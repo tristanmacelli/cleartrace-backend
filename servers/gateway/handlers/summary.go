@@ -385,7 +385,7 @@ func processMetaTags(mapOfTags map[string]string,
 		if strings.HasPrefix(ogProp, "og:image") {
 			// This is not able to grab anything after the og:image because the htmlStream gets passed empty
 			// And therefore it must process each image property in separate calls
-			PreviewImages, parsedImageData = processImageElements(ogProp, token, PreviewImages, parsedImageData)
+			PreviewImages = processImageElements(ogProp, token, PreviewImages)
 		} else {
 			mapOfTags = processContent(mapOfTags, token, ogProp)
 		}
@@ -396,10 +396,7 @@ func processMetaTags(mapOfTags map[string]string,
 	return mapOfTags, PreviewImages, parsedImageData
 }
 
-func processImageElements(ogProp string,
-	token html.Token,
-	PreviewImages []string,
-	parsedImageData string) ([]string, string) {
+func processImageElements(ogProp string, token html.Token, PreviewImages []string) []string {
 
 	ImageElements := [6]string{
 		"og:image",
@@ -410,6 +407,7 @@ func processImageElements(ogProp string,
 		"og:image:alt",
 	}
 	isImgURL := ogProp == ImageElements[0]
+	var parsedImageData string
 
 	// This needs to be able to process all image attributes
 	for _, attr := range token.Attr {
@@ -418,13 +416,13 @@ func processImageElements(ogProp string,
 		if attr.Key == "content" && exists {
 			if isImgURL {
 				parsedImageData = "url>>>" + attr.Val + ","
+				PreviewImages = append(PreviewImages, parsedImageData)
 			} else {
-				parsedImageData += ogProp + ">>>" + attr.Val + ","
+				PreviewImages[len(PreviewImages)-1] += ogProp + ">>>" + attr.Val + ","
 			}
 		}
 	}
-	PreviewImages = append(PreviewImages, parsedImageData)
-	return PreviewImages, parsedImageData
+	return PreviewImages
 }
 
 // processContent
