@@ -42,7 +42,6 @@ type PageSummary struct {
 //which should contain a URL to a web page. It responds with
 //a JSON-encoded PageSummary struct containing the page summary
 //meta-data.
-// -------------------------------------------------------------------- REQUIRED FUNCTION
 func SummaryHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 
@@ -87,7 +86,6 @@ func SummaryHandler(w http.ResponseWriter, r *http.Request) {
 //fetchHTML fetches `pageURL` and returns the body stream or an error.
 //Errors are returned if the response status code is an error (>=400),
 //or if the content type indicates the URL is not an HTML page.
-// -------------------------------------------------------------------- REQUIRED FUNCTION
 func fetchHTML(pageURL string) (io.ReadCloser, error) {
 	// if the url length exists, fetch it
 	if len(pageURL) >= 1 {
@@ -112,24 +110,9 @@ func fetchHTML(pageURL string) (io.ReadCloser, error) {
 	return nil, http.ErrContentLength
 }
 
-// -------------------------------------------------------------------- REQUIRED FUNCTION
 //extractSummary tokenizes the `htmlStream` and populates a PageSummary
 //struct with the page's summary meta-data.
 func extractSummary(pageURL string, htmlStream io.ReadCloser) (*PageSummary, error) {
-	/*TODO: tokenize the `htmlStream` and extract the page summary meta-data
-	according to the assignment description.
-
-	To test your implementation of this function, run the TestExtractSummary
-	test in summary_test.go. You can do that directly in Visual Studio Code,
-	or at the command line by running:
-		go test -run TestExtractSummary
-
-	Helpful Links:
-	https://drstearns.github.io/tutorials/tokenizing/
-	http://ogp.me/
-	https://developers.facebook.com/docs/reference/opengraph/
-	https://golang.org/pkg/net/url/#URL.ResolveReference
-	*/
 	mapOfTags := map[string]string{
 		"og:title":       "",
 		"title":          "",
@@ -143,13 +126,7 @@ func extractSummary(pageURL string, htmlStream io.ReadCloser) (*PageSummary, err
 		"keywords":       "",
 		"icon":           "",
 	}
-
-	/*  This function goes through the html stream only once,
-	and pulls out all the necessary information by returning
-	a map of data (meta tags extracted from the head tag) and an array of images */
 	resultMap, resultImages := extractRequiredTokens(mapOfTags, &htmlStream)
-	// Result images seem to be coming in empty because the tokenizer is not correctly being passed
-	// Between functions.
 
 	// do postprocessing of strings here
 	ogtype := resultMap["og:type"]
@@ -216,7 +193,6 @@ func generateKeywordsArray(keywords string) ([]string, bool) {
 }
 
 // generateIconsPreviewImage
-// Need to understand how commas and 3 stars are being added into the resultMap attributes
 func generateIconsPreviewImage(icons string) PreviewImage {
 	iconsArray := strings.Split(icons, ",")
 	var iconStruct PreviewImage
@@ -350,18 +326,15 @@ func parseIcons(mapOfTags map[string]string, token html.Token) map[string]string
 	if iconExistsFlag {
 		thingsToFetch := []string{"href", "type", "sizes"}
 		var finalStringForIcon string
-		// fmt.Println("token.Attr is: ", token.Attr)
 
 		// for each attribute of the link
 		for _, attr := range token.Attr {
 			// check if the attribute is one of our required attributes to fetch
-			// pattern is key-value,key-value....
 			if contains(thingsToFetch, attr.Key) {
 				// add the attribute to the final string
 				finalStringForIcon += attr.Key + ">>>" + attr.Val + ","
 			}
 		}
-		// fmt.Println("processLinkTags	", finalStringForIcon)
 		mapOfTags[ogProp] = finalStringForIcon
 	}
 	return mapOfTags
@@ -391,11 +364,8 @@ func parseMetaTags(mapOfTags map[string]string,
 			break
 		}
 	}
-	// if it is an og:image do this
 	if isProperty {
 		if strings.HasPrefix(ogProp, "og:image") {
-			// This is not able to grab anything after the og:image because the htmlStream gets passed empty
-			// And therefore it must process each image property in separate calls
 			PreviewImages = parseImageElements(ogProp, token, PreviewImages)
 		} else {
 			mapOfTags = processNonImageMetaElements(mapOfTags, token, ogProp)
@@ -419,7 +389,6 @@ func parseImageElements(ogProp string, token html.Token, PreviewImages []string)
 	isImgURL := ogProp == ImageElements[0]
 	var parsedImageData string
 
-	// This needs to be able to process all image attributes
 	for _, attr := range token.Attr {
 		exists := contains(ImageElements[0:6], ogProp)
 
