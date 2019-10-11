@@ -132,10 +132,12 @@ func extractSummary(pageURL string, htmlStream io.ReadCloser) (*PageSummary, err
 	*/
 	mapOfTags := map[string]string{
 		"og:title":       "",
+		"title":          "",
 		"og:type":        "",
 		"og:url":         "",
 		"og:site_name":   "",
 		"og:description": "",
+		"description":    "",
 		"og:image":       "",
 		"author":         "",
 		"keywords":       "",
@@ -155,8 +157,14 @@ func extractSummary(pageURL string, htmlStream io.ReadCloser) (*PageSummary, err
 	title := resultMap["og:title"]
 	siteName := resultMap["og:site_name"]
 	description := resultMap["og:description"]
-	author := resultMap["og:author"]
+	author := resultMap["author"]
 	keywords := resultMap["keywords"]
+	if len(title) == 0 {
+		title = resultMap["title"]
+	}
+	if len(description) == 0 {
+		description = resultMap["description"]
+	}
 
 	keywordsArray, nilKeywords := generateKeywordsArray(keywords)
 
@@ -281,7 +289,6 @@ a map of data and an array of images */
 func extractRequiredTokens(mapOfTags map[string]string, htmlStream *io.ReadCloser) (map[string]string, []string) {
 	tokenizer := html.NewTokenizer(*htmlStream)
 	var PreviewImages = []string{}
-	var parsedImageData string
 
 	// If og:image:url add one then append to the end of PreviewImages otherwise append to the current image index
 	for {
@@ -308,11 +315,16 @@ func extractRequiredTokens(mapOfTags map[string]string, htmlStream *io.ReadClose
 		if tokenType == html.StartTagToken {
 			// a link tag
 			if token.Data == "link" {
-				mapOfTags = processIcons(mapOfTags, token)
+				mapOfTags = parseIcons(mapOfTags, token)
 			}
 			// a meta tag
 			if token.Data == "meta" {
-				mapOfTags, PreviewImages, parsedImageData = processMetaTags(mapOfTags, token, PreviewImages, parsedImageData)
+				mapOfTags, PreviewImages = parseMetaTags(mapOfTags, token, PreviewImages)
+			}
+			if token.Data == "title" {
+				tokenizer.Next()
+				token = tokenizer.Token()
+				mapOfTags["title"] = token.Data
 			}
 		}
 
@@ -321,7 +333,7 @@ func extractRequiredTokens(mapOfTags map[string]string, htmlStream *io.ReadClose
 }
 
 // processLinkTags
-func processIcons(mapOfTags map[string]string, token html.Token) map[string]string {
+func parseIcons(mapOfTags map[string]string, token html.Token) map[string]string {
 	iconExistsFlag := false
 	// The following variable stands for Open Graph Property (since we will be capturing a lot of these)
 	var ogProp string
@@ -355,11 +367,10 @@ func processIcons(mapOfTags map[string]string, token html.Token) map[string]stri
 	return mapOfTags
 }
 
-// processMetaTags
-func processMetaTags(mapOfTags map[string]string,
+// parseMetaTags
+func parseMetaTags(mapOfTags map[string]string,
 	token html.Token,
-	PreviewImages []string,
-	parsedImageData string) (map[string]string, []string, string) {
+	PreviewImages []string) (map[string]string, []string) {
 
 	isProperty := false
 	metaNameExists := false
@@ -385,19 +396,18 @@ func processMetaTags(mapOfTags map[string]string,
 		if strings.HasPrefix(ogProp, "og:image") {
 			// This is not able to grab anything after the og:image because the htmlStream gets passed empty
 			// And therefore it must process each image property in separate calls
-			PreviewImages = processImageElements(ogProp, token, PreviewImages)
+			PreviewImages = parseImageElements(ogProp, token, PreviewImages)
 		} else {
-			mapOfTags = processContent(mapOfTags, token, ogProp)
+			mapOfTags = processNonImageMetaElements(mapOfTags, token, ogProp)
 		}
 	}
 	if metaNameExists {
-		mapOfTags = processContent(mapOfTags, token, ogProp)
+		mapOfTags = processNonImageMetaElements(mapOfTags, token, ogProp)
 	}
-	return mapOfTags, PreviewImages, parsedImageData
+	return mapOfTags, PreviewImages
 }
 
-func processImageElements(ogProp string, token html.Token, PreviewImages []string) []string {
-
+func parseImageElements(ogProp string, token html.Token, PreviewImages []string) []string {
 	ImageElements := [6]string{
 		"og:image",
 		"og:image:secure_url",
@@ -418,6 +428,7 @@ func processImageElements(ogProp string, token html.Token, PreviewImages []strin
 				parsedImageData = "url>>>" + attr.Val + ","
 				PreviewImages = append(PreviewImages, parsedImageData)
 			} else {
+				// This associates any additional image elements with the existing image url
 				PreviewImages[len(PreviewImages)-1] += ogProp + ">>>" + attr.Val + ","
 			}
 		}
@@ -425,8 +436,8 @@ func processImageElements(ogProp string, token html.Token, PreviewImages []strin
 	return PreviewImages
 }
 
-// processContent
-func processContent(mapOfTags map[string]string, token html.Token, ogProp string) map[string]string {
+// processNonImageMetaElements
+func processNonImageMetaElements(mapOfTags map[string]string, token html.Token, ogProp string) map[string]string {
 	for _, attr := range token.Attr {
 		if attr.Key == "content" {
 			mapOfTags[ogProp] = attr.Val
