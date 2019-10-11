@@ -146,6 +146,8 @@ func extractSummary(pageURL string, htmlStream io.ReadCloser) (*PageSummary, err
 	and pulls out all the necessary information by returning
 	a map of data (meta tags extracted from the head tag) and an array of images */
 	resultMap, resultImages := extractRequiredTokens(mapOfTags, &htmlStream)
+	// Result images seem to be coming in empty because the tokenizer is not correctly being passed
+	// Between functions.
 
 	// do postprocessing of strings here
 	ogtype := resultMap["og:type"]
@@ -212,7 +214,7 @@ func generateIconsPreviewImage(icons string) PreviewImage {
 	var iconStruct PreviewImage
 
 	for _, attr := range iconsArray {
-		attr := strings.Split(attr, "***")
+		attr := strings.Split(attr, ">>>")
 		// grabs the first item in the array (the )
 		switch attr[0] {
 		case "href":
@@ -244,7 +246,7 @@ func generateResultImagesStruct(resultImages []string) []*PreviewImage {
 		allLinks := strings.Split(attr, ",")
 
 		for _, b := range allLinks {
-			allSubs := strings.Split(b, "***")
+			allSubs := strings.Split(b, ">>>")
 
 			switch allSubs[0] {
 			case "url":
@@ -257,7 +259,7 @@ func generateResultImagesStruct(resultImages []string) []*PreviewImage {
 			case "og:image:height":
 				h, err := strconv.Atoi(allSubs[1])
 				if err == nil {
-					tempImagesStruct.Width = h
+					tempImagesStruct.Height = h
 				}
 			case "og:image:type":
 				tempImagesStruct.Type = allSubs[1]
@@ -279,9 +281,11 @@ a map of data and an array of images */
 func extractRequiredTokens(mapOfTags map[string]string, htmlStream *io.ReadCloser) (map[string]string, []string) {
 	tokenizer := html.NewTokenizer(*htmlStream)
 	var PreviewImages = []string{}
+	var parsedImageData string
 
+	// If og:image:url add one then append to the end of PreviewImages otherwise append to the current image index
 	for {
-		// next token type
+		// grab next token
 		tokenType := tokenizer.Next()
 		//if it's an error token, we either reached
 		//the end of the file, or the HTML was malformed
@@ -302,17 +306,13 @@ func extractRequiredTokens(mapOfTags map[string]string, htmlStream *io.ReadClose
 
 		// if its a start token
 		if tokenType == html.StartTagToken {
-
-			// if the token is a link tag
-			if "link" == token.Data {
-				// Will likely want to pass in pointers to mapOfTags
-				mapOfTags = processLinkTags(mapOfTags, token)
+			// a link tag
+			if token.Data == "link" {
+				mapOfTags = processIcons(mapOfTags, token)
 			}
-			//if the tag is attr meta tag do this
-			if "meta" == token.Data {
-				// for each of its attributes
-				// Will likely want to pass in pointers to mapOfTags & PreviewImages here
-				mapOfTags, PreviewImages = processMetaTags(mapOfTags, token, *tokenizer, PreviewImages)
+			// a meta tag
+			if token.Data == "meta" {
+				mapOfTags, PreviewImages, parsedImageData = processMetaTags(mapOfTags, token, PreviewImages, parsedImageData)
 			}
 		}
 
@@ -321,141 +321,120 @@ func extractRequiredTokens(mapOfTags map[string]string, htmlStream *io.ReadClose
 }
 
 // processLinkTags
-func processLinkTags(mapOfTags map[string]string, token html.Token) map[string]string {
+func processIcons(mapOfTags map[string]string, token html.Token) map[string]string {
 	iconExistsFlag := false
-	var tag string
-	// What is this finding?
+	// The following variable stands for Open Graph Property (since we will be capturing a lot of these)
+	var ogProp string
+	// This detects if there is an icon
 	for _, attr := range token.Attr {
 		_, exists := mapOfTags[attr.Val]
 		if attr.Key == "rel" && exists {
-			tag = attr.Val
+			ogProp = attr.Val
 			iconExistsFlag = true
+			break
 		}
 	}
-	// we have a link with rel=icon
+	// we have a link with rel=icon & we want to capture the other properties
 	if iconExistsFlag {
-		thingsToFetch := [3]string{"href", "type", "sizes"}
+		thingsToFetch := []string{"href", "type", "sizes"}
 		var finalStringForIcon string
+		// fmt.Println("token.Attr is: ", token.Attr)
+
 		// for each attribute of the link
 		for _, attr := range token.Attr {
 			// check if the attribute is one of our required attributes to fetch
-			for i := 0; i < len(thingsToFetch); i++ {
-				// pattern is key-value,key-value....
-				if attr.Key == thingsToFetch[i] {
-					// add the attribute to the final string
-					finalStringForIcon += attr.Key + "***" + attr.Val + ","
-				}
+			// pattern is key-value,key-value....
+			if contains(thingsToFetch, attr.Key) {
+				// add the attribute to the final string
+				finalStringForIcon += attr.Key + ">>>" + attr.Val + ","
 			}
-
 		}
-		mapOfTags[tag] = finalStringForIcon
+		// fmt.Println("processLinkTags	", finalStringForIcon)
+		mapOfTags[ogProp] = finalStringForIcon
 	}
 	return mapOfTags
 }
 
 // processMetaTags
-func processMetaTags(mapOfTags map[string]string, token html.Token, tokenizer html.Tokenizer, PreviewImages []string) (map[string]string, []string) {
-	metaPropertyExists := false
+func processMetaTags(mapOfTags map[string]string,
+	token html.Token,
+	PreviewImages []string,
+	parsedImageData string) (map[string]string, []string, string) {
+
+	isProperty := false
 	metaNameExists := false
-	var tag string
+	var ogProp string
+
 	for _, attr := range token.Attr {
 		_, exists := mapOfTags[attr.Val]
 
-		if attr.Key == "property" && exists {
-			tag = attr.Val
-			metaPropertyExists = true
+		if attr.Key == "property" {
+			ogProp = attr.Val
+			isProperty = true
+			break
 		}
 
 		if attr.Key == "name" && exists {
-			tag = attr.Val
+			ogProp = attr.Val
 			metaNameExists = true
+			break
 		}
 	}
 	// if it is an og:image do this
-	if metaPropertyExists {
-		if tag == "og:image" {
-			PreviewImages = processOpenGraphImage(tag, token, tokenizer, PreviewImages)
+	if isProperty {
+		if strings.HasPrefix(ogProp, "og:image") {
+			// This is not able to grab anything after the og:image because the htmlStream gets passed empty
+			// And therefore it must process each image property in separate calls
+			PreviewImages, parsedImageData = processImageElements(ogProp, token, PreviewImages, parsedImageData)
 		} else {
-			mapOfTags = processContent(mapOfTags, token, tag)
+			mapOfTags = processContent(mapOfTags, token, ogProp)
 		}
 	}
-
 	if metaNameExists {
-		mapOfTags = processContent(mapOfTags, token, tag)
+		mapOfTags = processContent(mapOfTags, token, ogProp)
 	}
-	return mapOfTags, PreviewImages
+	return mapOfTags, PreviewImages, parsedImageData
 }
 
-// processContent
-func processContent(mapOfTags map[string]string, token html.Token, tag string) map[string]string {
-	for _, attr := range token.Attr {
-		if attr.Key == "content" {
-			mapOfTags[tag] = attr.Val
-		}
-	}
-	return mapOfTags
-}
+func processImageElements(ogProp string,
+	token html.Token,
+	PreviewImages []string,
+	parsedImageData string) ([]string, string) {
 
-func processOpenGraphImage(tag string, token html.Token, tokenizer html.Tokenizer, PreviewImages []string) []string {
 	ImageElements := [6]string{
-		"og:image:url",
+		"og:image",
 		"og:image:secure_url",
 		"og:image:type",
 		"og:image:width",
 		"og:image:height",
 		"og:image:alt",
 	}
-	var finalImageToken string
-	flagForNextToken := false
+	isImgURL := ogProp == ImageElements[0]
 
-	// add first image's content to url
+	// This needs to be able to process all image attributes
+	for _, attr := range token.Attr {
+		exists := contains(ImageElements[0:6], ogProp)
+
+		if attr.Key == "content" && exists {
+			if isImgURL {
+				parsedImageData = "url>>>" + attr.Val + ","
+			} else {
+				parsedImageData += ogProp + ">>>" + attr.Val + ","
+			}
+		}
+	}
+	PreviewImages = append(PreviewImages, parsedImageData)
+	return PreviewImages, parsedImageData
+}
+
+// processContent
+func processContent(mapOfTags map[string]string, token html.Token, ogProp string) map[string]string {
 	for _, attr := range token.Attr {
 		if attr.Key == "content" {
-			finalImageToken = "url***" + attr.Val + ","
+			mapOfTags[ogProp] = attr.Val
 		}
 	}
-	tokenizer.Next()
-	token = tokenizer.Token()
-
-	for _, attr := range token.Attr {
-		// attr.Val is either in Image_Elements array
-		exists := contains(ImageElements[0:6], attr.Val)
-		if attr.Key == "property" && exists {
-			tag = attr.Val
-			flagForNextToken = true
-		}
-	}
-
-	// while upcoming token is meta and start with og:image
-	for flagForNextToken {
-		token := tokenizer.Token()
-		// check if next token
-		if token.Data == "meta" {
-			for _, attr := range token.Attr {
-				// attr.Val is either in ImageElements array
-				exists := contains(ImageElements[0:6], attr.Val)
-				if attr.Key == "property" && exists {
-					tag = attr.Val
-					flagForNextToken = true
-
-					for _, attr := range token.Attr {
-						if attr.Key == "content" {
-							finalImageToken += tag + "***" + attr.Val + ","
-						}
-					}
-				} else {
-					flagForNextToken = false
-				}
-			}
-		} else {
-			flagForNextToken = false
-		}
-		tokenizer.Next()
-
-	}
-	PreviewImages = append(PreviewImages, finalImageToken)
-
-	return PreviewImages
+	return mapOfTags
 }
 
 // helper function to check whether an element is present in a string
