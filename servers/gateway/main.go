@@ -1,33 +1,33 @@
 package main
 
 import (
+	"log"
 	"net/http"
 	"os"
-	"log"
-)
 
-// SummaryHandler, temporarily shows an html element at localhost/v1/summary
-func SummaryHandler (w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("<h1>Hello world</h1>"))
-}
+	"./handlers"
+)
 
 //main is the main entry point for the server
 func main() {
 	address := os.Getenv("ADDR")
+	// Default address the server should listen on
 	if len(address) == 0 {
 		address = ":80"
 	}
+	// starting a new mux session
 	mux := http.NewServeMux()
-	mux.HandleFunc("/v1/summary", SummaryHandler)
+	mux.HandleFunc("/v1/summary", handlers.SummaryHandler)
+
+	// logging server location or errors
 	log.Printf("server is listening at %s...", address)
 	log.Fatal(http.ListenAndServe(address, mux))
 
 	/* To host server:
-		- change path until in folder with main.go in it
-		- 'go install main.go'
-		- navigate to 'go' bin folder and run main.exe
+	- change path until in folder with main.go in it
+	- 'go install main.go'
+	- navigate to 'go' bin folder and run main.exe
 	*/
-
 
 	/* TODO: add code to do the following
 	- Read the ADDR environment variable to get the address
