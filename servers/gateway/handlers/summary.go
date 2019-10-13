@@ -209,8 +209,10 @@ func generateIconsPreviewImage(icons string) PreviewImage {
 		case "sizes":
 			heightAndWidth := strings.Split(attr[1], "x")
 			height, err := strconv.Atoi(heightAndWidth[0])
-			width, err := strconv.Atoi(heightAndWidth[1])
-
+			width, err := strconv.Atoi(heightAndWidth[0])
+			if len(heightAndWidth) > 1 {
+				width, err = strconv.Atoi(heightAndWidth[1])
+			}
 			if err == nil {
 				iconStruct.Height = height
 				iconStruct.Width = width
@@ -285,7 +287,7 @@ func extractRequiredTokens(mapOfTags map[string]string, htmlStream *io.ReadClose
 		}
 
 		token := tokenizer.Token()
-		// check if this has not reached the end of head tag
+		// check if this has reached the end of head tag
 		if tokenType == html.EndTagToken && "head" == token.Data {
 			break
 		}
