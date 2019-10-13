@@ -1,4 +1,4 @@
-# INFO 344 Challenges
+# INFO 344 Assignments
 
 This repo was created for you by GitHub Classroom. **DO NOT FORK THIS REPO INTO YOUR OWN ACCOUNT!** It is already private. Only you and the teaching team can see the code in this repo. Please make all of your commits to branches in this repo.
 
