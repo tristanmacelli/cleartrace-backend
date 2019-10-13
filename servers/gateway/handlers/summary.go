@@ -47,11 +47,11 @@ func SummaryHandler(w http.ResponseWriter, r *http.Request) {
 
 	keys, ok := r.URL.Query()["url"]
 	// not considering length of string here
-	fmt.Println(r)
 	if !ok {
 		// case when there are no url parameters present in the requested url
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte("Oops something looks fishy :("))
+		return
 	} else {
 		// case when there is a url param in the request, and we now process it
 		requestURL := keys[0]
@@ -66,7 +66,8 @@ func SummaryHandler(w http.ResponseWriter, r *http.Request) {
 		defer resp.Close()
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte("problem fetching data"))
+			w.Write([]byte("Status Code 500: Internal Server Error"))
+			return
 		}
 		encodedStruct, err := json.Marshal(pageSummary)
 		if err != nil {
@@ -96,12 +97,12 @@ func fetchHTML(pageURL string) (io.ReadCloser, error) {
 			return nil, err
 		}
 		if resp.StatusCode != http.StatusOK {
-			fmt.Println("Bad status code returned from url fetch")
+			fmt.Println("Response Code : ", resp.StatusCode, " Link used: ", pageURL)
 			return nil, errors.New("Bad status code returned from url fetch")
 		}
 		ctype := resp.Header.Get("Content-Type")
 		if !strings.HasPrefix(ctype, "text/html") {
-			fmt.Println("Bad content type")
+			fmt.Println("Content-Type received was: ", ctype, " Expecting text/html")
 			return nil, errors.New("Bad content types")
 		}
 		// reach here when everything looks ok, and we respond with the body of http response
@@ -205,13 +206,13 @@ func generateIconsPreviewImage(icons string) PreviewImage {
 		case "href":
 			iconStruct.URL = attr[1]
 		case "sizes":
-			hW := strings.Split(attr[1], "x")
-			h, err := strconv.Atoi(hW[0])
-			w, err := strconv.Atoi(hW[1])
+			heightAndWidth := strings.Split(attr[1], "x")
+			height, err := strconv.Atoi(heightAndWidth[0])
+			width, err := strconv.Atoi(heightAndWidth[1])
 
 			if err == nil {
-				iconStruct.Height = h
-				iconStruct.Width = w
+				iconStruct.Height = height
+				iconStruct.Width = width
 			}
 		case "type":
 			iconStruct.Type = attr[1]
