@@ -245,8 +245,6 @@ func generateResultImagesStruct(resultImages []string, url string) []*PreviewIma
 			case "url":
 				tempImagesStruct.URL = allSubs[1]
 				if !strings.HasPrefix(allSubs[1], "http") {
-					fmt.Println("The following this the icon url: ", allSubs[1])
-					fmt.Println("This is the url we will add: ", url)
 					tempImagesStruct.URL = url + allSubs[1]
 				}
 			case "og:image:width":
@@ -420,7 +418,7 @@ func parseImageElements(mapOfTags map[string]string,
 
 		if attr.Key == "content" && exists {
 			if isImgURL {
-				parsedImageData = "url>>>" + mapOfTags["og:url"] + attr.Val + ","
+				parsedImageData = "url>>>" + attr.Val + ","
 				PreviewImages = append(PreviewImages, parsedImageData)
 			} else {
 				// This associates any additional image elements with the existing image url
