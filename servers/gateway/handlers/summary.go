@@ -290,7 +290,7 @@ func extractRequiredTokens(mapOfTags map[string]string, htmlStream *io.ReadClose
 		}
 
 		// if its a start token
-		if tokenType == html.StartTagToken {
+		if tokenType == html.StartTagToken || tokenType == html.SelfClosingTagToken {
 			// a link tag
 			if token.Data == "link" {
 				mapOfTags = parseIcons(mapOfTags, token)
