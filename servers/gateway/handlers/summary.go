@@ -52,36 +52,33 @@ func SummaryHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte("Status Code 500: Internal Server Error"))
 		return
-	} else {
-		// case when there is a url param in the request, and we now process it
-		requestURL := keys[0]
-		// get the html stream of the url
-		resp, err := fetchHTML(requestURL)
-		// get summary of the html stream
-		pageSummary, err := extractSummary(requestURL, resp)
-		fmt.Println("***0*")
-		fmt.Println(pageSummary)
-
-		//close the response stream
-		defer resp.Close()
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte("Status Code 500: Internal Server Error"))
-			return
-		}
-		encodedStruct, err := json.Marshal(pageSummary)
-		if err != nil {
-			// handle error in json encoding
-			fmt.Println(err)
-			return
-		}
-		fmt.Println("Final json: ")
-		fmt.Println(encodedStruct)
-		w.Write([]byte(encodedStruct))
-
-		fmt.Println(err)
 	}
+	// case when there is a url param in the request, and we now process it
+	requestURL := keys[0]
+	// get the html stream of the url
+	resp, err := fetchHTML(requestURL)
+	// get summary of the html stream
+	pageSummary, err := extractSummary(requestURL, resp)
+	fmt.Println("***0*")
+	fmt.Println(pageSummary)
 
+	//close the response stream
+	defer resp.Close()
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("Status Code 500: Internal Server Error"))
+		return
+	}
+	encodedStruct, err := json.Marshal(pageSummary)
+	if err != nil {
+		// handle error in json encoding
+		fmt.Println(err)
+		return
+	}
+	fmt.Println("Final json: ")
+	fmt.Println(encodedStruct)
+	w.Write([]byte(encodedStruct))
+	fmt.Println(err)
 }
 
 //fetchHTML fetches `pageURL` and returns the body stream or an error.
