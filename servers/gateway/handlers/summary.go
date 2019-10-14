@@ -75,8 +75,7 @@ func SummaryHandler(w http.ResponseWriter, r *http.Request) {
 		fmt.Println(err)
 		return
 	}
-	fmt.Println("Final json: ")
-	fmt.Println(encodedStruct)
+	w.Header().Set("Content-Type", "application/json")
 	w.Write([]byte(encodedStruct))
 	fmt.Println(err)
 }
