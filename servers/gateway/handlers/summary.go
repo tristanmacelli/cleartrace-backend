@@ -42,52 +42,47 @@ type PageSummary struct {
 //which should contain a URL to a web page. It responds with
 //a JSON-encoded PageSummary struct containing the page summary
 //meta-data.
-// -------------------------------------------------------------------- REQUIRED FUNCTION
 func SummaryHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 
 	keys, ok := r.URL.Query()["url"]
 	// not considering length of string here
-	fmt.Println(r)
 	if !ok {
 		// case when there are no url parameters present in the requested url
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("Oops something looks fishy :("))
-	} else {
-		// case when there is a url param in the request, and we now process it
-		requestURL := keys[0]
-		// get the html stream of the url
-		resp, err := fetchHTML(requestURL)
-		// get summary of the html stream
-		pageSummary, err := extractSummary(requestURL, resp)
-		fmt.Println("***0*")
-		fmt.Println(pageSummary)
-
-		//close the response stream
-		defer resp.Close()
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte("problem fetching data"))
-		}
-		encodedStruct, err := json.Marshal(pageSummary)
-		if err != nil {
-			// handle error in json encoding
-			fmt.Println(err)
-			return
-		}
-		fmt.Println("Final json: ")
-		fmt.Println(encodedStruct)
-		w.Write([]byte(encodedStruct))
-
-		fmt.Println(err)
+		w.Write([]byte("Status Code 500: Internal Server Error"))
+		return
 	}
+	// case when there is a url param in the request, and we now process it
+	requestURL := keys[0]
+	// get the html stream of the url
+	resp, err := fetchHTML(requestURL)
+	// get summary of the html stream
+	pageSummary, err := extractSummary(requestURL, resp)
+	fmt.Println("***0*")
+	fmt.Println(pageSummary)
 
+	//close the response stream
+	defer resp.Close()
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("Status Code 500: Internal Server Error"))
+		return
+	}
+	encodedStruct, err := json.Marshal(pageSummary)
+	if err != nil {
+		// handle error in json encoding
+		fmt.Println(err)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Write([]byte(encodedStruct))
+	fmt.Println(err)
 }
 
 //fetchHTML fetches `pageURL` and returns the body stream or an error.
 //Errors are returned if the response status code is an error (>=400),
 //or if the content type indicates the URL is not an HTML page.
-// -------------------------------------------------------------------- REQUIRED FUNCTION
 func fetchHTML(pageURL string) (io.ReadCloser, error) {
 	// if the url length exists, fetch it
 	if len(pageURL) >= 1 {
@@ -98,12 +93,12 @@ func fetchHTML(pageURL string) (io.ReadCloser, error) {
 			return nil, err
 		}
 		if resp.StatusCode != http.StatusOK {
-			fmt.Println("Bad status code returned from url fetch")
+			fmt.Println("Response Code : ", resp.StatusCode, " Link used: ", pageURL)
 			return nil, errors.New("Bad status code returned from url fetch")
 		}
 		ctype := resp.Header.Get("Content-Type")
 		if !strings.HasPrefix(ctype, "text/html") {
-			fmt.Println("Bad content type")
+			fmt.Println("Content-Type received was: ", ctype, " Expecting text/html")
 			return nil, errors.New("Bad content types")
 		}
 		// reach here when everything looks ok, and we respond with the body of http response
@@ -112,39 +107,22 @@ func fetchHTML(pageURL string) (io.ReadCloser, error) {
 	return nil, http.ErrContentLength
 }
 
-// -------------------------------------------------------------------- REQUIRED FUNCTION
 //extractSummary tokenizes the `htmlStream` and populates a PageSummary
 //struct with the page's summary meta-data.
 func extractSummary(pageURL string, htmlStream io.ReadCloser) (*PageSummary, error) {
-	/*TODO: tokenize the `htmlStream` and extract the page summary meta-data
-	according to the assignment description.
-
-	To test your implementation of this function, run the TestExtractSummary
-	test in summary_test.go. You can do that directly in Visual Studio Code,
-	or at the command line by running:
-		go test -run TestExtractSummary
-
-	Helpful Links:
-	https://drstearns.github.io/tutorials/tokenizing/
-	http://ogp.me/
-	https://developers.facebook.com/docs/reference/opengraph/
-	https://golang.org/pkg/net/url/#URL.ResolveReference
-	*/
 	mapOfTags := map[string]string{
 		"og:title":       "",
+		"title":          "",
 		"og:type":        "",
 		"og:url":         "",
 		"og:site_name":   "",
 		"og:description": "",
+		"description":    "",
 		"og:image":       "",
 		"author":         "",
 		"keywords":       "",
 		"icon":           "",
 	}
-
-	/*  This function goes through the html stream only once,
-	and pulls out all the necessary information by returning
-	a map of data (meta tags extracted from the head tag) and an array of images */
 	resultMap, resultImages := extractRequiredTokens(mapOfTags, &htmlStream)
 
 	// do postprocessing of strings here
@@ -153,44 +131,52 @@ func extractSummary(pageURL string, htmlStream io.ReadCloser) (*PageSummary, err
 	title := resultMap["og:title"]
 	siteName := resultMap["og:site_name"]
 	description := resultMap["og:description"]
-	author := resultMap["og:author"]
+	author := resultMap["author"]
 	keywords := resultMap["keywords"]
+	if len(title) == 0 {
+		title = resultMap["title"]
+	}
+	if len(description) == 0 {
+		description = resultMap["description"]
+	}
 
 	keywordsArray, nilKeywords := generateKeywordsArray(keywords)
 
 	icons := resultMap["icon"]
+	iconStruct := generateIconsPreviewImage(icons, pageURL)
 
-	iconStruct := generateIconsPreviewImage(icons)
-
-	nilPreviewImage := false
+	nilIcon := false
 	// If there were no values created for the website preview image (aka icon) mark a flag
 	if reflect.DeepEqual(&iconStruct, &PreviewImage{"", "", "", 0, 0, ""}) {
-		nilPreviewImage = true
+		nilIcon = true
 	}
 
-	resultImagesStruct := generateResultImagesStruct(resultImages)
+	resultImagesStruct := generateResultImagesStruct(resultImages, pageURL)
 
-	finalPageSummary := &PageSummary{
-		ogtype, url, title, siteName, description, author, keywordsArray, &iconStruct, resultImagesStruct,
-	}
+	var finalPageSummary PageSummary
+	finalPageSummary.Type = ogtype
+	finalPageSummary.URL = url
+	finalPageSummary.Title = title
+	finalPageSummary.SiteName = siteName
+	finalPageSummary.Description = description
+	finalPageSummary.Author = author
+	finalPageSummary.Keywords = keywordsArray
+	finalPageSummary.Icon = &iconStruct
+	finalPageSummary.Images = resultImagesStruct
 
-	if nilPreviewImage && nilKeywords {
-		finalPageSummary = &PageSummary{
-			ogtype, url, title, siteName, description, author, nil, nil, resultImagesStruct,
-		}
+	if nilIcon && nilKeywords {
+		finalPageSummary.Keywords = nil
+		finalPageSummary.Icon = nil
 	} else if nilKeywords {
-		finalPageSummary = &PageSummary{
-			ogtype, url, title, siteName, description, author, nil, &iconStruct, resultImagesStruct,
-		}
-	} else if nilPreviewImage {
-		finalPageSummary = &PageSummary{
-			ogtype, url, title, siteName, description, author, keywordsArray, nil, resultImagesStruct,
-		}
+		finalPageSummary.Keywords = nil
+	} else if nilIcon {
+		finalPageSummary.Icon = nil
 	}
-	return finalPageSummary, nil
+	return &finalPageSummary, nil
 }
 
-// generateKeywordsArray
+// generateKeywordsArray decomposes the keywords generated by the extractRequiredtokens
+// function into a more read friendly format
 func generateKeywordsArray(keywords string) ([]string, bool) {
 	var keywordsArray []string
 	nilKeywords := false
@@ -206,25 +192,31 @@ func generateKeywordsArray(keywords string) ([]string, bool) {
 }
 
 // generateIconsPreviewImage
-// Need to understand how commas and 3 stars are being added into the resultMap attributes
-func generateIconsPreviewImage(icons string) PreviewImage {
+func generateIconsPreviewImage(icons string, url string) PreviewImage {
 	iconsArray := strings.Split(icons, ",")
 	var iconStruct PreviewImage
+	urlPieces := strings.Split(url, "/")
+	url = urlPieces[0] + "//" + urlPieces[1] + urlPieces[2]
 
 	for _, attr := range iconsArray {
-		attr := strings.Split(attr, "***")
+		attr := strings.Split(attr, ">>>")
 		// grabs the first item in the array (the )
 		switch attr[0] {
 		case "href":
 			iconStruct.URL = attr[1]
+			if !strings.HasPrefix(attr[1], "http") {
+				iconStruct.URL = url + attr[1]
+			}
 		case "sizes":
-			hW := strings.Split(attr[1], "x")
-			h, err := strconv.Atoi(hW[0])
-			w, err := strconv.Atoi(hW[1])
-
+			heightAndWidth := strings.Split(attr[1], "x")
+			height, err := strconv.Atoi(heightAndWidth[0])
+			width, err := strconv.Atoi(heightAndWidth[0])
+			if len(heightAndWidth) > 1 {
+				width, err = strconv.Atoi(heightAndWidth[1])
+			}
 			if err == nil {
-				iconStruct.Height = h
-				iconStruct.Width = w
+				iconStruct.Height = height
+				iconStruct.Width = width
 			}
 		case "type":
 			iconStruct.Type = attr[1]
@@ -234,8 +226,10 @@ func generateIconsPreviewImage(icons string) PreviewImage {
 }
 
 // generateResultImagesStruct combines multiple images to create an array of PreviewImage's (essentially an icon data type)
-func generateResultImagesStruct(resultImages []string) []*PreviewImage {
+func generateResultImagesStruct(resultImages []string, url string) []*PreviewImage {
 	var resultImagesStruct []*PreviewImage
+	urlPieces := strings.Split(url, "/")
+	url = urlPieces[0] + "//" + urlPieces[1] + urlPieces[2]
 
 	// This parsing seems like overkill to me
 	// Also, the case statements stop after one is used.
@@ -244,11 +238,14 @@ func generateResultImagesStruct(resultImages []string) []*PreviewImage {
 		allLinks := strings.Split(attr, ",")
 
 		for _, b := range allLinks {
-			allSubs := strings.Split(b, "***")
+			allSubs := strings.Split(b, ">>>")
 
 			switch allSubs[0] {
 			case "url":
 				tempImagesStruct.URL = allSubs[1]
+				if !strings.HasPrefix(allSubs[1], "http") {
+					tempImagesStruct.URL = url + allSubs[1]
+				}
 			case "og:image:width":
 				w, err := strconv.Atoi(allSubs[1])
 				if err == nil {
@@ -257,7 +254,7 @@ func generateResultImagesStruct(resultImages []string) []*PreviewImage {
 			case "og:image:height":
 				h, err := strconv.Atoi(allSubs[1])
 				if err == nil {
-					tempImagesStruct.Width = h
+					tempImagesStruct.Height = h
 				}
 			case "og:image:type":
 				tempImagesStruct.Type = allSubs[1]
@@ -280,8 +277,9 @@ func extractRequiredTokens(mapOfTags map[string]string, htmlStream *io.ReadClose
 	tokenizer := html.NewTokenizer(*htmlStream)
 	var PreviewImages = []string{}
 
+	// If og:image:url add one then append to the end of PreviewImages otherwise append to the current image index
 	for {
-		// next token type
+		// grab next token
 		tokenType := tokenizer.Next()
 		//if it's an error token, we either reached
 		//the end of the file, or the HTML was malformed
@@ -295,24 +293,25 @@ func extractRequiredTokens(mapOfTags map[string]string, htmlStream *io.ReadClose
 		}
 
 		token := tokenizer.Token()
-		// check if this has not reached the end of head tag
+		// check if this has reached the end of head tag
 		if tokenType == html.EndTagToken && "head" == token.Data {
 			break
 		}
 
 		// if its a start token
-		if tokenType == html.StartTagToken {
-
-			// if the token is a link tag
-			if "link" == token.Data {
-				// Will likely want to pass in pointers to mapOfTags
-				mapOfTags = processLinkTags(mapOfTags, token)
+		if tokenType == html.StartTagToken || tokenType == html.SelfClosingTagToken {
+			// a link tag
+			if token.Data == "link" {
+				mapOfTags = parseIcons(mapOfTags, token)
 			}
-			//if the tag is attr meta tag do this
-			if "meta" == token.Data {
-				// for each of its attributes
-				// Will likely want to pass in pointers to mapOfTags & PreviewImages here
-				mapOfTags, PreviewImages = processMetaTags(mapOfTags, token, *tokenizer, PreviewImages)
+			// a meta tag
+			if token.Data == "meta" {
+				mapOfTags, PreviewImages = parseMetaTags(mapOfTags, token, PreviewImages)
+			}
+			if token.Data == "title" {
+				tokenizer.Next()
+				token = tokenizer.Token()
+				mapOfTags["title"] = token.Data
 			}
 		}
 
@@ -320,142 +319,124 @@ func extractRequiredTokens(mapOfTags map[string]string, htmlStream *io.ReadClose
 	return mapOfTags, PreviewImages
 }
 
-// processLinkTags
-func processLinkTags(mapOfTags map[string]string, token html.Token) map[string]string {
+// processLinkTags processes information related to Icons by interpolating attribute data
+// with filler data for later decomposition
+func parseIcons(mapOfTags map[string]string, token html.Token) map[string]string {
 	iconExistsFlag := false
-	var tag string
-	// What is this finding?
+	// The following variable stands for Open Graph Property (since we will be capturing a lot of these)
+	var ogProp string
+	// This detects if there is an icon
 	for _, attr := range token.Attr {
 		_, exists := mapOfTags[attr.Val]
 		if attr.Key == "rel" && exists {
-			tag = attr.Val
+			ogProp = attr.Val
 			iconExistsFlag = true
+			break
 		}
 	}
-	// we have a link with rel=icon
+	// we have a link with rel=icon & we want to capture the other properties
 	if iconExistsFlag {
-		thingsToFetch := [3]string{"href", "type", "sizes"}
+		thingsToFetch := []string{"href", "type", "sizes"}
 		var finalStringForIcon string
+
 		// for each attribute of the link
 		for _, attr := range token.Attr {
 			// check if the attribute is one of our required attributes to fetch
-			for i := 0; i < len(thingsToFetch); i++ {
-				// pattern is key-value,key-value....
-				if attr.Key == thingsToFetch[i] {
-					// add the attribute to the final string
-					finalStringForIcon += attr.Key + "***" + attr.Val + ","
+			if contains(thingsToFetch, attr.Key) {
+				// add the attribute to the final string
+				if attr.Key == "url" {
+					finalStringForIcon += attr.Key + ">>>" + mapOfTags["og:url"] + attr.Val + ","
+				} else {
+					finalStringForIcon += attr.Key + ">>>" + attr.Val + ","
 				}
 			}
-
 		}
-		mapOfTags[tag] = finalStringForIcon
+		mapOfTags[ogProp] = finalStringForIcon
 	}
 	return mapOfTags
 }
 
-// processMetaTags
-func processMetaTags(mapOfTags map[string]string, token html.Token, tokenizer html.Tokenizer, PreviewImages []string) (map[string]string, []string) {
-	metaPropertyExists := false
+// parseMetaTags extracts and uses the first part of the meta tag to direct the tag
+// to the correct parsing helper method
+func parseMetaTags(mapOfTags map[string]string,
+	token html.Token,
+	PreviewImages []string) (map[string]string, []string) {
+
+	isProperty := false
 	metaNameExists := false
-	var tag string
+	var ogProp string
+
 	for _, attr := range token.Attr {
 		_, exists := mapOfTags[attr.Val]
 
-		if attr.Key == "property" && exists {
-			tag = attr.Val
-			metaPropertyExists = true
+		if attr.Key == "property" {
+			ogProp = attr.Val
+			isProperty = true
+			break
 		}
 
 		if attr.Key == "name" && exists {
-			tag = attr.Val
+			ogProp = attr.Val
 			metaNameExists = true
+			break
 		}
 	}
-	// if it is an og:image do this
-	if metaPropertyExists {
-		if tag == "og:image" {
-			PreviewImages = processOpenGraphImage(tag, token, tokenizer, PreviewImages)
+	if isProperty {
+		if strings.HasPrefix(ogProp, "og:image") {
+			PreviewImages = parseImageElements(mapOfTags, ogProp, token, PreviewImages)
 		} else {
-			mapOfTags = processContent(mapOfTags, token, tag)
+			mapOfTags = processNonImageMetaElements(mapOfTags, token, ogProp)
 		}
 	}
-
 	if metaNameExists {
-		mapOfTags = processContent(mapOfTags, token, tag)
+		mapOfTags = processNonImageMetaElements(mapOfTags, token, ogProp)
 	}
 	return mapOfTags, PreviewImages
 }
 
-// processContent
-func processContent(mapOfTags map[string]string, token html.Token, tag string) map[string]string {
-	for _, attr := range token.Attr {
-		if attr.Key == "content" {
-			mapOfTags[tag] = attr.Val
-		}
-	}
-	return mapOfTags
-}
+// parseImageElements processes all meta tags with information related to image
+// elements by interpolating the elements with other data for later decomposition
+func parseImageElements(mapOfTags map[string]string,
+	ogProp string,
+	token html.Token,
+	PreviewImages []string) []string {
 
-func processOpenGraphImage(tag string, token html.Token, tokenizer html.Tokenizer, PreviewImages []string) []string {
 	ImageElements := [6]string{
-		"og:image:url",
+		"og:image",
 		"og:image:secure_url",
 		"og:image:type",
 		"og:image:width",
 		"og:image:height",
 		"og:image:alt",
 	}
-	var finalImageToken string
-	flagForNextToken := false
+	isImgURL := ogProp == ImageElements[0]
+	var parsedImageData string
 
-	// add first image's content to url
+	for _, attr := range token.Attr {
+		exists := contains(ImageElements[0:6], ogProp)
+
+		if attr.Key == "content" && exists {
+			if isImgURL {
+				parsedImageData = "url>>>" + attr.Val + ","
+				PreviewImages = append(PreviewImages, parsedImageData)
+			} else {
+				// This associates any additional image elements with the existing image url
+				PreviewImages[len(PreviewImages)-1] += ogProp + ">>>" + attr.Val + ","
+			}
+		}
+	}
+	return PreviewImages
+}
+
+// processNonImageMetaElements takes all non-image related meta tag information
+// and directly inserts it into the resulting map of tags
+func processNonImageMetaElements(mapOfTags map[string]string, token html.Token, ogProp string) map[string]string {
 	for _, attr := range token.Attr {
 		if attr.Key == "content" {
-			finalImageToken = "url***" + attr.Val + ","
+			mapOfTags[ogProp] = attr.Val
 		}
 	}
-	tokenizer.Next()
-	token = tokenizer.Token()
-
-	for _, attr := range token.Attr {
-		// attr.Val is either in Image_Elements array
-		exists := contains(ImageElements[0:6], attr.Val)
-		if attr.Key == "property" && exists {
-			tag = attr.Val
-			flagForNextToken = true
-		}
-	}
-
-	// while upcoming token is meta and start with og:image
-	for flagForNextToken {
-		token := tokenizer.Token()
-		// check if next token
-		if token.Data == "meta" {
-			for _, attr := range token.Attr {
-				// attr.Val is either in ImageElements array
-				exists := contains(ImageElements[0:6], attr.Val)
-				if attr.Key == "property" && exists {
-					tag = attr.Val
-					flagForNextToken = true
-
-					for _, attr := range token.Attr {
-						if attr.Key == "content" {
-							finalImageToken += tag + "***" + attr.Val + ","
-						}
-					}
-				} else {
-					flagForNextToken = false
-				}
-			}
-		} else {
-			flagForNextToken = false
-		}
-		tokenizer.Next()
-
-	}
-	PreviewImages = append(PreviewImages, finalImageToken)
-
-	return PreviewImages
+	return mapOfTags
 }
 
 // helper function to check whether an element is present in a string
