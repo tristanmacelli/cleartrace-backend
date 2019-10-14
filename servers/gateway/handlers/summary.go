@@ -144,7 +144,7 @@ func extractSummary(pageURL string, htmlStream io.ReadCloser) (*PageSummary, err
 	keywordsArray, nilKeywords := generateKeywordsArray(keywords)
 
 	icons := resultMap["icon"]
-	iconStruct := generateIconsPreviewImage(icons)
+	iconStruct := generateIconsPreviewImage(icons, pageURL)
 
 	nilIcon := false
 	// If there were no values created for the website preview image (aka icon) mark a flag
@@ -152,7 +152,7 @@ func extractSummary(pageURL string, htmlStream io.ReadCloser) (*PageSummary, err
 		nilIcon = true
 	}
 
-	resultImagesStruct := generateResultImagesStruct(resultImages)
+	resultImagesStruct := generateResultImagesStruct(resultImages, pageURL)
 
 	var finalPageSummary PageSummary
 	finalPageSummary.Type = ogtype
@@ -193,9 +193,11 @@ func generateKeywordsArray(keywords string) ([]string, bool) {
 }
 
 // generateIconsPreviewImage
-func generateIconsPreviewImage(icons string) PreviewImage {
+func generateIconsPreviewImage(icons string, url string) PreviewImage {
 	iconsArray := strings.Split(icons, ",")
 	var iconStruct PreviewImage
+	urlPieces := strings.Split(url, "/")
+	url = urlPieces[0] + "//" + urlPieces[1] + urlPieces[2]
 
 	for _, attr := range iconsArray {
 		attr := strings.Split(attr, ">>>")
@@ -203,6 +205,9 @@ func generateIconsPreviewImage(icons string) PreviewImage {
 		switch attr[0] {
 		case "href":
 			iconStruct.URL = attr[1]
+			if !strings.HasPrefix(attr[1], "http") {
+				iconStruct.URL = url + attr[1]
+			}
 		case "sizes":
 			heightAndWidth := strings.Split(attr[1], "x")
 			height, err := strconv.Atoi(heightAndWidth[0])
@@ -222,8 +227,10 @@ func generateIconsPreviewImage(icons string) PreviewImage {
 }
 
 // generateResultImagesStruct combines multiple images to create an array of PreviewImage's (essentially an icon data type)
-func generateResultImagesStruct(resultImages []string) []*PreviewImage {
+func generateResultImagesStruct(resultImages []string, url string) []*PreviewImage {
 	var resultImagesStruct []*PreviewImage
+	urlPieces := strings.Split(url, "/")
+	url = urlPieces[0] + "//" + urlPieces[1] + urlPieces[2]
 
 	// This parsing seems like overkill to me
 	// Also, the case statements stop after one is used.
@@ -237,6 +244,11 @@ func generateResultImagesStruct(resultImages []string) []*PreviewImage {
 			switch allSubs[0] {
 			case "url":
 				tempImagesStruct.URL = allSubs[1]
+				if !strings.HasPrefix(allSubs[1], "http") {
+					fmt.Println("The following this the icon url: ", allSubs[1])
+					fmt.Println("This is the url we will add: ", url)
+					tempImagesStruct.URL = url + allSubs[1]
+				}
 			case "og:image:width":
 				w, err := strconv.Atoi(allSubs[1])
 				if err == nil {
@@ -335,7 +347,11 @@ func parseIcons(mapOfTags map[string]string, token html.Token) map[string]string
 			// check if the attribute is one of our required attributes to fetch
 			if contains(thingsToFetch, attr.Key) {
 				// add the attribute to the final string
-				finalStringForIcon += attr.Key + ">>>" + attr.Val + ","
+				if attr.Key == "url" {
+					finalStringForIcon += attr.Key + ">>>" + mapOfTags["og:url"] + attr.Val + ","
+				} else {
+					finalStringForIcon += attr.Key + ">>>" + attr.Val + ","
+				}
 			}
 		}
 		mapOfTags[ogProp] = finalStringForIcon
@@ -370,7 +386,7 @@ func parseMetaTags(mapOfTags map[string]string,
 	}
 	if isProperty {
 		if strings.HasPrefix(ogProp, "og:image") {
-			PreviewImages = parseImageElements(ogProp, token, PreviewImages)
+			PreviewImages = parseImageElements(mapOfTags, ogProp, token, PreviewImages)
 		} else {
 			mapOfTags = processNonImageMetaElements(mapOfTags, token, ogProp)
 		}
@@ -383,7 +399,11 @@ func parseMetaTags(mapOfTags map[string]string,
 
 // parseImageElements processes all meta tags with information related to image
 // elements by interpolating the elements with other data for later decomposition
-func parseImageElements(ogProp string, token html.Token, PreviewImages []string) []string {
+func parseImageElements(mapOfTags map[string]string,
+	ogProp string,
+	token html.Token,
+	PreviewImages []string) []string {
+
 	ImageElements := [6]string{
 		"og:image",
 		"og:image:secure_url",
@@ -400,7 +420,7 @@ func parseImageElements(ogProp string, token html.Token, PreviewImages []string)
 
 		if attr.Key == "content" && exists {
 			if isImgURL {
-				parsedImageData = "url>>>" + attr.Val + ","
+				parsedImageData = "url>>>" + mapOfTags["og:url"] + attr.Val + ","
 				PreviewImages = append(PreviewImages, parsedImageData)
 			} else {
 				// This associates any additional image elements with the existing image url
