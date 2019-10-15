@@ -2,14 +2,9 @@
 # to create a Docker container image
 # for your Go API gateway server
 
-
-FROM alpine 
-COPY . ./server
+FROM alpine:3.7
 RUN apk add --no-cache ca-certificates
-ENTRYPOINT ["api.sauravkharb.me"]
+COPY . /assignments-tristan6/clients/index.html
+EXPOSE 443
 
-# FROM alpine
-# RUN apk add --no-cache ca-certificates
-# COPY mygoapp /mygoapp
-# EXPOSE 80
-# ENTRYPOINT ["/mygoapp"]
+# Not sure if you need the expose.

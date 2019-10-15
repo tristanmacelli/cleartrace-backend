@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"os"
 
-	"./handlers"
+	"assignments-Tristan6/servers/gateway/handlers"
 )
 
 //main is the main entry point for the server
