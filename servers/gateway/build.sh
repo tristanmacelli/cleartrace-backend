@@ -1,6 +1,6 @@
 #!/bin/bashx
 
 go install .
-export GOOS="linux"
+export GOOS="linux go build"
 docker build .
 go clean 
