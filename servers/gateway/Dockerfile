@@ -4,13 +4,9 @@
 
 
 FROM alpine 
+COPY . ./server
 RUN apk add --no-cache ca-certificates
 ENTRYPOINT ["api.sauravkharb.me"]
-
-
-
-
-
 
 # FROM alpine
 # RUN apk add --no-cache ca-certificates
