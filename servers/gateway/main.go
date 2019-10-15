@@ -27,7 +27,7 @@ func main() {
 
 	// logging server location or errors
 	log.Printf("server is listening at %s...", address)
-	log.Fatal(http.ListenAndServeTLS(addr, tlsCertPath, tlsKeyPath, mux))
+	log.Fatal(http.ListenAndServeTLS(address, tlsCertPath, tlsKeyPath, mux))
 
 	/* To host server:
 	- change path until in folder with main.go in it
