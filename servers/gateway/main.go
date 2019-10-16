@@ -18,8 +18,8 @@ func main() {
 	//get the TLS key and cert paths from environment variables
 	//this allows us to use a self-signed cert/key during development
 	//and the Let's Encrypt cert/key in production
-	tlsKeyPath := os.Getenv("TLSKEY")
-	tlsCertPath := os.Getenv("TLSCERT")
+	// tlsKeyPath := os.Getenv("TLSKEY")
+	// tlsCertPath := os.Getenv("TLSCERT")
 
 	// starting a new mux session
 	mux := http.NewServeMux()
@@ -27,7 +27,8 @@ func main() {
 
 	// logging server location or errors
 	log.Printf("server is listening at %s...", address)
-	log.Fatal(http.ListenAndServeTLS(address, tlsCertPath, tlsKeyPath, mux))
+	log.Fatal(http.ListenAndServe(address, mux))
+	// log.Fatal(http.ListenAndServeTLS(address, tlsCertPath, tlsKeyPath, mux))
 
 	/* To host server:
 	- change path until in folder with main.go in it

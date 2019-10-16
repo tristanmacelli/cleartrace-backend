@@ -4,7 +4,7 @@
 
 FROM alpine:3.7
 RUN apk add --no-cache ca-certificates
-COPY . /assignments-tristan6/clients/index.html
-EXPOSE 443
+COPY . ./build
+EXPOSE 80
 
 # Not sure if you need the expose.
