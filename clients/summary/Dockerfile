@@ -5,7 +5,5 @@
 
 FROM nginx
 ADD default.conf /etc/nginx/conf.d/default.conf
-COPY . /build
 COPY . /usr/share/nginx/html
 EXPOSE 443
-ENTRYPOINT ["/build"]

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-docker rm -f jtanderson7/assignment2client
+docker rm -f client
 docker pull jtanderson7/assignment2client
 
 export TLSCERT=/etc/letsencrypt/live/a2.sauravkharb.me/fullchain.pem
@@ -9,6 +9,7 @@ export TLSKEY=/etc/letsencrypt/live/a2.sauravkharb.me/privkey.pem
 docker run -d \
 -p 443:443 \
 -p 80:80 \
+--name client \
 -v /etc/letsencrypt:/etc/letsencrypt:ro \
 -e TLSCERT=$TLSCERT \
 -e TLSKEY=$TLSKEY \
