@@ -4,7 +4,7 @@
 
 FROM alpine:3.7
 RUN apk add --no-cache ca-certificates
-COPY . ./build
-EXPOSE 80
-
+COPY ./gateway /build
+EXPOSE 443
+ENTRYPOINT ["/build"]
 # Not sure if you need the expose.

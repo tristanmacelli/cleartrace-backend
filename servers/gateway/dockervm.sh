@@ -13,6 +13,7 @@ docker run -d \
 -e TLSKEY=$TLSKEY \
 jtanderson7/assignment2
 
+docker ps
 # docker run -d \
 # -p 443:443 \
 # -v /etc/letsencrypt/live/api.sauravkharb.me/:/build:ro \
