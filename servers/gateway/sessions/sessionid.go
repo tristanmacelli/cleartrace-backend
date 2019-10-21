@@ -1,6 +1,7 @@
 package sessions
 
 import (
+	"bytes"
 	"crypto/hmac"
 	"crypto/rand"
 	"crypto/sha256"
@@ -90,7 +91,26 @@ func ValidateID(id string, signingKey string) (SessionID, error) {
 	//return the entire `id` parameter as a SessionID type.
 	//If not, return InvalidSessionID and ErrInvalidID.
 
-	return InvalidSessionID, ErrInvalidID
+	// decode the id parameter
+	s_id_Dec, _ := b64.StdEncoding.DecodeString(id)
+	// get the first half of the slice
+	first_half := s_id_Dec[0:idLength]
+	fmt.Println(first_half)
+
+	// HMAC hash the first half
+	k := []byte(signingKey)
+	he := hmac.New(sha256.New, k)
+	he.Write(first_half)
+	signature := he.Sum(nil)
+
+	// compare this to the second half
+	res := bytes.Compare(signature, s_id_Dec[idLength:])
+
+	if res == 0 {
+		return id, nil
+	} else {
+		return InvalidSessionID, ErrInvalidID
+	}
 }
 
 //String returns a string representation of the sessionID
