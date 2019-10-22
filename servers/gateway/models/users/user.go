@@ -1,5 +1,12 @@
 package users
 
+import (
+	"crypto/md5"
+	"fmt"
+	"net/mail"
+	"strings"
+)
+
 //gravatarBasePhotoURL is the base URL for Gravatar image requests.
 //See https://id.gravatar.com/site/implement/images/ for details
 const gravatarBasePhotoURL = "https://www.gravatar.com/avatar/"
@@ -45,12 +52,28 @@ type Updates struct {
 func (nu *NewUser) Validate() error {
 	//TODO: validate the new user according to these rules:
 	//- Email field must be a valid email address (hint: see mail.ParseAddress)
+	e, err := mail.ParseAddress(nu.Email)
+	if err != nil {
+		//log.Fatal(e, err, "ahhhhhhhhhhh")
+		_ = e
+		return err
+	}
+
 	//- Password must be at least 6 characters
+	if len(nu.Password) <= 5 {
+		return fmt.Errorf("error: Password is not 6 characters or more")
+	}
+
 	//- Password and PasswordConf must match
+	if nu.Password != nu.PasswordConf {
+		return fmt.Errorf("error: Password doesnt not match the confirmed password")
+	}
 	//- UserName must be non-zero length and may not contain spaces
+	if len(nu.UserName) < 1 || strings.Contains(nu.UserName, " ") {
+		return fmt.Errorf("error: Usernames must have a non-zero length and must contain no spaces")
+	}
 	//use fmt.Errorf() to generate appropriate error messages if
 	//the new user doesn't pass one of the validation rules
-
 	return nil
 }
 
@@ -68,11 +91,36 @@ func (nu *NewUser) ToUser() (*User, error) {
 	//for the user's email address.
 	//see https://en.gravatar.com/site/implement/hash/
 	//and https://en.gravatar.com/site/implement/images/
-
 	//TODO: also call .SetPassword() to set the PassHash
 	//field of the User to a hash of the NewUser.Password
 
-	return nil, nil
+	err := nu.Validate()
+	fmt.Println(err)
+	if err != nil { // there was an error.
+		return nil, err
+	}
+	var us User
+	us.Email = nu.Email
+	us.SetPassword(nu.Password)
+	us.UserName = nu.UserName
+	us.FirstName = nu.FirstName
+	us.LastName = nu.LastName
+	// Create new hash with md5 for photo url
+	var hash = strings.ToLower(strings.TrimSpace(nu.Email))
+	hasher := md5.New()
+	hasher.Write([]byte(hash))
+	us.PhotoURL = gravatarBasePhotoURL + hash
+
+	// User struct
+	/*ID        int64  `json:"id"`
+	Email     string `json:"-"` //never JSON encoded/decoded
+	PassHash  []byte `json:"-"` //never JSON encoded/decoded
+	UserName  string `json:"userName"`
+	FirstName string `json:"firstName"`
+	LastName  string `json:"lastName"`
+	PhotoURL  string `json:"photoURL"`*/
+
+	return &us, nil
 }
 
 //FullName returns the user's full name, in the form:
