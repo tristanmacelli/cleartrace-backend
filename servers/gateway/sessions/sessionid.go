@@ -40,9 +40,9 @@ var ErrInvalidID = errors.New("Invalid Session ID")
 func NewSessionID(signingKey string) (SessionID, error) {
 	//TODO: if `signingKey` is zero-length, return InvalidSessionID
 	//and an error indicating that it may not be empty
-	if signingKey.length == 0 {
+	if len(signingKey) == 0 {
 		// TODO RETURN AN ERROR HERE
-		return InvalidSessionID
+		return InvalidSessionID, nil
 	}
 	//TODO: Generate a new digitally-signed SessionID by doing the following:
 	//- create a byte slice where the first `idLength` of bytes
@@ -56,7 +56,7 @@ func NewSessionID(signingKey string) (SessionID, error) {
 	_, err := rand.Read(s_id)
 	if err != nil {
 		fmt.Println("error:", err)
-		return InvalidSessionID
+		return InvalidSessionID, nil
 	}
 	// first half of id
 	fmt.Println(s_id)
@@ -74,9 +74,9 @@ func NewSessionID(signingKey string) (SessionID, error) {
 
 	// encode using Base64 URL encoding
 	s_id_encoded := b64.StdEncoding.EncodeToString([]byte(s_id))
-	fmt.Println(s_id_encoded)
+	fmt.Println(SessionID(s_id_encoded))
 
-	return s_id_encoded, nil
+	return SessionID(s_id_encoded), nil
 }
 
 //ValidateID validates the string in the `id` parameter
@@ -107,7 +107,7 @@ func ValidateID(id string, signingKey string) (SessionID, error) {
 	res := bytes.Compare(signature, s_id_Dec[idLength:])
 
 	if res == 0 {
-		return id, nil
+		return SessionID(id), nil
 	} else {
 		return InvalidSessionID, ErrInvalidID
 	}
