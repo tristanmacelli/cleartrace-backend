@@ -42,7 +42,7 @@ func GetSessionID(r *http.Request, signingKey string) (SessionID, error) {
 	// Get the value of the Authorization header,
 	id := r.Header.Get(headerAuthorization)
 	// Or the "auth" query string parameter if no Authorization header is present,
-	if id == "" || len(id) == 0 {
+	if id == "" {
 		id = r.Header.Get(paramAuthorization)
 	}
 	// Then we validate the sessionID.
