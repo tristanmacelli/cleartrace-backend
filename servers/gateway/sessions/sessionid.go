@@ -41,9 +41,9 @@ func NewSessionID(signingKey string) (SessionID, error) {
 	//TODO: if `signingKey` is zero-length, return InvalidSessionID
 	//and an error indicating that it may not be empty
 	if len(signingKey) == 0 {
-		// TODO RETURN AN ERROR HERE
-		return InvalidSessionID, nil
+		return InvalidSessionID, errors.New("Empty signing key")
 	}
+
 	//TODO: Generate a new digitally-signed SessionID by doing the following:
 	//- create a byte slice where the first `idLength` of bytes
 	//  are cryptographically random bytes for the new session ID,
@@ -59,7 +59,7 @@ func NewSessionID(signingKey string) (SessionID, error) {
 		return InvalidSessionID, nil
 	}
 	// first half of id
-	fmt.Println(sID)
+	// fmt.Println(sID)
 
 	key := []byte(signingKey)
 	//create a new HMAC hasher
@@ -73,8 +73,8 @@ func NewSessionID(signingKey string) (SessionID, error) {
 	sID = append(sID, signature...)
 
 	// encode using Base64 URL encoding
-	sIDEncoded := b64.StdEncoding.EncodeToString([]byte(sID))
-	fmt.Println(SessionID(sIDEncoded))
+	sIDEncoded := b64.URLEncoding.EncodeToString([]byte(sID))
+	// fmt.Println(SessionID(sIDEncoded))
 	return SessionID(sIDEncoded), nil
 }
 
@@ -94,41 +94,38 @@ func ValidateID(id string, signingKey string) (SessionID, error) {
 	// fmt.Println(id)
 	// fmt.Println("id value:")
 	// fmt.Println(id[7:])
-	fmt.Println("before is brearer")
-	fmt.Println(id)
-	if len(id) < 8 {
-		return InvalidSessionID, ErrInvalidID
-	}
-	isBearer := id[0:7]
-	fmt.Println("scheme")
-	fmt.Println(isBearer)
-	if isBearer != "Bearer " {
-		return InvalidSessionID, ErrInvalidID
-	}
-	fmt.Println("what is the length ", len(id))
 
-	id = id[7:]
-	sIDDec, _ := b64.StdEncoding.DecodeString(id)
+	if len(signingKey) == 0 {
+		return InvalidSessionID, errors.New("Empty signing key")
+	}
 
-	fmt.Println("inside validate")
-	fmt.Println(len(sIDDec))
-	fmt.Println(sIDDec)
+	// if len(id) < 8 {
+	// 	return InvalidSessionID, ErrInvalidID
+	// }
+	// isBearer := id[0:7]
+
+	// if isBearer != "Bearer " {
+	// 	fmt.Println(id)
+	// 	return InvalidSessionID, ErrInvalidID
+	// }
+	// idEncoded := id[7:]
+
+	// check for URLEncoding
+	sIDDec, _ := b64.URLEncoding.DecodeString(id)
+
 	if len(sIDDec) != 64 {
 		return InvalidSessionID, ErrInvalidID
 	}
 
 	// get the first half of the slice
 	firstHalf := sIDDec[0:idLength]
-	// fmt.Println(firstHalf)
 
 	// HMAC hash the first half
 	k := []byte(signingKey)
 	he := hmac.New(sha256.New, k)
 	he.Write(firstHalf)
 	signature := he.Sum(nil)
-
 	// compare this to the second half
-
 	res := bytes.Compare(signature, sIDDec[idLength:])
 
 	if res == 0 {

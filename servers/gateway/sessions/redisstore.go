@@ -2,6 +2,7 @@ package sessions
 
 import (
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/go-redis/redis"
@@ -35,17 +36,21 @@ func (rs *RedisStore) Save(sid SessionID, sessionState interface{}) error {
 	//return any errors that occur along the way.
 
 	// marshal the json and resolve errors
-	j, err := json.Marshal(sessionState)
+	j, err := json.Marshal(&sessionState)
 	if nil != err {
 		return err
 	}
 
+	fmt.Println("marshalled  json", j)
 	// get redis key
 	redisKey := sid.getRedisKey()
 
 	// save state to database
 	err1 := rs.Client.Set(redisKey, j, 0).Err()
+	// marshalledJSON, err := rs.Client.Get(redisKey).Result()
+	// fmt.Println("-->", marshalledJSON, " err -", err)
 	if err1 != nil {
+		fmt.Println(err1)
 		return err1
 	}
 
@@ -63,7 +68,7 @@ func (rs *RedisStore) Get(sid SessionID, sessionState interface{}) error {
 
 	marshalledJSON, err := rs.Client.Get(redisKey).Result()
 	if err != nil {
-		return err
+		return ErrStateNotFound
 	}
 	// if this doesn't work, try marshalledJSON.([]byte)
 	err1 := json.Unmarshal([]byte(marshalledJSON), &sessionState)
@@ -89,10 +94,8 @@ func (rs *RedisStore) Get(sid SessionID, sessionState interface{}) error {
 func (rs *RedisStore) Delete(sid SessionID) error {
 	//TODO: delete the data stored in redis for the provided SessionID
 	redisKey := sid.getRedisKey()
-
 	// handle errors here
 	rs.Client.Del(redisKey)
-
 	return nil
 }
 

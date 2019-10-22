@@ -3,6 +3,7 @@ package sessions
 import (
 	"errors"
 	"net/http"
+	"strings"
 )
 
 const headerAuthorization = "Authorization"
@@ -42,11 +43,17 @@ func GetSessionID(r *http.Request, signingKey string) (SessionID, error) {
 	// Get the value of the Authorization header,
 	id := r.Header.Get(headerAuthorization)
 	// Or the "auth" query string parameter if no Authorization header is present,
-	if id == "" {
-		id = r.Header.Get(paramAuthorization)
+	if id == "" || len(id) == 0 {
+		id = r.FormValue(paramAuthorization)
+	}
+	if strings.HasPrefix(id, "Bearer") {
+		id = id[7:]
+	} else {
+		return InvalidSessionID, ErrInvalidScheme
 	}
 	// Then we validate the sessionID.
 	sessionID, err := ValidateID(id, signingKey)
+
 	// If the sessionID is not valid return the validation error.
 	if err != nil {
 		return InvalidSessionID, err
