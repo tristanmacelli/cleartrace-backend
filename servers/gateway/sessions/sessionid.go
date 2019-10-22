@@ -52,31 +52,31 @@ func NewSessionID(signingKey string) (SessionID, error) {
 	//- encode that byte slice using base64 URL Encoding and return
 	//  the result as a SessionID type
 
-	s_id := make([]byte, idLength)
-	_, err := rand.Read(s_id)
+	sID := make([]byte, idLength)
+	_, err := rand.Read(sID)
 	if err != nil {
 		fmt.Println("error:", err)
 		return InvalidSessionID, nil
 	}
 	// first half of id
-	fmt.Println(s_id)
+	fmt.Println(sID)
 
 	key := []byte(signingKey)
 	//create a new HMAC hasher
 	h := hmac.New(sha256.New, key)
 	//write the message into it
-	h.Write(s_id)
+	h.Write(sID)
 	//calculate the HMAC signature
 	signature := h.Sum(nil)
 
 	// final session id in bytes
-	s_id = append(s_id, signature...)
+	sID = append(sID, signature...)
 
 	// encode using Base64 URL encoding
-	s_id_encoded := b64.StdEncoding.EncodeToString([]byte(s_id))
-	fmt.Println(SessionID(s_id_encoded))
+	sIDEncoded := b64.StdEncoding.EncodeToString([]byte(sID))
+	fmt.Println(SessionID(sIDEncoded))
 
-	return SessionID(s_id_encoded), nil
+	return SessionID(sIDEncoded), nil
 }
 
 //ValidateID validates the string in the `id` parameter
@@ -92,25 +92,24 @@ func ValidateID(id string, signingKey string) (SessionID, error) {
 	//If not, return InvalidSessionID and ErrInvalidID.
 
 	// decode the id parameter
-	s_id_Dec, _ := b64.StdEncoding.DecodeString(id)
+	sIDDec, _ := b64.StdEncoding.DecodeString(id)
 	// get the first half of the slice
-	first_half := s_id_Dec[0:idLength]
-	fmt.Println(first_half)
+	firstHalf := sIDDec[0:idLength]
+	fmt.Println(firstHalf)
 
 	// HMAC hash the first half
 	k := []byte(signingKey)
 	he := hmac.New(sha256.New, k)
-	he.Write(first_half)
+	he.Write(firstHalf)
 	signature := he.Sum(nil)
 
 	// compare this to the second half
-	res := bytes.Compare(signature, s_id_Dec[idLength:])
+	res := bytes.Compare(signature, sIDDec[idLength:])
 
 	if res == 0 {
 		return SessionID(id), nil
-	} else {
-		return InvalidSessionID, ErrInvalidID
 	}
+	return InvalidSessionID, ErrInvalidID
 }
 
 //String returns a string representation of the sessionID

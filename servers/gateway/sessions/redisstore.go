@@ -61,19 +61,19 @@ func (rs *RedisStore) Get(sid SessionID, sessionState interface{}) error {
 	//the SessionDuration has elapsed.
 	redisKey := sid.getRedisKey()
 
-	marshalled_json, err := rs.Client.Get(redisKey).Result()
+	marshalledJSON, err := rs.Client.Get(redisKey).Result()
 	if err != nil {
 		return err
 	}
-	// if this doesn't work, try marshalled_json.([]byte)
-	err1 := json.Unmarshal([]byte(marshalled_json), &sessionState)
+	// if this doesn't work, try marshalledJSON.([]byte)
+	err1 := json.Unmarshal([]byte(marshalledJSON), &sessionState)
 	if err1 != nil {
 		return err1
 	}
 
 	// reset the expiry time
 	rs.SessionDuration = time.Hour
-	err2 := rs.Client.Set(redisKey, marshalled_json, rs.SessionDuration).Err()
+	err2 := rs.Client.Set(redisKey, marshalledJSON, rs.SessionDuration).Err()
 	if err2 != nil {
 		return err2
 	}
