@@ -32,7 +32,8 @@ func BeginSession(signingKey string, store Store, sessionState interface{}, w ht
 	//    "Authorization: Bearer <sessionID>"
 	//  where "<sessionID>" is replaced with the newly-created SessionID
 	//  (note the constants declared for you above, which will help you avoid typos)
-	w.Header().Add(headerAuthorization, sessionID.String())
+	authValue := schemeBearer + sessionID.String()
+	w.Header().Add(headerAuthorization, authValue)
 	return sessionID, nil
 }
 
