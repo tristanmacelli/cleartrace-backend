@@ -187,15 +187,14 @@ func (u *User) ApplyUpdates(updates *Updates) error {
 	//TODO: set the fields of `u` to the values of the related
 	//field in the `updates` struct
 
-	u.FirstName = updates.FirstName
-	u.LastName = updates.LastName
-
 	if len(updates.FirstName) < 1 || strings.Contains(updates.FirstName, " ") {
 		return fmt.Errorf("error: Firstname must contain characters and must not contain white space")
 	}
 	if len(updates.LastName) < 1 || strings.Contains(updates.LastName, " ") {
 		return fmt.Errorf("error: Firstname must contain characters and must not contain white space")
 	}
+	u.FirstName = updates.FirstName
+	u.LastName = updates.LastName
 
 	return nil
 }
