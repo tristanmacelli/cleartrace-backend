@@ -48,11 +48,15 @@ func OpenConnection(dsn string) (*sql.DB, error) {
 
 // GetBy is a helper method that resolves all
 func (ms *MysqlStore) GetBy(query string) (*User, error) {
+
+	// TODO: Open connection to db
 	rows, err := ms.db.Query(query)
+	// TODO: Close connection to db
 	if err != nil {
-		// close the db connection
 		return nil, err
 	}
+	// May need to alter the capitalization of these variables to match what is in
+	// schema.sql or vice versa
 	var ID int64
 	var Email string
 	var PassHash []byte
@@ -63,11 +67,9 @@ func (ms *MysqlStore) GetBy(query string) (*User, error) {
 	for rows.Next() {
 		err = rows.Scan(&ID, &Email, &PassHash, &UserName, &FirstName, &LastName, &PhotoURL)
 		if err != nil {
-			// close the db connection
 			return nil, err
 		}
 	}
-	// close the db connection
 	return &User{
 		ID:        ID,
 		Email:     Email,
@@ -81,22 +83,18 @@ func (ms *MysqlStore) GetBy(query string) (*User, error) {
 
 //GetByID returns the User with the given ID
 func (ms *MysqlStore) GetByID(id int64) (*User, error) {
-	// open a connection
-
 	query := queryString + " ID = " + strconv.FormatInt(id, 10)
 	return ms.GetBy(query)
 }
 
 //GetByEmail returns the User with the given email
 func (ms *MysqlStore) GetByEmail(email string) (*User, error) {
-
 	query := queryString + " Email = " + email
 	return ms.GetBy(query)
 }
 
 //GetByUserName returns the User with the given Username
 func (ms *MysqlStore) GetByUserName(username string) (*User, error) {
-
 	query := queryString + " UserName = " + username
 	return ms.GetBy(query)
 }
@@ -104,8 +102,27 @@ func (ms *MysqlStore) GetByUserName(username string) (*User, error) {
 //Insert inserts the user into the database, and returns
 //the newly-inserted User, complete with the DBMS-assigned ID
 func (ms *MysqlStore) Insert(user *User) (*User, error) {
-	// TODO: Implement this function per the comment above
-	return nil, nil
+	//insert a new row into the "users" table
+	//use ? markers for the values to defeat SQL
+	//injection attacks
+
+	// TODO: Open connection to db
+	insq := "insert into users(email, passHash, username, firstname, lastname, photoURL) values (?,?,?,?,?,?)"
+	res, err := ms.db.Exec(insq, "test@test.com", "Test", "TestUserName", "TestFirst", "TestLast", "testURL")
+	// TODO: Close connection to db
+
+	if err != nil {
+		fmt.Printf("error inserting new row: %v\n", err)
+		return nil, err
+	}
+	//get the auto-assigned ID for the new row
+	id, err := res.LastInsertId()
+	if err != nil {
+		fmt.Printf("error getting new ID: %v\n", id)
+		return nil, err
+	}
+	fmt.Printf("ID for new row is %d\n", id)
+	return ms.GetByID(id)
 }
 
 //Update applies UserUpdates to the given user ID
