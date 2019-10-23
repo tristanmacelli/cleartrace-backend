@@ -90,27 +90,11 @@ func ValidateID(id string, signingKey string) (SessionID, error) {
 	//return the entire `id` parameter as a SessionID type.
 	//If not, return InvalidSessionID and ErrInvalidID.
 
-	// decode the id parameter
-	// fmt.Println(id)
-	// fmt.Println("id value:")
-	// fmt.Println(id[7:])
-
 	if len(signingKey) == 0 {
 		return InvalidSessionID, errors.New("Empty signing key")
 	}
 
-	// if len(id) < 8 {
-	// 	return InvalidSessionID, ErrInvalidID
-	// }
-	// isBearer := id[0:7]
-
-	// if isBearer != "Bearer " {
-	// 	fmt.Println(id)
-	// 	return InvalidSessionID, ErrInvalidID
-	// }
-	// idEncoded := id[7:]
-
-	// check for URLEncoding
+	// check for URLEncoding and decode the id parameter
 	sIDDec, _ := b64.URLEncoding.DecodeString(id)
 
 	if len(sIDDec) != 64 {
