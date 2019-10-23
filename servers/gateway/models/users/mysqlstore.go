@@ -31,7 +31,7 @@ func NewMysqlStore() *MysqlStore {
 	}
 }
 
-// GetBy is a helper method that resolves all
+// GetBy is a helper method that resolves all queries asking for singular user objects
 func (ms *MysqlStore) GetBy(query string, queryValue string) (*User, error) {
 
 	// A prepared statement allows us to use bind values the (?)
@@ -41,14 +41,9 @@ func (ms *MysqlStore) GetBy(query string, queryValue string) (*User, error) {
 	row := stmt.QueryRow(queryValue)
 	// May need to alter the capitalization of these variables to match what is in
 	// schema.sql or vice versa
-	var ID int64
-	var Email string
-	var PassHash []byte
-	var UserName string
-	var FirstName string
-	var LastName string
-	var PhotoURL string
-	err := row.Scan(&ID, &Email, &PassHash, &UserName, &FirstName, &LastName, &PhotoURL)
+	user := User{}
+	err := row.Scan(&user.ID, &user.Email, &user.PassHash, &user.UserName,
+		&user.FirstName, &user.LastName, &user.PhotoURL)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			// there were no rows, but otherwise no error occurred
@@ -57,15 +52,7 @@ func (ms *MysqlStore) GetBy(query string, queryValue string) (*User, error) {
 			return nil, err
 		}
 	}
-	return &User{
-		ID:        ID,
-		Email:     Email,
-		PassHash:  PassHash,
-		UserName:  UserName,
-		FirstName: FirstName,
-		LastName:  LastName,
-		PhotoURL:  PhotoURL,
-	}, nil
+	return &user, nil
 }
 
 //GetByID returns the User with the given ID
@@ -126,7 +113,7 @@ func (ms *MysqlStore) Update(id int64, updates *Updates) (*User, error) {
 
 	// Open a reserved connection to db to make an individual transaction
 	tx, _ := ms.db.Begin()
-	stmt, _ := tx.Prepare("UPDATE users SET (?, ?) WHERE ID = ?")
+	stmt, _ := tx.Prepare("UPDATE users SET firstname = ?, lastname = ? WHERE ID = ?")
 	// This will close the prepared statement once Exec is called
 	defer stmt.Close()
 	_, err := stmt.Exec(updates.FirstName, updates.LastName, strconv.FormatInt(id, 10))
