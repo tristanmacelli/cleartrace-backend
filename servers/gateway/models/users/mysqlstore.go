@@ -108,7 +108,8 @@ func (ms *MysqlStore) Insert(user *User) (*User, error) {
 
 	// TODO: Open connection to db
 	insq := "insert into users(email, passHash, username, firstname, lastname, photoURL) values (?,?,?,?,?,?)"
-	res, err := ms.db.Exec(insq, "test@test.com", "Test", "TestUserName", "TestFirst", "TestLast", "testURL")
+	res, err := ms.db.Exec(insq, user.Email, user.PassHash, user.UserName,
+		user.FirstName, user.LastName, user.PhotoURL)
 	// TODO: Close connection to db
 
 	if err != nil {
