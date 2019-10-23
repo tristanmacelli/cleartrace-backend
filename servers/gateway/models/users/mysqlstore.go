@@ -102,9 +102,9 @@ func (ms *MysqlStore) GetByUserName(username string) (*User, error) {
 //Insert inserts the user into the database, and returns
 //the newly-inserted User, complete with the DBMS-assigned ID
 func (ms *MysqlStore) Insert(user *User) (*User, error) {
-	//insert a new row into the "users" table
-	//use ? markers for the values to defeat SQL
-	//injection attacks
+	// This inserts a new row into the "users" table
+	// Using ? markers for the values will defeat SQL
+	// injection attacks
 
 	// TODO: Open connection to db
 	insq := "insert into users(email, passHash, username, firstname, lastname, photoURL) values (?,?,?,?,?,?)"
