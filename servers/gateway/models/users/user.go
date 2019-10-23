@@ -81,21 +81,21 @@ func (nu *NewUser) Validate() error {
 //ToUser converts the NewUser to a User, setting the
 //PhotoURL and PassHash fields appropriately
 func (nu *NewUser) ToUser() (*User, error) {
-	//TODO: also call .SetPassword() to set the PassHash
-	//field of the User to a hash of the NewUser.Password
 
-	//TODO: call Validate() to validate the NewUser and
-	//return any validation errors that may occur.
+	// Validating the NewUser and returning any validation
+	// errors that may occur.
 	err := nu.Validate()
 	fmt.Println(err)
 	if err != nil { // there was an error.
 		return nil, err
 	}
-	//if valid, create a new *User and set the fields
-	//based on the field values in `nu`.
+	// Creating a new *User and setting the fields
+	// based on the field values in `nu`.
 	var us User
 	us.Email = nu.Email
 
+	// Setting the PassHash field of the User to a hash
+	// of the NewUser.Password
 	err1 := us.SetPassword(nu.Password)
 	if err1 != nil {
 		return nil, err1
@@ -177,14 +177,13 @@ func (u *User) Authenticate(password string) error {
 	if err != nil {
 		return err
 	}
-
 	return nil
 }
 
 //ApplyUpdates applies the updates to the user. An error
 //is returned if the updates are invalid
 func (u *User) ApplyUpdates(updates *Updates) error {
-	//TODO: set the fields of `u` to the values of the related
+	// Setting the fields of `u` to the values of the related
 	//field in the `updates` struct
 
 	if len(updates.FirstName) < 1 || strings.Contains(updates.FirstName, " ") {
