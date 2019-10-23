@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net/mail"
 	"strings"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 //gravatarBasePhotoURL is the base URL for Gravatar image requests.
@@ -153,10 +155,12 @@ func (u *User) SetPassword(password string) error {
 //Authenticate compares the plaintext password against the stored hash
 //and returns an error if they don't match, or nil if they do
 func (u *User) Authenticate(password string) error {
-	//TODO: use the bcrypt package to compare the supplied
-	//password with the stored PassHash
-	//https://godoc.org/golang.org/x/crypto/bcrypt
-
+	// Using bcrypt package to compare the supplied password with the stored PassHash.
+	// See https://godoc.org/golang.org/x/crypto/bcrypt for more info.
+	err := bcrypt.CompareHashAndPassword(u.PassHash, []byte(password))
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
