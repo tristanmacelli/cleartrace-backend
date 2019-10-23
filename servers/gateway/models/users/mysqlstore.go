@@ -4,24 +4,29 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+	"strconv"
 
+	// Necessary to run db commands
 	_ "github.com/go-sql-driver/mysql"
 )
 
-//RedisStore represents a session.Store backed by redis.
+//MysqlStore represents a connection to our user database
 type MysqlStore struct {
 	dsn string
-	db  DB
+	db  sql.DB
 }
 
+//NewMysqlStore creates data source name which can be used to connect to the user database
 func NewMysqlStore() *MysqlStore {
-	dsn := fmt.Sprintf("root:%s@tcp(127.0.0.1:3306)/demo", os.Getenv("MYSQL_ROOT_PASSWORD"))
+	// See docker run command for env vars that define database name & password
+	dsn := fmt.Sprintf("root:%s@tcp(127.0.0.1:3306)/insert-database-name-here", os.Getenv("MYSQL_ROOT_PASSWORD"))
 	return &MysqlStore{
 		dsn: dsn,
 	}
 }
 
-func OpenConnection(dsn string) (*DB, error) {
+//OpenConnection opens a connection to the user database
+func OpenConnection(dsn string) (*sql.DB, error) {
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
 		fmt.Printf("error opening database: %v\n", err)
@@ -30,16 +35,17 @@ func OpenConnection(dsn string) (*DB, error) {
 	return db, nil
 }
 
+//GetByID gogog
 func (ms *MysqlStore) GetByID(id int64) (*User, error) {
 	// open a connection
 
-	queryString := "SELECT * FROM users where ID = " + id
-	rows, err := db.Query(queryString)
+	queryString := "SELECT * FROM users where ID = " + strconv.FormatInt(id, 10)
+	rows, err := ms.db.Query(queryString)
 	if err != nil {
 		// close the fdb connefction
 		return nil, err
 	}
-	var ID int
+	var ID int64
 	var Email string
 	var PassHash []byte
 	var UserName string
