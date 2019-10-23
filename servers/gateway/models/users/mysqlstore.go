@@ -16,6 +16,9 @@ type MysqlStore struct {
 	db  *sql.DB
 }
 
+// A partially constructed sql query to use in getter functions
+const queryString = "SELECT * FROM users where"
+
 //NewMysqlStore creates data source name which can be used to connect to the user database
 func NewMysqlStore() *MysqlStore {
 	// See docker run command for env vars that define database name & password
@@ -43,14 +46,11 @@ func OpenConnection(dsn string) (*sql.DB, error) {
 	return db, nil
 }
 
-//GetByID gogog
-func (ms *MysqlStore) GetByID(id int64) (*User, error) {
-	// open a connection
-
-	queryString := "SELECT * FROM users where ID = " + strconv.FormatInt(id, 10)
-	rows, err := ms.db.Query(queryString)
+// GetBy is a helper method that resolves all
+func (ms *MysqlStore) GetBy(query string) (*User, error) {
+	rows, err := ms.db.Query(query)
 	if err != nil {
-		// close the db connefction
+		// close the db connection
 		return nil, err
 	}
 	var ID int64
@@ -63,11 +63,11 @@ func (ms *MysqlStore) GetByID(id int64) (*User, error) {
 	for rows.Next() {
 		err = rows.Scan(&ID, &Email, &PassHash, &UserName, &FirstName, &LastName, &PhotoURL)
 		if err != nil {
-			// close the db connefction
+			// close the db connection
 			return nil, err
 		}
 	}
-	// close the db connefction
+	// close the db connection
 	return &User{
 		ID:        ID,
 		Email:     Email,
@@ -77,7 +77,48 @@ func (ms *MysqlStore) GetByID(id int64) (*User, error) {
 		LastName:  LastName,
 		PhotoURL:  PhotoURL,
 	}, nil
+}
 
+//GetByID returns the User with the given ID
+func (ms *MysqlStore) GetByID(id int64) (*User, error) {
+	// open a connection
+
+	query := queryString + " ID = " + strconv.FormatInt(id, 10)
+	return ms.GetBy(query)
+}
+
+//GetByEmail returns the User with the given email
+func (ms *MysqlStore) GetByEmail(email string) (*User, error) {
+
+	query := queryString + " Email = " + email
+	return ms.GetBy(query)
+}
+
+//GetByUserName returns the User with the given Username
+func (ms *MysqlStore) GetByUserName(username string) (*User, error) {
+
+	query := queryString + " UserName = " + username
+	return ms.GetBy(query)
+}
+
+//Insert inserts the user into the database, and returns
+//the newly-inserted User, complete with the DBMS-assigned ID
+func (ms *MysqlStore) Insert(user *User) (*User, error) {
+	// TODO: Implement this function per the comment above
+	return nil, nil
+}
+
+//Update applies UserUpdates to the given user ID
+//and returns the newly-updated user
+func (ms *MysqlStore) Update(id int64, updates *Updates) (*User, error) {
+	// TODO: Implement this function per the comment above
+	return nil, nil
+}
+
+//Delete deletes the user with the given ID
+func (ms *MysqlStore) Delete(id int64) error {
+	// TODO: Implement this function per the comment above
+	return nil
 }
 
 // type User struct {
