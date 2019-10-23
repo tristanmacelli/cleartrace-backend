@@ -13,19 +13,27 @@ import (
 //MysqlStore represents a connection to our user database
 type MysqlStore struct {
 	dsn string
-	db  sql.DB
+	db  *sql.DB
 }
 
 //NewMysqlStore creates data source name which can be used to connect to the user database
 func NewMysqlStore() *MysqlStore {
 	// See docker run command for env vars that define database name & password
 	dsn := fmt.Sprintf("root:%s@tcp(127.0.0.1:3306)/insert-database-name-here", os.Getenv("MYSQL_ROOT_PASSWORD"))
+	// Uncomment this if we can use a persistent connection for all transactions
+	// db, _ := sql.Open("mysql", dsn)
 	return &MysqlStore{
 		dsn: dsn,
+		// Uncomment this if we can use a persistent connection for all transactions
+		// db:  db,
 	}
 }
 
 //OpenConnection opens a connection to the user database
+// Delete this function if we can use a persistent connection for all transactions
+//	i.e. we are storing the open connection in our MysqlStore struct
+// Keep this function if we must use a different connection for each individual transactions
+//  i.e. we are opening a connection in each of our CRUD functions
 func OpenConnection(dsn string) (*sql.DB, error) {
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
@@ -42,7 +50,7 @@ func (ms *MysqlStore) GetByID(id int64) (*User, error) {
 	queryString := "SELECT * FROM users where ID = " + strconv.FormatInt(id, 10)
 	rows, err := ms.db.Query(queryString)
 	if err != nil {
-		// close the fdb connefction
+		// close the db connefction
 		return nil, err
 	}
 	var ID int64
@@ -55,11 +63,11 @@ func (ms *MysqlStore) GetByID(id int64) (*User, error) {
 	for rows.Next() {
 		err = rows.Scan(&ID, &Email, &PassHash, &UserName, &FirstName, &LastName, &PhotoURL)
 		if err != nil {
-			// close the fdb connefction
+			// close the db connefction
 			return nil, err
 		}
 	}
-	// close the fdb connefction
+	// close the db connefction
 	return &User{
 		ID:        ID,
 		Email:     Email,
