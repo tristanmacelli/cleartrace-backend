@@ -107,15 +107,20 @@ func (ms *MysqlStore) Insert(user *User) (*User, error) {
 	// injection attacks
 
 	// TODO: Open connection to db
+	tx, err := ms.db.Begin()
 	insq := "insert into users(email, passHash, username, firstname, lastname, photoURL) values (?,?,?,?,?,?)"
 	res, err := ms.db.Exec(insq, user.Email, user.PassHash, user.UserName,
 		user.FirstName, user.LastName, user.PhotoURL)
-	// TODO: Close connection to db
 
 	if err != nil {
 		fmt.Printf("error inserting new row: %v\n", err)
+		tx.Rollback()
+		// TODO: Close connection to db
 		return nil, err
 	}
+	tx.Commit()
+	// TODO: Close connection to db
+
 	//get the auto-assigned ID for the new row
 	id, err := res.LastInsertId()
 	if err != nil {
@@ -136,6 +141,18 @@ func (ms *MysqlStore) Update(id int64, updates *Updates) (*User, error) {
 //Delete deletes the user with the given ID
 func (ms *MysqlStore) Delete(id int64) error {
 	// TODO: Implement this function per the comment above
+
+	// TODO: Open connection to db
+	tx, err := ms.db.Begin()
+	_, err = ms.db.Exec("DELETE FROM users WHERE ID " + strconv.FormatInt(id, 10))
+	if err != nil {
+		fmt.Printf("error deleting row: %v\n", err)
+		tx.Rollback()
+		// TODO: Close connection to db
+		return err
+	}
+	tx.Commit()
+	// TODO: Close connection to db
 	return nil
 }
 
