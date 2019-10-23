@@ -126,13 +126,20 @@ func (nu *NewUser) ToUser() (*User, error) {
 
 //FullName returns the user's full name, in the form:
 // "<FirstName> <LastName>"
-//If either first or last name is an empty string, no
-//space is put between the names. If both are missing,
-//this returns an empty string
 func (u *User) FullName() string {
-	//TODO: implement according to comment above
-
-	return ""
+	// If both first and last name are missing, this returns an empty string
+	if u.FirstName == "" && u.LastName == "" {
+		return ""
+	}
+	// FirstName is an empty string, no space is put between the names.
+	if u.FirstName == "" {
+		return u.LastName
+	}
+	// LastName is an empty string, no space is put between the names.
+	if u.LastName == "" {
+		return u.FirstName
+	}
+	return u.FirstName + " " + u.LastName
 }
 
 //SetPassword hashes the password and stores it in the PassHash field
