@@ -165,12 +165,15 @@ func (u *User) SetPassword(password string) error {
 //Authenticate compares the plaintext password against the stored hash
 //and returns an error if they don't match, or nil if they do
 func (u *User) Authenticate(password string) error {
-	// Using bcrypt package to compare the supplied password with the stored PassHash.
-	// See https://godoc.org/golang.org/x/crypto/bcrypt for more info.
+	//TODO: use the bcrypt package to compare the supplied
+	//password with the stored PassHash
+	//https://godoc.org/golang.org/x/crypto/bcrypt
+
 	err := bcrypt.CompareHashAndPassword(u.PassHash, []byte(password))
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -179,6 +182,16 @@ func (u *User) Authenticate(password string) error {
 func (u *User) ApplyUpdates(updates *Updates) error {
 	//TODO: set the fields of `u` to the values of the related
 	//field in the `updates` struct
+
+	u.FirstName = updates.FirstName
+	u.LastName = updates.LastName
+
+	if len(updates.FirstName) < 1 || strings.Contains(updates.FirstName, " ") {
+		return fmt.Errorf("error: Firstname must contain characters and must not contain white space")
+	}
+	if len(updates.LastName) < 1 || strings.Contains(updates.LastName, " ") {
+		return fmt.Errorf("error: Firstname must contain characters and must not contain white space")
+	}
 
 	return nil
 }
