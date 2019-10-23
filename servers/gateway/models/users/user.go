@@ -95,7 +95,11 @@ func (nu *NewUser) ToUser() (*User, error) {
 	//based on the field values in `nu`.
 	var us User
 	us.Email = nu.Email
-	us.SetPassword(nu.Password)
+
+	err1 := us.SetPassword(nu.Password)
+	if err1 != nil {
+		return nil, err1
+	}
 	us.UserName = nu.UserName
 	us.FirstName = nu.FirstName
 	us.LastName = nu.LastName
