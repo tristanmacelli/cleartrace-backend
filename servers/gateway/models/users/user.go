@@ -50,27 +50,26 @@ type Updates struct {
 //Validate validates the new user and returns an error if
 //any of the validation rules fail, or nil if its valid
 func (nu *NewUser) Validate() error {
-	//TODO: validate the new user according to these rules:
-	//- Email field must be a valid email address (hint: see mail.ParseAddress)
-	e, err := mail.ParseAddress(nu.Email)
+	// Validating the new user according to these rules
+	// Checking for a valid Email address field (see mail.ParseAddress)
+	_, err := mail.ParseAddress(nu.Email)
 	if err != nil {
-		//log.Fatal(e, err, "ahhhhhhhhhhh")
-		_ = e
+		//log.Fatal(e, err, "Error: Email address is not in a valid format: yourname@domain.com")
 		return err
 	}
 
-	//- Password must be at least 6 characters
+	// Checking that Password is at least 6 characters
 	if len(nu.Password) <= 5 {
-		return fmt.Errorf("error: Password is not 6 characters or more")
+		return fmt.Errorf("Error: Password is not 6 characters or more")
 	}
 
-	//- Password and PasswordConf must match
+	// Checking that Password and PasswordConf match
 	if nu.Password != nu.PasswordConf {
-		return fmt.Errorf("error: Password doesnt not match the confirmed password")
+		return fmt.Errorf("Error: Password doesnt not match the confirmed password")
 	}
-	//- UserName must be non-zero length and may not contain spaces
+	// Checking that UserName is of non-zero length and does not contain spaces
 	if len(nu.UserName) < 1 || strings.Contains(nu.UserName, " ") {
-		return fmt.Errorf("error: Usernames must have a non-zero length and must contain no spaces")
+		return fmt.Errorf("Error: Usernames must have a non-zero length and must contain no spaces")
 	}
 	//use fmt.Errorf() to generate appropriate error messages if
 	//the new user doesn't pass one of the validation rules
@@ -80,31 +79,33 @@ func (nu *NewUser) Validate() error {
 //ToUser converts the NewUser to a User, setting the
 //PhotoURL and PassHash fields appropriately
 func (nu *NewUser) ToUser() (*User, error) {
-	//TODO: call Validate() to validate the NewUser and
-	//return any validation errors that may occur.
-	//if valid, create a new *User and set the fields
-	//based on the field values in `nu`.
-	//Leave the ID field as the zero-value; your Store
-	//implementation will set that field to the DBMS-assigned
-	//primary key value.
-	//Set the PhotoURL field to the Gravatar PhotoURL
-	//for the user's email address.
-	//see https://en.gravatar.com/site/implement/hash/
-	//and https://en.gravatar.com/site/implement/images/
 	//TODO: also call .SetPassword() to set the PassHash
 	//field of the User to a hash of the NewUser.Password
 
+	//TODO: call Validate() to validate the NewUser and
+	//return any validation errors that may occur.
 	err := nu.Validate()
 	fmt.Println(err)
 	if err != nil { // there was an error.
 		return nil, err
 	}
+	//if valid, create a new *User and set the fields
+	//based on the field values in `nu`.
 	var us User
 	us.Email = nu.Email
 	us.SetPassword(nu.Password)
 	us.UserName = nu.UserName
 	us.FirstName = nu.FirstName
 	us.LastName = nu.LastName
+
+	// The ID field will be left as a zero-value; the Store
+	// implementation will set that field to the DBMS-assigned
+	// primary key value.
+	// The following sets the PhotoURL field to the Gravatar PhotoURL
+	// for the user's email address.
+	// see https://en.gravatar.com/site/implement/hash/
+	// and https://en.gravatar.com/site/implement/images/ for more information.
+
 	// Create new hash with md5 for photo url
 	var hash = strings.ToLower(strings.TrimSpace(nu.Email))
 	hasher := md5.New()
@@ -125,13 +126,20 @@ func (nu *NewUser) ToUser() (*User, error) {
 
 //FullName returns the user's full name, in the form:
 // "<FirstName> <LastName>"
-//If either first or last name is an empty string, no
-//space is put between the names. If both are missing,
-//this returns an empty string
 func (u *User) FullName() string {
-	//TODO: implement according to comment above
-
-	return ""
+	// If both first and last name are missing, this returns an empty string
+	if u.FirstName == "" && u.LastName == "" {
+		return ""
+	}
+	// FirstName is an empty string, no space is put between the names.
+	if u.FirstName == "" {
+		return u.LastName
+	}
+	// LastName is an empty string, no space is put between the names.
+	if u.LastName == "" {
+		return u.FirstName
+	}
+	return u.FirstName + " " + u.LastName
 }
 
 //SetPassword hashes the password and stores it in the PassHash field
