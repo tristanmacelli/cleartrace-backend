@@ -7,7 +7,6 @@ import (
 	"crypto/sha256"
 	b64 "encoding/base64"
 	"errors"
-	"fmt"
 )
 
 //InvalidSessionID represents an empty, invalid session ID
@@ -55,11 +54,9 @@ func NewSessionID(signingKey string) (SessionID, error) {
 	sID := make([]byte, idLength)
 	_, err := rand.Read(sID)
 	if err != nil {
-		fmt.Println("error:", err)
 		return InvalidSessionID, nil
 	}
 	// first half of id
-	// fmt.Println(sID)
 
 	key := []byte(signingKey)
 	//create a new HMAC hasher
@@ -74,7 +71,6 @@ func NewSessionID(signingKey string) (SessionID, error) {
 
 	// encode using Base64 URL encoding
 	sIDEncoded := b64.URLEncoding.EncodeToString([]byte(sID))
-	// fmt.Println(SessionID(sIDEncoded))
 	return SessionID(sIDEncoded), nil
 }
 
