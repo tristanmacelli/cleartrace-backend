@@ -10,16 +10,6 @@ import (
 // Test the (nu *NewUser) Validate() function to ensure it catches all possible validation errors,
 // and returns no error when the new user is valid.
 
-// type User struct {
-// 	ID        int64  `json:"id"`
-// 	Email     string `json:"-"` //never JSON encoded/decoded
-// 	PassHash  []byte `json:"-"` //never JSON encoded/decoded
-// 	UserName  string `json:"userName"`
-// 	FirstName string `json:"firstName"`
-// 	LastName  string `json:"lastName"`
-// 	PhotoURL  string `json:"photoURL"`
-// }
-
 func TestValidateNewUser(t *testing.T) {
 	cases := []struct {
 		name        string
@@ -360,12 +350,3 @@ func TestApplyUpdates(t *testing.T) {
 		}
 	}
 }
-
-// &User{
-// 	Email:        "",
-// 	PassHash:     "",
-// 	UserName:     "",
-// 	FirstName:    "",
-// 	LastName:     "",
-// 	PhotoURL:     ""
-// },
