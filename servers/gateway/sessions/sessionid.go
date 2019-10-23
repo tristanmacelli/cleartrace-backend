@@ -40,7 +40,7 @@ func NewSessionID(signingKey string) (SessionID, error) {
 	//TODO: if `signingKey` is zero-length, return InvalidSessionID
 	//and an error indicating that it may not be empty
 	if len(signingKey) == 0 {
-		return InvalidSessionID, errors.New("Empty signing key")
+		return InvalidSessionID, errors.New("signingKey must not be empty")
 	}
 
 	//TODO: Generate a new digitally-signed SessionID by doing the following:
@@ -87,7 +87,7 @@ func ValidateID(id string, signingKey string) (SessionID, error) {
 	//If not, return InvalidSessionID and ErrInvalidID.
 
 	if len(signingKey) == 0 {
-		return InvalidSessionID, errors.New("Empty signing key")
+		return InvalidSessionID, errors.New("signingKey must not be empty")
 	}
 
 	// check for URLEncoding and decode the id parameter
