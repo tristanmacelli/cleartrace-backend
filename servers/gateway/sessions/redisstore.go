@@ -2,7 +2,6 @@ package sessions
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"time"
 
@@ -41,18 +40,13 @@ func (rs *RedisStore) Save(sid SessionID, sessionState interface{}) error {
 	if nil != err {
 		return err
 	}
-
-	fmt.Println("marshalled  json", j)
 	// get redis key
 	redisKey := sid.getRedisKey()
 
 	// save state to database
-	err1 := rs.Client.Set(redisKey, j, 0).Err()
-	// marshalledJSON, err := rs.Client.Get(redisKey).Result()
-	// fmt.Println("-->", marshalledJSON, " err -", err)
-	if err1 != nil {
-		fmt.Println(err1)
-		return err1
+	err = rs.Client.Set(redisKey, j, 0).Err()
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -71,17 +65,16 @@ func (rs *RedisStore) Get(sid SessionID, sessionState interface{}) error {
 	if err != nil {
 		return ErrStateNotFound
 	}
-	// if this doesn't work, try marshalledJSON.([]byte)
-	err1 := json.Unmarshal([]byte(marshalledJSON), &sessionState)
-	if err1 != nil {
-		return err1
+	err = json.Unmarshal([]byte(marshalledJSON), &sessionState)
+	if err != nil {
+		return err
 	}
 
 	// reset the expiry time
 	rs.SessionDuration = time.Hour
-	err2 := rs.Client.Set(redisKey, marshalledJSON, rs.SessionDuration).Err()
-	if err2 != nil {
-		return err2
+	err = rs.Client.Set(redisKey, marshalledJSON, rs.SessionDuration).Err()
+	if err != nil {
+		return err
 	}
 
 	//for extra-credit using the Pipeline feature of the redis
