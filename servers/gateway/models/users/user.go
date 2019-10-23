@@ -148,6 +148,16 @@ func (u *User) FullName() string {
 func (u *User) SetPassword(password string) error {
 	//TODO: use the bcrypt package to generate a new hash of the password
 	//https://godoc.org/golang.org/x/crypto/bcrypt
+	// convert from string to byte hash
+	byte_pass := []byte(password)
+
+	// convert byte pass to hash
+	encrypted_password, err := bcrypt.GenerateFromPassword(byte_pass, bcryptCost)
+
+	if err != nil {
+		return err
+	}
+	u.PassHash = encrypted_password
 
 	return nil
 }
