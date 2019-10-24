@@ -30,17 +30,18 @@ func NewMysqlStore() *MysqlStore {
 }
 
 // GetBy is a helper method that resolves all queries asking for singular user objects
-func (ms *MysqlStore) GetBy(query string, value string) (*User, error) {
+func (ms *MysqlStore) GetBy(query string, queryValue string) (*User, error) {
 
-	insq := queryString + query
-	row := ms.db.QueryRow(insq, value)
+	// A prepared statement allows us to use bind values the (?)
+	// in the query parameter which helps avoid sql injection attacks
+	stmt, _ := ms.db.Prepare(queryString + query)
+	defer stmt.Close()
+	row := stmt.QueryRow(queryValue)
 	// May need to alter the capitalization of these variables to match what is in
 	// schema.sql or vice versa
-	fmt.Println("The row is:", row)
 	user := User{}
 	err := row.Scan(&user.ID, &user.Email, &user.PassHash, &user.UserName,
 		&user.FirstName, &user.LastName, &user.PhotoURL)
-	fmt.Println("The user is:", user)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			// there were no rows, but otherwise no error occurred
@@ -79,8 +80,9 @@ func (ms *MysqlStore) Insert(user *User) (*User, error) {
 
 	// Open a reserved connection to make an individual transaction
 	tx, _ := ms.db.Begin()
-	insq := "INSERT INTO users(email, passHash, username, firstname, lastname, photoURL) VALUES (?,?,?,?,?,?)"
-	res, err := tx.Exec(insq, user.Email, user.PassHash, user.UserName,
+	stmt, _ := tx.Prepare("INSERT INTO users(Email, PassHash, UserName, firstname, lastname, photoURL) VALUES (?,?,?,?,?,?)")
+	defer stmt.Close()
+	res, err := stmt.Exec(user.Email, user.PassHash, user.UserName,
 		user.FirstName, user.LastName, user.PhotoURL)
 
 	if err != nil {
@@ -100,9 +102,6 @@ func (ms *MysqlStore) Insert(user *User) (*User, error) {
 	}
 	fmt.Printf("ID for new row is %d\n", id)
 	// Get and return this new user
-	fmt.Println()
-	user, _ = ms.GetByID(id)
-	fmt.Println("The user we found is:", user)
 	return ms.GetByID(id)
 }
 
@@ -112,9 +111,10 @@ func (ms *MysqlStore) Update(id int64, updates *Updates) (*User, error) {
 
 	// Open a reserved connection to db to make an individual transaction
 	tx, _ := ms.db.Begin()
-	insq := "UPDATE users SET firstname = ?, lastname = ? WHERE ID = ?"
+	stmt, _ := tx.Prepare("UPDATE users SET firstname = ?, lastname = ? WHERE ID = ?")
 	// This will close the prepared statement once Exec is called
-	_, err := tx.Exec(insq, updates.FirstName, updates.LastName, strconv.FormatInt(id, 10))
+	defer stmt.Close()
+	_, err := stmt.Exec(updates.FirstName, updates.LastName, strconv.FormatInt(id, 10))
 	if err != nil {
 		fmt.Printf("error updating row: %v\n", err)
 		// Close the reserved connection upon failure
@@ -131,9 +131,10 @@ func (ms *MysqlStore) Delete(id int64) error {
 
 	// Open a reserved connection to db to make an individual transaction
 	tx, _ := ms.db.Begin()
-	insq := "DELETE FROM users WHERE ID = ?"
+	stmt, _ := tx.Prepare("DELETE FROM users WHERE ID = ?")
 	// This will close the prepared statement once Exec is called
-	_, err := tx.Exec(insq, strconv.FormatInt(id, 10))
+	defer stmt.Close()
+	_, err := stmt.Exec(strconv.FormatInt(id, 10))
 	if err != nil {
 		fmt.Printf("error deleting row: %v\n", err)
 		// Close the reserved connection upon failure
