@@ -11,7 +11,7 @@ import (
 
 //gravatarBasePhotoURL is the base URL for Gravatar image requests.
 //See https://id.gravatar.com/site/implement/images/ for details
-const gravatarBasePhotoURL = "https://www.gravatar.com/avatar/"
+const gravatarBasePhotoURL = "https://www.gravatar.com/avatar/%x"
 
 //bcryptCost is the default bcrypt cost to use when hashing passwords
 var bcryptCost = 13
@@ -113,19 +113,10 @@ func (nu *NewUser) ToUser() (*User, error) {
 	// and https://en.gravatar.com/site/implement/images/ for more information.
 
 	// Create new hash with md5 for photo url
-	var hash = strings.ToLower(strings.TrimSpace(nu.Email))
-	hasher := md5.New()
-	hasher.Write([]byte(hash))
-	us.PhotoURL = gravatarBasePhotoURL + hash
-
-	// User struct
-	/*ID        int64  `json:"id"`
-	Email     string `json:"-"` //never JSON encoded/decoded
-	PassHash  []byte `json:"-"` //never JSON encoded/decoded
-	UserName  string `json:"userName"`
-	FirstName string `json:"firstName"`
-	LastName  string `json:"lastName"`
-	PhotoURL  string `json:"photoURL"`*/
+	var email = strings.ToLower(strings.TrimSpace(nu.Email))
+	hash := md5.Sum([]byte(email))
+	finalURL := fmt.Sprintf(gravatarBasePhotoURL, hash)
+	us.PhotoURL = finalURL
 
 	return &us, nil
 }
