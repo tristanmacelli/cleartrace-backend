@@ -30,18 +30,13 @@ func NewMysqlStore() *MysqlStore {
 }
 
 // GetBy is a helper method that resolves all queries asking for singular user objects
-func (ms *MysqlStore) GetBy(query string, queryValue string) (*User, error) {
-
-	// A prepared statement allows us to use bind values the (?)
-	// in the query parameter which helps avoid sql injection attacks
-	stmt, _ := ms.db.Prepare(queryString + query)
-	defer stmt.Close()
-	row := stmt.QueryRow(queryValue)
-	// May need to alter the capitalization of these variables to match what is in
-	// schema.sql or vice versa
+func (ms *MysqlStore) GetBy(query string, value string) (*User, error) {
 	user := User{}
+	insq := queryString + query
+	row := ms.db.QueryRow(insq, value)
 	err := row.Scan(&user.ID, &user.Email, &user.PassHash, &user.UserName,
 		&user.FirstName, &user.LastName, &user.PhotoURL)
+
 	if err != nil {
 		if err == sql.ErrNoRows {
 			// there were no rows, but otherwise no error occurred
