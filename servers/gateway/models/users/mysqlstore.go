@@ -75,9 +75,8 @@ func (ms *MysqlStore) Insert(user *User) (*User, error) {
 
 	// Open a reserved connection to make an individual transaction
 	tx, _ := ms.db.Begin()
-	stmt, _ := tx.Prepare("INSERT INTO users(Email, PassHash, UserName, firstname, lastname, photoURL) VALUES (?,?,?,?,?,?)")
-	defer stmt.Close()
-	res, err := stmt.Exec(user.Email, user.PassHash, user.UserName,
+	insq := "INSERT INTO users(email, passHash, username, firstname, lastname, photoURL) VALUES (?,?,?,?,?,?)"
+	res, err := tx.Exec(insq, user.Email, user.PassHash, user.UserName,
 		user.FirstName, user.LastName, user.PhotoURL)
 
 	if err != nil {
@@ -106,10 +105,9 @@ func (ms *MysqlStore) Update(id int64, updates *Updates) (*User, error) {
 
 	// Open a reserved connection to db to make an individual transaction
 	tx, _ := ms.db.Begin()
-	stmt, _ := tx.Prepare("UPDATE users SET firstname = ?, lastname = ? WHERE ID = ?")
+	insq := "UPDATE users SET firstname = ?, lastname = ? WHERE ID = ?"
 	// This will close the prepared statement once Exec is called
-	defer stmt.Close()
-	_, err := stmt.Exec(updates.FirstName, updates.LastName, strconv.FormatInt(id, 10))
+	_, err := tx.Exec(insq, updates.FirstName, updates.LastName, strconv.FormatInt(id, 10))
 	if err != nil {
 		fmt.Printf("error updating row: %v\n", err)
 		// Close the reserved connection upon failure
@@ -126,10 +124,9 @@ func (ms *MysqlStore) Delete(id int64) error {
 
 	// Open a reserved connection to db to make an individual transaction
 	tx, _ := ms.db.Begin()
-	stmt, _ := tx.Prepare("DELETE FROM users WHERE ID = ?")
+	insq := "DELETE FROM users WHERE ID = ?"
 	// This will close the prepared statement once Exec is called
-	defer stmt.Close()
-	_, err := stmt.Exec(strconv.FormatInt(id, 10))
+	_, err := tx.Exec(insq, strconv.FormatInt(id, 10))
 	if err != nil {
 		fmt.Printf("error deleting row: %v\n", err)
 		// Close the reserved connection upon failure
