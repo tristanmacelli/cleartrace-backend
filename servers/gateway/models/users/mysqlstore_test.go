@@ -118,7 +118,10 @@ func TestInsert(t *testing.T) {
 	nu.FirstName = "first"
 	nu.LastName = "last"
 	u, err := nu.ToUser()
-	fmt.Print("Error when generating user: ", err)
+	if err != nil {
+		fmt.Println("Error when generating user")
+	}
+	fmt.Println(&u)
 
 	mock.ExpectBegin()
 	mock.ExpectPrepare("INSERT INTO users(email, passHash, username, firstname, lastname, photoURL) VALUES (?,?,?,?,?,?)")
