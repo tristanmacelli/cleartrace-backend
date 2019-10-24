@@ -100,3 +100,28 @@ func TestGetByUsername(t *testing.T) {
 		t.Errorf("there were unfulfilled expectations: %s", err)
 	}
 }
+
+func TestInsert(t *testing.T) {
+	//MysqlStore represents a connection to our user database
+	db, mock, err := sqlmock.New()
+
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectPrepare("INSERT INTO users(email, passHash, username, firstname, lastname, photoURL) VALUES (?,?,?,?,?,?)")
+	mock.ExpectExec("INSERT INTO users").
+		WithArgs()
+
+	// passes the mock to our struct
+	var ms = MysqlStore{}
+	ms.db = db
+
+	// now we execute our method with the mock
+	if user, err := ms.GetByUserName("Sam"); err != nil {
+		t.Errorf("was not expecting an error, but there was none")
+		fmt.Print(user)
+	}
+}
