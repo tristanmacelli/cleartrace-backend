@@ -10,6 +10,11 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
+// @saurav
+// creates a mysql store that supports a sql databse connected to a docker
+// image. the struct defines the store, while the functions implement some sql
+// executions
+
 //MysqlStore represents a connection to our user database
 type MysqlStore struct {
 	db *sql.DB

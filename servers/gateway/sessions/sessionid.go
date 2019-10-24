@@ -51,13 +51,14 @@ func NewSessionID(signingKey string) (SessionID, error) {
 	//- encode that byte slice using base64 URL Encoding and return
 	//  the result as a SessionID type
 
+	// this code generates a byte slice of iDlength and assigns it random bytes.
 	sID := make([]byte, idLength)
 	_, err := rand.Read(sID)
 	if err != nil {
 		return InvalidSessionID, nil
 	}
-	// first half of id
 
+	// first half of id
 	key := []byte(signingKey)
 	//create a new HMAC hasher
 	h := hmac.New(sha256.New, key)
@@ -86,6 +87,7 @@ func ValidateID(id string, signingKey string) (SessionID, error) {
 	//return the entire `id` parameter as a SessionID type.
 	//If not, return InvalidSessionID and ErrInvalidID.
 
+	// checks if the key is not empty
 	if len(signingKey) == 0 {
 		return InvalidSessionID, errors.New("signingKey must not be empty")
 	}
@@ -108,6 +110,7 @@ func ValidateID(id string, signingKey string) (SessionID, error) {
 	// compare this to the second half
 	res := bytes.Compare(signature, sIDDec[idLength:])
 
+	// 0 means true, and then return session id otherwise return invalid session id
 	if res == 0 {
 		return SessionID(id), nil
 	}

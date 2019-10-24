@@ -16,6 +16,8 @@ var ErrNoSessionID = errors.New("no session ID found in " + headerAuthorization 
 //ErrInvalidScheme is used when the authorization scheme is not supported
 var ErrInvalidScheme = errors.New("authorization scheme not supported")
 
+// worked on this with Tristan so most of the comments are mine
+// @saurav
 //BeginSession creates a new SessionID, saves the `sessionState` to the store, adds an
 //Authorization header to the response with the SessionID, and returns the new SessionID
 func BeginSession(signingKey string, store Store, sessionState interface{}, w http.ResponseWriter) (SessionID, error) {

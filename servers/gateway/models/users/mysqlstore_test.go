@@ -8,6 +8,10 @@ import (
 	"github.com/DATA-DOG/go-sqlmock"
 )
 
+// @saurav
+// we use go-sqlmock to test our mysqlstore. this basically lets us
+// test with a mock databse so saves time to build a real databse connection
+// the tests test either expected queries or executions
 // a failing test case
 func TestGetByID(t *testing.T) {
 	//MysqlStore represents a connection to our user database
