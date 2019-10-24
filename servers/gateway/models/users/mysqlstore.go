@@ -80,7 +80,7 @@ func (ms *MysqlStore) Insert(user *User) (*User, error) {
 
 	// Open a reserved connection to make an individual transaction
 	tx, _ := ms.db.Begin()
-	stmt, _ := tx.Prepare("INSERT INTO users(email, passHash, username, firstname, lastname, photoURL) VALUES (?,?,?,?,?,?)")
+	stmt, _ := tx.Prepare("INSERT INTO users(Email, PassHash, UserName, firstname, lastname, photoURL) VALUES (?,?,?,?,?,?)")
 	defer stmt.Close()
 	res, err := stmt.Exec(user.Email, user.PassHash, user.UserName,
 		user.FirstName, user.LastName, user.PhotoURL)
@@ -105,26 +105,26 @@ func (ms *MysqlStore) Insert(user *User) (*User, error) {
 	return ms.GetByID(id)
 }
 
-// //Update applies UserUpdates to the given user ID
-// //and returns the newly-updated user
-// func (ms *MysqlStore) Update(id int64, updates *Updates) (*User, error) {
+//Update applies UserUpdates to the given user ID
+//and returns the newly-updated user
+func (ms *MysqlStore) Update(id int64, updates *Updates) (*User, error) {
 
-// 	// Open a reserved connection to db to make an individual transaction
-// 	tx, _ := ms.db.Begin()
-// 	stmt, _ := tx.Prepare("UPDATE users SET firstname = ?, lastname = ? WHERE ID = ?")
-// 	// This will close the prepared statement once Exec is called
-// 	defer stmt.Close()
-// 	res, err := stmt.Exec(updates.FirstName, updates.LastName, strconv.FormatInt(id, 10))
-// 	if err != nil {
-// 		fmt.Printf("error updating row: %v\n", err)
-// 		// Close the reserved connection upon failure
-// 		tx.Rollback()
-// 		return nil, err
-// 	}
-// 	// Close the reserved connection upon success
-// 	tx.Commit()
-// 	return nil, nil
-// }
+	// Open a reserved connection to db to make an individual transaction
+	tx, _ := ms.db.Begin()
+	stmt, _ := tx.Prepare("UPDATE users SET firstname = ?, lastname = ? WHERE ID = ?")
+	// This will close the prepared statement once Exec is called
+	defer stmt.Close()
+	_, err := stmt.Exec(updates.FirstName, updates.LastName, strconv.FormatInt(id, 10))
+	if err != nil {
+		fmt.Printf("error updating row: %v\n", err)
+		// Close the reserved connection upon failure
+		tx.Rollback()
+		return nil, err
+	}
+	// Close the reserved connection upon success
+	tx.Commit()
+	return ms.GetByID(id)
+}
 
 //Delete deletes the user with the given ID
 func (ms *MysqlStore) Delete(id int64) error {
