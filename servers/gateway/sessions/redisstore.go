@@ -19,6 +19,7 @@ type RedisStore struct {
 //NewRedisStore constructs a new RedisStore
 func NewRedisStore(client *redis.Client, sessionDuration time.Duration) *RedisStore {
 	//initialize and return a new RedisStore struct
+	// keets track of client and session duration
 	return &RedisStore{
 		Client:          client,
 		SessionDuration: sessionDuration,
@@ -38,8 +39,10 @@ func (rs *RedisStore) Save(sid SessionID, sessionState interface{}) error {
 	// marshal the json and resolve errors
 	j, err := json.Marshal(&sessionState)
 	if nil != err {
+		// json can not be marshalled
 		return err
 	}
+
 	// get redis key
 	redisKey := sid.getRedisKey()
 
@@ -49,6 +52,7 @@ func (rs *RedisStore) Save(sid SessionID, sessionState interface{}) error {
 		return err
 	}
 
+	// no error return
 	return nil
 }
 
@@ -59,12 +63,18 @@ func (rs *RedisStore) Get(sid SessionID, sessionState interface{}) error {
 	//unmarshal it back into the `sessionState` parameter
 	//and reset the expiry time, so that it doesn't get deleted until
 	//the SessionDuration has elapsed.
+
+	// get redis frmatted key
 	redisKey := sid.getRedisKey()
 
+	// get the state information from redis
 	marshalledJSON, err := rs.Client.Get(redisKey).Result()
 	if err != nil {
+		// state does not exist for the key
 		return ErrStateNotFound
 	}
+
+	// unmarshal the fetched state and put it into session state using pointer
 	err = json.Unmarshal([]byte(marshalledJSON), &sessionState)
 	if err != nil {
 		return err
@@ -77,10 +87,6 @@ func (rs *RedisStore) Get(sid SessionID, sessionState interface{}) error {
 		return err
 	}
 
-	//for extra-credit using the Pipeline feature of the redis
-	//package to do both the get and the reset of the expiry time
-	//in just one network round trip!
-
 	return nil
 }
 
@@ -89,7 +95,10 @@ func (rs *RedisStore) Delete(sid SessionID) error {
 	//TODO: delete the data stored in redis for the provided SessionID
 	redisKey := sid.getRedisKey()
 	// handle errors here
-	rs.Client.Del(redisKey)
+	err := rs.Client.Del(redisKey).Err()
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
