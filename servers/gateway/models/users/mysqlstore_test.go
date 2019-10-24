@@ -8,7 +8,8 @@ import (
 	"github.com/DATA-DOG/go-sqlmock"
 )
 
-// a failing test case
+// TestGetByID tests to see that we can query the database with a valid ID
+// and receive the all the column data corresponding to the row with that ID without errors
 func TestGetByID(t *testing.T) {
 	//MysqlStore represents a connection to our user database
 	db, mock, err := sqlmock.New()
@@ -39,6 +40,39 @@ func TestGetByID(t *testing.T) {
 	}
 }
 
+// TestGetByIDExpectError tests to see that when we query the database with an invalid ID
+// and we do not receive column data corresponding any row and that we return an error
+func TestGetByIDExpectError(t *testing.T) {
+	//MysqlStore represents a connection to our user database
+	db, mock, err := sqlmock.New()
+
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer db.Close()
+
+	mock.ExpectQuery("SELECT \\* FROM users").
+		WithArgs("-1").
+		WillReturnError(fmt.Errorf("Invalid ID value: ID's must be positive"))
+
+	// passes the mock to our struct
+	var ms = MysqlStore{}
+	ms.db = db
+
+	// now we execute our method with the mock
+	if user, err := ms.GetByID(-1); err == nil {
+		t.Errorf("we were expecting an error, but there was none")
+		fmt.Print(user)
+	}
+
+	// we make sure that all expectations were met
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("there were unfulfilled expectations: %s", err)
+	}
+}
+
+// TestGetByEmail tests to see that we can query the database with a valid email
+// and receive the all the column data corresponding to the row with that email without errors
 func TestGetByEmail(t *testing.T) {
 	//MysqlStore represents a connection to our user database
 	db, mock, err := sqlmock.New()
@@ -69,6 +103,8 @@ func TestGetByEmail(t *testing.T) {
 	}
 }
 
+// TestGetByUsername tests to see that we can query the database with a valid username
+// and receive the all the column data corresponding to the row with that username without errors
 func TestGetByUsername(t *testing.T) {
 	//MysqlStore represents a connection to our user database
 	db, mock, err := sqlmock.New()
@@ -99,6 +135,9 @@ func TestGetByUsername(t *testing.T) {
 	}
 }
 
+// TestInsert tests to see that upon calling the update method with a validated user,
+// the user will be committed into the database without errors and then the new user will
+// be made available
 func TestInsert(t *testing.T) {
 	//MysqlStore represents a connection to our user database
 	db, mock, err := sqlmock.New()
@@ -139,6 +178,9 @@ func TestInsert(t *testing.T) {
 	}
 }
 
+// TestExpectErrorInsert Tests case when a user with an undefined passHash is trying to
+// be inserted. Expect an error and a transaction rollback (do not commit new data to
+// the database)
 func TestExpectErrorInsert(t *testing.T) {
 	//MysqlStore represents a connection to our user database
 	db, mock, err := sqlmock.New()
@@ -173,6 +215,8 @@ func TestExpectErrorInsert(t *testing.T) {
 	}
 }
 
+// TestUpdate tests the update operation in the Update function as well as checking that
+// the data store returns the updated user after the update transaction was committed sucessfully
 func TestUpdate(t *testing.T) {
 	//MysqlStore represents a connection to our user database
 	db, mock, err := sqlmock.New()
@@ -210,6 +254,8 @@ func TestUpdate(t *testing.T) {
 	}
 }
 
+// TestUpdateExpectError tests an update using an invalid row id, which should cause
+// the update transaction to fail and rolling back the changes.
 func TestUpdateExpectError(t *testing.T) {
 	//MysqlStore represents a connection to our user database
 	db, mock, err := sqlmock.New()
@@ -243,6 +289,8 @@ func TestUpdateExpectError(t *testing.T) {
 	}
 }
 
+// TestDelete tests to see that, given a valid user ID, a user will be deleted from
+// the database and this change will be committed to the database without error.
 func TestDelete(t *testing.T) {
 	//MysqlStore represents a connection to our user database
 	db, mock, err := sqlmock.New()
@@ -275,7 +323,8 @@ func TestDelete(t *testing.T) {
 	}
 }
 
-//TODO: Write TestDeleteExpectError
+// TestDeleteExpectError attempts to delete a user with an invalid ID which causes
+// an error and causes the transaction to rollback (no data deleted)
 func TestDeleteExpectError(t *testing.T) {
 	//MysqlStore represents a connection to our user database
 	db, mock, err := sqlmock.New()

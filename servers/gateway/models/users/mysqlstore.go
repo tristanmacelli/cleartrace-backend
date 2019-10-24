@@ -31,15 +31,19 @@ func NewMysqlStore() *MysqlStore {
 
 // GetBy is a helper method that resolves all queries asking for singular user objects
 func (ms *MysqlStore) GetBy(query string, value string) (*User, error) {
+	// Creates a new user object to populate with the query for a single row
 	user := User{}
 	insq := queryString + query
 	row := ms.db.QueryRow(insq, value)
+	// Populating the new user
 	err := row.Scan(&user.ID, &user.Email, &user.PassHash, &user.UserName,
 		&user.FirstName, &user.LastName, &user.PhotoURL)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
 			// there were no rows, but otherwise no error occurred
+			// We return a user without any values indicating that the query returned nothing
+			// since there was no fatal error
 			fmt.Printf("error getting user: %v\n", err)
 		} else {
 			return nil, err

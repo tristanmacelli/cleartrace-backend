@@ -1,9 +1,9 @@
 drop table if exists users;
 
 create table users (
-    ID integer not null primary key, -- add auto increment
+    ID integer not null auto_increment primary key, -- add auto increment
     email varchar(320),
-    passHash varchar(100),
+    passHash varbinary(80),
     username varchar(255),
     firstname varchar(200),
     lastname varchar(200),
