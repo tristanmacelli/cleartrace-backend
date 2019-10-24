@@ -12,8 +12,7 @@ import (
 
 //MysqlStore represents a connection to our user database
 type MysqlStore struct {
-	dsn string
-	db  *sql.DB
+	db *sql.DB
 }
 
 // A partially constructed sql query to use in getter functions
@@ -26,8 +25,7 @@ func NewMysqlStore() *MysqlStore {
 	// We are using a persistent connection for all transactions
 	db, _ := sql.Open("mysql", dsn)
 	return &MysqlStore{
-		dsn: dsn,
-		db:  db,
+		db: db,
 	}
 }
 
@@ -107,26 +105,26 @@ func (ms *MysqlStore) Insert(user *User) (*User, error) {
 	return ms.GetByID(id)
 }
 
-//Update applies UserUpdates to the given user ID
-//and returns the newly-updated user
-func (ms *MysqlStore) Update(id int64, updates *Updates) (*User, error) {
+// //Update applies UserUpdates to the given user ID
+// //and returns the newly-updated user
+// func (ms *MysqlStore) Update(id int64, updates *Updates) (*User, error) {
 
-	// Open a reserved connection to db to make an individual transaction
-	tx, _ := ms.db.Begin()
-	stmt, _ := tx.Prepare("UPDATE users SET firstname = ?, lastname = ? WHERE ID = ?")
-	// This will close the prepared statement once Exec is called
-	defer stmt.Close()
-	_, err := stmt.Exec(updates.FirstName, updates.LastName, strconv.FormatInt(id, 10))
-	if err != nil {
-		fmt.Printf("error updating row: %v\n", err)
-		// Close the reserved connection upon failure
-		tx.Rollback()
-		return nil, err
-	}
-	// Close the reserved connection upon success
-	tx.Commit()
-	return nil, nil
-}
+// 	// Open a reserved connection to db to make an individual transaction
+// 	tx, _ := ms.db.Begin()
+// 	stmt, _ := tx.Prepare("UPDATE users SET firstname = ?, lastname = ? WHERE ID = ?")
+// 	// This will close the prepared statement once Exec is called
+// 	defer stmt.Close()
+// 	res, err := stmt.Exec(updates.FirstName, updates.LastName, strconv.FormatInt(id, 10))
+// 	if err != nil {
+// 		fmt.Printf("error updating row: %v\n", err)
+// 		// Close the reserved connection upon failure
+// 		tx.Rollback()
+// 		return nil, err
+// 	}
+// 	// Close the reserved connection upon success
+// 	tx.Commit()
+// 	return nil, nil
+// }
 
 //Delete deletes the user with the given ID
 func (ms *MysqlStore) Delete(id int64) error {
