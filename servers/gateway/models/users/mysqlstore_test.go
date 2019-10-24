@@ -110,17 +110,27 @@ func TestInsert(t *testing.T) {
 	}
 	defer db.Close()
 
+	nu := NewUser{}
+	nu.Email = "user@domain.com"
+	nu.Password = "password"
+	nu.PasswordConf = "password"
+	nu.UserName = "username"
+	nu.FirstName = "first"
+	nu.LastName = "last"
+	u, err := nu.ToUser()
+	fmt.Print("Error when generating user: ", err)
+
 	mock.ExpectBegin()
 	mock.ExpectPrepare("INSERT INTO users(email, passHash, username, firstname, lastname, photoURL) VALUES (?,?,?,?,?,?)")
 	mock.ExpectExec("INSERT INTO users").
-		WithArgs()
+		WithArgs(u)
 
 	// passes the mock to our struct
 	var ms = MysqlStore{}
 	ms.db = db
 
 	// now we execute our method with the mock
-	if user, err := ms.GetByUserName("Sam"); err != nil {
+	if user, err := ms.Insert(u); err != nil {
 		t.Errorf("was not expecting an error, but there was none")
 		fmt.Print(user)
 	}
