@@ -116,7 +116,7 @@ func TestInsert(t *testing.T) {
 	columns := []string{"ID", "Email", "PassHash", "UserName", "FirstName", "LastName", "PhotoURL"}
 
 	mock.ExpectBegin()
-	mock.ExpectExec("INSERT INTO users\\(email, passHash, username, firstname, lastname, photoURL\\) VALUES \\(\\?,\\?,\\?,\\?,\\?,\\?\\)").
+	mock.ExpectExec("INSERT INTO users").
 		WithArgs(u.Email, u.PassHash, u.UserName, u.FirstName, u.LastName, u.PhotoURL).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectCommit()
@@ -139,7 +139,7 @@ func TestInsert(t *testing.T) {
 	}
 }
 
-func TestInsertExpectError(t *testing.T) {
+func TestExpectErrorInsert(t *testing.T) {
 	//MysqlStore represents a connection to our user database
 	db, mock, err := sqlmock.New()
 
@@ -150,11 +150,12 @@ func TestInsertExpectError(t *testing.T) {
 
 	nu := NewUser{"user@domain.com", "password", "password", "username", "first", "last"}
 	u, err := nu.ToUser()
+	u.PassHash = []byte{}
 
 	mock.ExpectBegin()
-	mock.ExpectExec("INSERT INTO users\\(email, passHash, username firstname, lastname, photoURL\\) VALUES \\(\\?,\\?,\\?,\\?,\\?,\\?\\)").
+	mock.ExpectExec("INSERT INTO users").
 		WithArgs(u.Email, u.PassHash, u.UserName, u.FirstName, u.LastName, u.PhotoURL).
-		WillReturnError(fmt.Errorf("Some error"))
+		WillReturnError(fmt.Errorf("No password passed"))
 	mock.ExpectRollback()
 
 	// passes the mock to our struct
