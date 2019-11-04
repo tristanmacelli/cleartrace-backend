@@ -15,7 +15,7 @@ import (
 //struct as the receiver on these functions so that you have
 //access to things like the session store and user store.
 
-// NewHandlerContext
+// NewHandlerContext gg
 func NewHandlerContext(key string, user *users.Store, session *sessions.Store) *HandlerContext {
 	if user == nil {
 		panic("No user")
@@ -27,7 +27,7 @@ func NewHandlerContext(key string, user *users.Store, session *sessions.Store) *
 	return &HandlerContext{key, user, session}
 }
 
-// UsersHandler
+// UsersHandler gg
 func (ctx *HandlerContext) UsersHandler(w http.ResponseWriter, r *http.Request) {
 	// check for POST
 	if r.Method == http.MethodPost {
@@ -90,7 +90,83 @@ func (ctx *HandlerContext) UsersHandler(w http.ResponseWriter, r *http.Request) 
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusCreated)
 			w.Write(userJSON)
-
 		}
+	}
+}
+
+// SessionsHandler ghgh
+func (ctx *HandlerContext) SessionsHandler(w http.ResponseWriter, r *http.Request) {
+	// check for POST
+	if r.Method != http.MethodPost {
+		http.Error(w, "Incorrect HTTP Method", http.StatusMethodNotAllowed)
+	} else {
+		// check for correct header
+		ctype := r.Header.Get("Content-Type")
+		if !strings.HasPrefix(ctype, "application/json") {
+			// throw error
+			http.Error(w, "Unsupported Media Type", http.StatusUnsupportedMediaType)
+		} else {
+			fmt.Println(r.Body)
+			var creds users.Credentials
+			// jsonBody := r.Body
+
+			// make sure this json is valid
+			decoder := json.NewDecoder(r.Body)
+			err := decoder.Decode(&creds)
+			if err != nil {
+				panic(err)
+			}
+
+			dbUser := *ctx.User
+			user, err := dbUser.GetByEmail(creds.Email)
+			// TODO: do something that would take about the same amount of time as authenticating
+			if err == nil {
+				http.Error(w, "invalid credentials", http.StatusUnauthorized)
+				return
+			}
+			err = user.Authenticate(creds.Password)
+			if err != nil {
+				http.Error(w, "invalid credentials", http.StatusUnauthorized)
+				return
+			}
+
+			userJSON, err := json.Marshal(user)
+			if err != nil {
+				fmt.Errorf("Could not marshal user")
+			}
+			// create a new session
+			var sessionState SessionState
+			sessionState.User = user
+			sessionState.BeginTime = time.Now()
+
+			_, err = sessions.BeginSession(ctx.Key, *ctx.Session, sessionState, w)
+			if err != nil {
+				fmt.Errorf("Could not begin session")
+			}
+
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusCreated)
+			w.Write(userJSON)
+		}
+	}
+}
+
+// SpecificSessionsHandler ghgh
+func (ctx *HandlerContext) SpecificSessionsHandler(w http.ResponseWriter, r *http.Request) {
+	// check for POST
+	if r.Method != http.MethodDelete {
+		http.Error(w, "Incorrect HTTP Method", http.StatusMethodNotAllowed)
+	} else {
+		mine := strings.HasSuffix(r.URL.String(), "mine")
+		if !mine {
+			http.Error(w, "access denied", http.StatusForbidden)
+			return
+		}
+		// func EndSession(r *http.Request, signingKey string, store Store) (SessionID, error) {
+		_, err := sessions.EndSession(r, ctx.Key, *ctx.Session)
+		if err != nil {
+			fmt.Errorf("Could not end session")
+		}
+		fmt.Println("signed out")
 	}
 }
