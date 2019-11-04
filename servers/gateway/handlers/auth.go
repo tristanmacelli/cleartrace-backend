@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 )
 
 //TODO: define HTTP handler functions as described in the
@@ -14,6 +15,7 @@ import (
 //struct as the receiver on these functions so that you have
 //access to things like the session store and user store.
 
+// NewHandlerContext
 func NewHandlerContext(key string, user *users.Store, session *sessions.Store) *HandlerContext {
 	if user == nil {
 		panic("No user")
@@ -25,6 +27,7 @@ func NewHandlerContext(key string, user *users.Store, session *sessions.Store) *
 	return &HandlerContext{key, user, session}
 }
 
+// UsersHandler
 func (ctx *HandlerContext) UsersHandler(w http.ResponseWriter, r *http.Request) {
 	// check for POST
 	if r.Method == http.MethodPost {
@@ -58,31 +61,35 @@ func (ctx *HandlerContext) UsersHandler(w http.ResponseWriter, r *http.Request) 
 			}
 
 			// save user to database
-			dbUser := &ctx.User
+			dbUser := *ctx.User
 			anotherUser, err := dbUser.Insert(user)
 			if err != nil {
 				fmt.Errorf("Could not insert user to DB")
 			}
 
 			// ensure anotherUser contains the new database-assigned primary key value
-			if _, err =  dbUser.GetByID(anotherUser.id); err != nil {
+			_, err = dbUser.GetByID(anotherUser.ID)
+			if err != nil {
 				fmt.Errorf("id does not contain the db primary key value")
 			}
 
-			anotherUser, err = json.Marshal(anotherUser)
+			userJSON, err := json.Marshal(anotherUser)
 			if err != nil {
 				fmt.Errorf("Could not marshal user")
 			}
 			// create a new session
-			// BeginSession(signingKey string, store Store, sessionState interface{}, w http.ResponseWriter) (SessionID, error) {
-			sessionId, err := BeginSession(ctx.Key, ctx.User, ctx.Session, w)
+			var sessionState SessionState
+			sessionState.User = anotherUser
+			sessionState.BeginTime = time.Now()
+
+			_, err = sessions.BeginSession(ctx.Key, *ctx.Session, sessionState, w)
 			if err != nil {
 				fmt.Errorf("Could not begin session")
 			}
 
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusCreated)
-			w.Write(anotherUser)
+			w.Write(userJSON)
 
 		}
 	}
