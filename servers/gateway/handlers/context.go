@@ -5,7 +5,7 @@ import (
 	"assignments-Tristan6/servers/gateway/sessions"
 )
 
-//Context TODO: define a handler context struct that
+//HandlerContext TODO: define a handler context struct that
 //will be a receiver on any of your HTTP
 //handler functions that need access to
 //globals, such as the key used for signing

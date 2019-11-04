@@ -9,7 +9,7 @@ import (
 //see the assignment description for the fields you should include
 //remember that other packages can only see exported fields!
 
-// SessionState
+// SessionState is a struct
 type SessionState struct {
 	BeginTime time.Time
 	User      *users.User
