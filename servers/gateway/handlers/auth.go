@@ -69,7 +69,7 @@ func (ctx *HandlerContext) UsersHandler(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// ensure anotherUser contains the new database-assigned primary key value
-	_, err = dbUser.GetByID(user.ID)
+	user, err = dbUser.GetByID(user.ID)
 	if err != nil {
 		fmt.Errorf("id does not contain the db primary key value")
 	}
