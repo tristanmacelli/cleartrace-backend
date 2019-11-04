@@ -147,7 +147,7 @@ func (ctx *HandlerContext) SessionsHandler(w http.ResponseWriter, r *http.Reques
 		dbUser := *ctx.User
 		user, err := dbUser.GetByEmail(creds.Email)
 		// TODO: do something that would take about the same amount of time as authenticating
-		if err == nil {
+		if err != nil {
 			http.Error(w, "invalid credentials", http.StatusUnauthorized)
 			return
 		}
