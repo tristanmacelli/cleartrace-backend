@@ -16,7 +16,7 @@ import (
 //struct as the receiver on these functions so that you have
 //access to things like the session store and user store.
 
-// NewHandlerContext gg
+// NewHandlerContext does something
 func NewHandlerContext(key string, user *users.Store, session *sessions.Store) *HandlerContext {
 	if user == nil {
 		panic("No user")
@@ -28,7 +28,7 @@ func NewHandlerContext(key string, user *users.Store, session *sessions.Store) *
 	return &HandlerContext{key, user, session}
 }
 
-// UsersHandler gg
+// UsersHandler does something
 func (ctx *HandlerContext) UsersHandler(w http.ResponseWriter, r *http.Request) {
 	// check for POST
 	if r.Method == http.MethodPost {
@@ -126,7 +126,7 @@ func (ctx *HandlerContext) SpecificUserHandler(w http.ResponseWriter, r *http.Re
 	}
 }
 
-// SessionsHandler ghgh
+// SessionsHandler does something
 func (ctx *HandlerContext) SessionsHandler(w http.ResponseWriter, r *http.Request) {
 	// check for POST
 	if r.Method != http.MethodPost {
@@ -163,7 +163,7 @@ func (ctx *HandlerContext) SessionsHandler(w http.ResponseWriter, r *http.Reques
 	}
 }
 
-// SpecificSessionsHandler ghgh
+// SpecificSessionsHandler does something
 func (ctx *HandlerContext) SpecificSessionsHandler(w http.ResponseWriter, r *http.Request) {
 	// check for POST
 	if r.Method != http.MethodDelete {
@@ -174,11 +174,11 @@ func (ctx *HandlerContext) SpecificSessionsHandler(w http.ResponseWriter, r *htt
 			http.Error(w, "access denied", http.StatusForbidden)
 			return
 		}
-		// func EndSession(r *http.Request, signingKey string, store Store) (SessionID, error) {
 		_, err := sessions.EndSession(r, ctx.Key, *ctx.Session)
 		if err != nil {
 			fmt.Errorf("Could not end session")
 		}
+		// Is this the correct way to be Responding with the plain text message "signed out"
 		fmt.Println("signed out")
 	}
 }
