@@ -11,8 +11,8 @@ import (
 //globals, such as the key used for signing
 //and verifying SessionIDs, the session store
 //and the user store
-type Context struct {
+type HandlerContext struct {
 	Key     string
-	User    users.Store
-	Session sessions.Store
+	User    *users.Store
+	Session *sessions.Store
 }
