@@ -31,50 +31,52 @@ func NewHandlerContext(key string, user *users.Store, session *sessions.Store) *
 // UsersHandler does something
 func (ctx *HandlerContext) UsersHandler(w http.ResponseWriter, r *http.Request) {
 	// check for POST
-	if r.Method == http.MethodPost {
-		if correctHeader(w, r) {
-			return
-		}
-		fmt.Println(r.Body)
-		var nu users.NewUser
-		// jsonBody := r.Body
-
-		// make sure this json is valid
-		decoder := json.NewDecoder(r.Body)
-		err := decoder.Decode(&nu)
-		if err != nil {
-			panic(err)
-		}
-		// create a new user
-		// nu.Email = jsonBody.Email
-		// nu.Password = jsonBody.Password
-		// nu.PasswordConf = jsonBody.PasswordConf
-		// nu.UserName = jsonBody.UserName
-		// nu.FirstName = jsonBody.FirstName
-		// nu.LastNamw = jsonBody.LastName
-
-		user, err := nu.ToUser()
-		if err != nil {
-			fmt.Errorf("Could not create a new user")
-		}
-
-		// save user to database
-		dbUser := *ctx.User
-		user, err = dbUser.Insert(user)
-		if err != nil {
-			fmt.Errorf("Could not insert user to DB")
-		}
-
-		// ensure anotherUser contains the new database-assigned primary key value
-		_, err = dbUser.GetByID(user.ID)
-		if err != nil {
-			fmt.Errorf("id does not contain the db primary key value")
-		}
-
-		userJSON := encodeUser(user)
-		ctx.beginSession(user, w)
-		formatResponse(w, http.StatusCreated, userJSON)
+	if r.Method != http.MethodPost {
+		http.Error(w, "Incorrect HTTP Method", http.StatusMethodNotAllowed)
+		return
 	}
+	if correctHeader(w, r) {
+		return
+	}
+	fmt.Println(r.Body)
+	var nu users.NewUser
+	// jsonBody := r.Body
+
+	// make sure this json is valid
+	decoder := json.NewDecoder(r.Body)
+	err := decoder.Decode(&nu)
+	if err != nil {
+		panic(err)
+	}
+	// create a new user
+	// nu.Email = jsonBody.Email
+	// nu.Password = jsonBody.Password
+	// nu.PasswordConf = jsonBody.PasswordConf
+	// nu.UserName = jsonBody.UserName
+	// nu.FirstName = jsonBody.FirstName
+	// nu.LastNamw = jsonBody.LastName
+
+	user, err := nu.ToUser()
+	if err != nil {
+		fmt.Errorf("Could not create a new user")
+	}
+
+	// save user to database
+	dbUser := *ctx.User
+	user, err = dbUser.Insert(user)
+	if err != nil {
+		fmt.Errorf("Could not insert user to DB")
+	}
+
+	// ensure anotherUser contains the new database-assigned primary key value
+	user, err = dbUser.GetByID(user.ID)
+	if err != nil {
+		fmt.Errorf("id does not contain the db primary key value")
+	}
+
+	userJSON := encodeUser(user)
+	ctx.beginSession(user, w)
+	formatResponse(w, http.StatusCreated, userJSON)
 }
 
 // SpecificUserHandler does something
