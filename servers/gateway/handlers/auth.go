@@ -104,6 +104,7 @@ func (ctx *HandlerContext) SpecificUserHandler(w http.ResponseWriter, r *http.Re
 		// Conditionally convert the userID into an int to be able to compare with the corresponding authenticated user
 
 		// 1 in the second case after the != is a mock of the currently authenticated user
+
 		if userID[1] != "me" && userID[1] != 1 {
 			http.Error(w, "You are unauthorized to perform this action", http.StatusForbidden)
 			return
@@ -195,8 +196,7 @@ func (ctx *HandlerContext) SpecificSessionsHandler(w http.ResponseWriter, r *htt
 		if err != nil {
 			fmt.Errorf("Could not end session")
 		}
-		// Is this the correct way to be Responding with the plain text message "signed out"
-		fmt.Println("signed out")
+		w.Write([]byte("signed out"))
 	}
 }
 
