@@ -9,3 +9,10 @@ create table users (
     lastname varchar(200),
     photoURL varchar(300)
 )
+
+create table userSignIn (
+    ID integer not null auto_increment primary key, -- add auto increment
+    userID integer not null,
+    signinDT DATETIME,
+    ip varchar(200)
+)
