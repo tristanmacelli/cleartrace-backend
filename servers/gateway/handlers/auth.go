@@ -64,6 +64,15 @@ func (ctx *HandlerContext) UsersHandler(w http.ResponseWriter, r *http.Request) 
 				fmt.Errorf("Could not insert user to DB")
 			}
 
+			// ensure anotherUser contains the new database-assigned primary key value
+			if _, err =  dbUser.GetByID(anotherUser.id); err != nil {
+				fmt.Errorf("id does not contain the db primary key value")
+			}
+
+			anotherUser, err = json.Marshal(anotherUser)
+			if err != nil {
+				fmt.Errorf("Could not marshal user")
+			}
 			// create a new session
 			// BeginSession(signingKey string, store Store, sessionState interface{}, w http.ResponseWriter) (SessionID, error) {
 			sessionId, err := BeginSession(ctx.Key, ctx.User, ctx.Session, w)
@@ -73,6 +82,7 @@ func (ctx *HandlerContext) UsersHandler(w http.ResponseWriter, r *http.Request) 
 
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusCreated)
+			w.Write(anotherUser)
 
 		}
 	}
