@@ -12,20 +12,20 @@ import (
 
 //MysqlStore represents a connection to our user database
 type MysqlStore struct {
-	db *sql.DB
+	DB *sql.DB
 }
 
 // A partially constructed sql query to use in getter functions
 const queryString = "SELECT * FROM users WHERE"
 
-//NewMysqlStore creates data source name which can be used to connect to the user database
+//NewMysqlStore creates an open database connection to do queries and transactions on
 func NewMysqlStore() *MysqlStore {
 	// See docker run command for env vars that define database name & password
 	dsn := fmt.Sprintf("root:%s@tcp(127.0.0.1:3306)/insert-database-name-here", os.Getenv("MYSQL_ROOT_PASSWORD"))
 	// We are using a persistent connection for all transactions
 	db, _ := sql.Open("mysql", dsn)
 	return &MysqlStore{
-		db: db,
+		DB: db,
 	}
 }
 
@@ -34,7 +34,7 @@ func (ms *MysqlStore) GetBy(query string, value string) (*User, error) {
 	// Creates a new user object to populate with the query for a single row
 	user := User{}
 	insq := queryString + query
-	row := ms.db.QueryRow(insq, value)
+	row := ms.DB.QueryRow(insq, value)
 	// Populating the new user
 	err := row.Scan(&user.ID, &user.Email, &user.PassHash, &user.UserName,
 		&user.FirstName, &user.LastName, &user.PhotoURL)
@@ -78,7 +78,7 @@ func (ms *MysqlStore) Insert(user *User) (*User, error) {
 	// injection attacks
 
 	// Open a reserved connection to make an individual transaction
-	tx, _ := ms.db.Begin()
+	tx, _ := ms.DB.Begin()
 	insq := "INSERT INTO users(email, passHash, username, firstname, lastname, photoURL) VALUES (?,?,?,?,?,?)"
 	res, err := tx.Exec(insq, user.Email, user.PassHash, user.UserName,
 		user.FirstName, user.LastName, user.PhotoURL)
@@ -108,7 +108,7 @@ func (ms *MysqlStore) Insert(user *User) (*User, error) {
 func (ms *MysqlStore) Update(id int64, updates *Updates) (*User, error) {
 
 	// Open a reserved connection to db to make an individual transaction
-	tx, _ := ms.db.Begin()
+	tx, _ := ms.DB.Begin()
 	insq := "UPDATE users SET firstname = ?, lastname = ? WHERE ID = ?"
 	// This will close the prepared statement once Exec is called
 	_, err := tx.Exec(insq, updates.FirstName, updates.LastName, strconv.FormatInt(id, 10))
@@ -127,7 +127,7 @@ func (ms *MysqlStore) Update(id int64, updates *Updates) (*User, error) {
 func (ms *MysqlStore) Delete(id int64) error {
 
 	// Open a reserved connection to db to make an individual transaction
-	tx, _ := ms.db.Begin()
+	tx, _ := ms.DB.Begin()
 	insq := "DELETE FROM users WHERE ID = ?"
 	// This will close the prepared statement once Exec is called
 	_, err := tx.Exec(insq, strconv.FormatInt(id, 10))

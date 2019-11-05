@@ -26,7 +26,7 @@ func TestGetByID(t *testing.T) {
 
 	// passes the mock to our struct
 	var ms = MysqlStore{}
-	ms.db = db
+	ms.DB = db
 
 	// now we execute our method with the mock
 	if user, err := ms.GetByID(1); err != nil {
@@ -57,7 +57,7 @@ func TestGetByIDExpectError(t *testing.T) {
 
 	// passes the mock to our struct
 	var ms = MysqlStore{}
-	ms.db = db
+	ms.DB = db
 
 	// now we execute our method with the mock
 	if user, err := ms.GetByID(-1); err == nil {
@@ -89,7 +89,7 @@ func TestGetByEmail(t *testing.T) {
 
 	// passes the mock to our struct
 	var ms = MysqlStore{}
-	ms.db = db
+	ms.DB = db
 
 	// now we execute our method with the mock
 	if user, err := ms.GetByEmail("user@domain.com"); err != nil {
@@ -121,7 +121,7 @@ func TestGetByUsername(t *testing.T) {
 
 	// passes the mock to our struct
 	var ms = MysqlStore{}
-	ms.db = db
+	ms.DB = db
 
 	// now we execute our method with the mock
 	if user, err := ms.GetByUserName("Sam"); err != nil {
@@ -165,7 +165,7 @@ func TestInsert(t *testing.T) {
 
 	// passes the mock to our struct
 	var ms = MysqlStore{}
-	ms.db = db
+	ms.DB = db
 
 	// now we execute our method with the mock
 	if _, err := ms.Insert(u); err != nil {
@@ -202,7 +202,7 @@ func TestExpectErrorInsert(t *testing.T) {
 
 	// passes the mock to our struct
 	var ms = MysqlStore{}
-	ms.db = db
+	ms.DB = db
 
 	// now we execute our method with the mock
 	if _, err := ms.Insert(u); err == nil {
@@ -241,7 +241,7 @@ func TestUpdate(t *testing.T) {
 
 	// passes the mock to our struct
 	var ms = MysqlStore{}
-	ms.db = db
+	ms.DB = db
 
 	// now we execute our method with the mock
 	if _, err := ms.Update(id, updates); err != nil {
@@ -276,7 +276,7 @@ func TestUpdateExpectError(t *testing.T) {
 
 	// passes the mock to our struct
 	var ms = MysqlStore{}
-	ms.db = db
+	ms.DB = db
 
 	// now we execute our method with the mock
 	if _, err := ms.Update(id, updates); err == nil {
@@ -310,7 +310,7 @@ func TestDelete(t *testing.T) {
 
 	// passes the mock to our struct
 	var ms = MysqlStore{}
-	ms.db = db
+	ms.DB = db
 
 	// now we execute our method with the mock
 	if err := ms.Delete(id); err != nil {
@@ -344,7 +344,7 @@ func TestDeleteExpectError(t *testing.T) {
 
 	// passes the mock to our struct
 	var ms = MysqlStore{}
-	ms.db = db
+	ms.DB = db
 
 	// now we execute our method with the mock
 	if err := ms.Delete(id); err == nil {

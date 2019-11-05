@@ -1,14 +1,23 @@
 package users
 
 import (
+	"database/sql"
 	"errors"
 )
 
 //ErrUserNotFound is returned when the user can't be found
 var ErrUserNotFound = errors.New("user not found")
 
+//MyStore represents a connection to our user database
+type MyStore struct {
+	DB *sql.DB
+}
+
 //Store represents a store for Users
 type Store interface {
+	//NewStore returns the Store with an open database connection to do queries and transactions on
+	NewStore() *MyStore
+
 	//GetByID returns the User with the given ID
 	GetByID(id int64) (*User, error)
 
