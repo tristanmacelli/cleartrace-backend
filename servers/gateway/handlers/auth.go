@@ -118,11 +118,7 @@ func (ctx *HandlerContext) SpecificUserHandler(w http.ResponseWriter, r *http.Re
 		formatResponse(w, http.StatusOK, userJSON)
 		// Patch
 	} else {
-		// Conditionally convert the userID into an int to be able to compare with the corresponding authenticated user
-
-		// 1 in the second case after the != is a mock of the currently authenticated user
-
-		if userID[1] != "me" && userID[1] != 1 {
+		if userID[1] != "me" && userID[1] != sessionID.String() {
 			http.Error(w, "You are unauthorized to perform this action", http.StatusForbidden)
 			return
 		}
