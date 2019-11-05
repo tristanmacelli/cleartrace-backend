@@ -174,26 +174,40 @@ func (ctx *HandlerContext) SessionsHandler(w http.ResponseWriter, r *http.Reques
 			return
 		}
 		// log all successful user sign-in attempts
-		uid := user.ID
-		timeOfSignIn := time.Now()
-		clientIP := r.RemoteAddr
-		ips := r.Header.Get("X-Forwarded-For")
-
-		if len(ips) > 1 {
-			clientIP = strings.Split(ips, ",")[0]
-		} else if len(ips) == 1 {
-			clientIP = ips
-		}
-		store := *ctx.User
-		db := store.NewStore()
-		tx, _ := db.DB.Begin()
-		insq := "INSERT INTO userSignIn(userID, signinDT, ip) VALUES (?,?,?)"
-		res, err := tx.Exec(insq, uid, timeOfSignIn, clientIP)
+		ctx.logSuccessfulSignIns(user, r)
 
 		userJSON := encodeUser(user)
 		ctx.beginSession(user, w)
 		formatResponse(w, http.StatusCreated, userJSON)
 	}
+}
+
+//logSuccessfulSignIns does something
+func (ctx *HandlerContext) logSuccessfulSignIns(user *users.User, r *http.Request) {
+	uid := user.ID
+	timeOfSignIn := time.Now()
+	clientIP := r.RemoteAddr
+	ips := r.Header.Get("X-Forwarded-For")
+
+	if len(ips) > 1 {
+		clientIP = strings.Split(ips, ",")[0]
+	} else if len(ips) == 1 {
+		clientIP = ips
+	}
+	store := *ctx.User
+	db := store.NewStore()
+	tx, _ := db.DB.Begin()
+	insq := "INSERT INTO userSignIn(userID, signinDT, ip) VALUES (?,?,?)"
+	_, err := tx.Exec(insq, uid, timeOfSignIn, clientIP)
+
+	if err != nil {
+		fmt.Printf("error inserting new row: %v\n", err)
+		// Close the reserved connection upon failure
+		tx.Rollback()
+		return
+	}
+	// Close the reserved connection upon success
+	tx.Commit()
 }
 
 // SpecificSessionsHandler does something
