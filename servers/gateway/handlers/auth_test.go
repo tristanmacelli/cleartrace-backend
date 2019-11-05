@@ -4,6 +4,7 @@ import (
 	"assignments-Tristan6/servers/gateway/models/users"
 	"assignments-Tristan6/servers/gateway/sessions"
 	"bytes"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -12,6 +13,13 @@ import (
 	"github.com/DATA-DOG/go-sqlmock"
 )
 
+// var nu users.NewUser
+// 	nu.Password = "mypassword123"
+// 	nu.PasswordConf = "mypassword123"
+// 	nu.UserName = "TMcGee123"
+// 	nu.Email = "myexampleEmail@live.com"
+// 	nu.FirstName = "Tester"
+// 	nu.LastName = "McGee"
 func TestUserHandler(t *testing.T) {
 
 	//email        string `json:"email"`
@@ -21,14 +29,15 @@ func TestUserHandler(t *testing.T) {
 	// FirstName    string `json:"firstName"`
 	// LastName
 
-	// jsonBody := []byte({
-	//     "Email":        "myexampleEmail@live.com",
-	//     "Password":     "mypassword123",
-	//     "PasswordConf": "mypassword123",
-	//     "UserName":     "TMcGee123",
-	//     "FirstName":    "Tester",
-	//     "LastName":     "McGee"
-	// })
+	valueMap := map[string]string{
+		"Email":        "myexampleEmail@live.com",
+		"Password":     "mypassword123",
+		"PasswordConf": "mypassword123",
+		"UserName":     "TMcGee123",
+		"FirstName":    "Tester",
+		"LastName":     "McGee",
+	}
+	jsonBody, _ := json.Marshal(valueMap)
 
 	req, err := http.NewRequest("POST", "v1/users/", bytes.NewBuffer(jsonBody))
 	if err != nil {
@@ -38,13 +47,12 @@ func TestUserHandler(t *testing.T) {
 
 	db, mock, err := sqlmock.New()
 	var ms = users.MysqlStore{}
-	ms.db = db
+	ms.DB = db
 
 	store := sessions.NewMemStore(time.Hour, time.Minute)
-	// sid, err := newSessionStore()
 
 	// func NewHandlerContext(key string, user *users.Store, session *sessions.Store) *HandlerContext {
-	ctx := NewHandlerContext("anything", db, store)
+	ctx := NewHandlerContext("anything", ms.DB, store)
 	rr := httptest.NewRecorder()
 	handler := http.HandlerFunc(ctx.UsersHandler)
 	handler.ServeHTTP(rr, req)
