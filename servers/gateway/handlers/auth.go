@@ -86,8 +86,25 @@ func (ctx *HandlerContext) SpecificUserHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 	//Authentication process
+	// Check the values in the authentication handler passed to the responsewriter
+	authValue := r.Header.Get("Authorization")
+	sessionID, err := sessions.GetSessionID(r, authValue)
+	if err != nil {
+		http.Error(w, "You are not authenticated", http.StatusUnauthorized)
+		return
+	}
+
+	// Checking if the authenticated is in the redis db
+	var sessionState SessionState
+	session := *ctx.Session
+	err = session.Get(sessionID, sessionState)
+	if err != nil {
+		http.Error(w, "You are not authenticated", http.StatusUnauthorized)
+		return
+	}
 
 	var userID []string = strings.Split(r.URL.String(), "users/")
+
 	if r.Method == http.MethodGet {
 		dbUser := *ctx.User
 		id, _ := strconv.ParseInt(userID[1], 10, 64)
@@ -154,26 +171,28 @@ func (ctx *HandlerContext) SessionsHandler(w http.ResponseWriter, r *http.Reques
 			http.Error(w, "invalid credentials", http.StatusUnauthorized)
 			return
 		}
-		//TODO: log all user sign-in attempts
-		// uid := user.ID
-		// timeOfSignIn := time.Now()
-		// clientIP := r.RemoteAddr
-		// ips := r.Header.Get("X-Forwarded-For")
-
-		// if len(ips) > 1 {
-		// 	clientIP = strings.Split(ips, ",")[0]
-		// } else if len(ips) == 1 {
-		// 	clientIP = ips
-		// }
-		// tx, _ := ctx.User.db.Begin()
-		// insq := "INSERT INTO userSignIn(userID, signinDT, ip) VALUES (?,?,?)"
-		// res, err := tx.Exec(insq, uid, timeOfSignIn, clientIP)
 
 		err = user.Authenticate(creds.Password)
 		if err != nil {
 			http.Error(w, "invalid credentials", http.StatusUnauthorized)
 			return
 		}
+		// log all successful user sign-in attempts
+		uid := user.ID
+		timeOfSignIn := time.Now()
+		clientIP := r.RemoteAddr
+		ips := r.Header.Get("X-Forwarded-For")
+
+		if len(ips) > 1 {
+			clientIP = strings.Split(ips, ",")[0]
+		} else if len(ips) == 1 {
+			clientIP = ips
+		}
+		store := *ctx.User
+		db := store.NewStore()
+		tx, _ := db.DB.Begin()
+		insq := "INSERT INTO userSignIn(userID, signinDT, ip) VALUES (?,?,?)"
+		res, err := tx.Exec(insq, uid, timeOfSignIn, clientIP)
 
 		userJSON := encodeUser(user)
 		ctx.beginSession(user, w)
