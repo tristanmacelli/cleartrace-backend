@@ -94,14 +94,14 @@ func (ctx *HandlerContext) SpecificUserHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	// Checking if the authenticated is in the redis db
-	var sessionState SessionState
-	session := *ctx.Session
-	err = session.Get(sessionID, sessionState)
-	if err != nil {
-		http.Error(w, "You are not authenticated", http.StatusUnauthorized)
-		return
-	}
+	// // Checking if the authenticated is in the redis db
+	// var sessionState SessionState
+	// session := *ctx.Session
+	// err = session.Get(sessionID, sessionState)
+	// if err != nil {
+	// 	http.Error(w, "You are not authenticated", http.StatusUnauthorized)
+	// 	return
+	// }
 
 	var userID []string = strings.Split(r.URL.String(), "users/")
 

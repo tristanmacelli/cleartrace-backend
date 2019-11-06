@@ -8,9 +8,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"time"
-
-	"github.com/DATA-DOG/go-sqlmock"
 )
 
 // var nu users.NewUser
@@ -45,14 +42,11 @@ func TestUserHandler(t *testing.T) {
 	}
 	req.Header.Set("Content-Type", "application/json")
 
-	db, mock, err := sqlmock.New()
-	var ms = users.MysqlStore{}
-	ms.DB = db
-
-	store := sessions.NewMemStore(time.Hour, time.Minute)
+	userStore := users.UserStore{}
+	sessionStore := sessions.SessionStore{}
 
 	// func NewHandlerContext(key string, user *users.Store, session *sessions.Store) *HandlerContext {
-	ctx := NewHandlerContext("anything", ms.DB, store)
+	ctx := NewHandlerContext("anything", userStore.Store, sessionStore.Store)
 	rr := httptest.NewRecorder()
 	handler := http.HandlerFunc(ctx.UsersHandler)
 	handler.ServeHTTP(rr, req)

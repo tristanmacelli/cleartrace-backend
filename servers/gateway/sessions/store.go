@@ -8,12 +8,19 @@ import (
 //session id was not found in the store
 var ErrStateNotFound = errors.New("no session state was found in the session store")
 
+//SessionStore does something
+type SessionStore struct {
+	Store *Store
+}
+
 //Store represents a session data store.
 //This is an abstract interface that can be implemented
 //against several different types of data stores. For example,
 //session data could be stored in memory in a concurrent map,
 //or more typically in a shared key/value server store like redis.
 type Store interface {
+	NewStore() *SessionStore
+
 	//Save saves the provided `sessionState` and associated SessionID to the store.
 	//The `sessionState` parameter is typically a pointer to a struct containing
 	//all the data you want to associated with the given SessionID.
