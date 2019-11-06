@@ -12,7 +12,19 @@ import (
 //and verifying SessionIDs, the session store
 //and the user store
 type HandlerContext struct {
-	Key     string
-	User    *users.MysqlStore
-	Session *sessions.RedisStore
+	Key          string
+	UserStore    *users.Store
+	SessionStore *sessions.RedisStore
+}
+
+// NewHandlerContext does something
+func NewHandlerContext(key string, userStore users.Store, sessionStore *sessions.RedisStore) *HandlerContext {
+	if len(key) == 0 {
+		panic("No User key")
+	} else if userStore == nil {
+		panic("No user")
+	} else if sessionStore == nil {
+		panic("No Session")
+	}
+	return &HandlerContext{key, userStore, sessionStore}
 }

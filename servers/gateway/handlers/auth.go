@@ -16,18 +16,6 @@ import (
 //struct as the receiver on these functions so that you have
 //access to things like the session store and user store.
 
-// NewHandlerContext does something
-func NewHandlerContext(key string, user *users.MysqlStore, session *sessions.RedisStore) *HandlerContext {
-	if len(key) == 0 {
-		panic("No User key")
-	} else if user == nil {
-		panic("No user")
-	} else if session == nil {
-		panic("No Session")
-	}
-	return &HandlerContext{key, user, session}
-}
-
 // UsersHandler does something
 func (ctx *HandlerContext) UsersHandler(w http.ResponseWriter, r *http.Request) {
 	// check for POST
@@ -48,13 +36,6 @@ func (ctx *HandlerContext) UsersHandler(w http.ResponseWriter, r *http.Request) 
 	if err != nil {
 		panic(err)
 	}
-	// create a new user
-	// nu.Email = jsonBody.Email
-	// nu.Password = jsonBody.Password
-	// nu.PasswordConf = jsonBody.PasswordConf
-	// nu.UserName = jsonBody.UserName
-	// nu.FirstName = jsonBody.FirstName
-	// nu.LastNamw = jsonBody.LastName
 
 	user, err := nu.ToUser()
 	if err != nil {
@@ -62,8 +43,8 @@ func (ctx *HandlerContext) UsersHandler(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// save user to database
-	dbUser := *ctx.User
-	user, err = dbUser.Insert(user)
+	userStore := *ctx.UserStore
+	user, err = userStore.Insert(user)
 	if err != nil {
 		fmt.Errorf("Could not insert user to DB")
 	}
@@ -72,7 +53,7 @@ func (ctx *HandlerContext) UsersHandler(w http.ResponseWriter, r *http.Request) 
 	fmt.Println()
 	fmt.Println("userID is: ", user.ID)
 	fmt.Println()
-	user, err = dbUser.GetByID(user.ID)
+	user, err = userStore.GetByID(user.ID)
 	if err != nil {
 		fmt.Errorf("id does not contain the db primary key value")
 	}
@@ -99,7 +80,7 @@ func (ctx *HandlerContext) SpecificUserHandler(w http.ResponseWriter, r *http.Re
 
 	// // Checking if the authenticated is in the redis db
 	// var sessionState SessionState
-	// session := *ctx.Session
+	// session := *ctx.SessionStore
 	// err = session.Get(sessionID, sessionState)
 	// if err != nil {
 	// 	http.Error(w, "You are not authenticated", http.StatusUnauthorized)
@@ -109,9 +90,9 @@ func (ctx *HandlerContext) SpecificUserHandler(w http.ResponseWriter, r *http.Re
 	var userID []string = strings.Split(r.URL.String(), "users/")
 
 	if r.Method == http.MethodGet {
-		dbUser := *ctx.User
+		userStore := *ctx.UserStore
 		id, _ := strconv.ParseInt(userID[1], 10, 64)
-		user, err := dbUser.GetByID(id)
+		user, err := userStore.GetByID(id)
 
 		if user.FirstName == "" && err == nil {
 			http.Error(w, "There is no user with the corresponding ID", http.StatusNotFound)
@@ -138,8 +119,8 @@ func (ctx *HandlerContext) SpecificUserHandler(w http.ResponseWriter, r *http.Re
 			panic(err)
 		}
 
-		dbUser := *ctx.User
-		user, err := dbUser.Update(1, &up)
+		userStore := *ctx.UserStore
+		user, err := userStore.Update(1, &up)
 		userJSON := encodeUser(user)
 		formatResponse(w, http.StatusOK, userJSON)
 	}
@@ -163,8 +144,8 @@ func (ctx *HandlerContext) SessionsHandler(w http.ResponseWriter, r *http.Reques
 			panic(err)
 		}
 
-		dbUser := *ctx.User
-		user, err := dbUser.GetByEmail(creds.Email)
+		userStore := *ctx.UserStore
+		user, err := userStore.GetByEmail(creds.Email)
 		// TODO: do something that would take about the same amount of time as authenticating
 		if err != nil {
 			http.Error(w, "invalid credentials", http.StatusUnauthorized)
@@ -177,39 +158,12 @@ func (ctx *HandlerContext) SessionsHandler(w http.ResponseWriter, r *http.Reques
 			return
 		}
 		// log all successful user sign-in attempts
-		ctx.logSuccessfulSignIns(user, r)
+		userStore.LogSuccessfulSignIns(user, r)
 
 		userJSON := encodeUser(user)
 		ctx.beginSession(user, w)
 		formatResponse(w, http.StatusCreated, userJSON)
 	}
-}
-
-//logSuccessfulSignIns does something
-func (ctx *HandlerContext) logSuccessfulSignIns(user *users.User, r *http.Request) {
-	uid := user.ID
-	timeOfSignIn := time.Now()
-	clientIP := r.RemoteAddr
-	ips := r.Header.Get("X-Forwarded-For")
-
-	if len(ips) > 1 {
-		clientIP = strings.Split(ips, ",")[0]
-	} else if len(ips) == 1 {
-		clientIP = ips
-	}
-	db := *ctx.User.DB
-	tx, _ := db.Begin()
-	insq := "INSERT INTO userSignIn(userID, signinDT, ip) VALUES (?,?,?)"
-	_, err := tx.Exec(insq, uid, timeOfSignIn, clientIP)
-
-	if err != nil {
-		fmt.Printf("error inserting new row: %v\n", err)
-		// Close the reserved connection upon failure
-		tx.Rollback()
-		return
-	}
-	// Close the reserved connection upon success
-	tx.Commit()
 }
 
 // SpecificSessionsHandler does something
@@ -223,7 +177,7 @@ func (ctx *HandlerContext) SpecificSessionsHandler(w http.ResponseWriter, r *htt
 			http.Error(w, "access denied", http.StatusForbidden)
 			return
 		}
-		_, err := sessions.EndSession(r, ctx.Key, ctx.Session)
+		_, err := sessions.EndSession(r, ctx.Key, ctx.SessionStore)
 		if err != nil {
 			fmt.Errorf("Could not end session")
 		}
@@ -256,7 +210,7 @@ func (ctx *HandlerContext) beginSession(user *users.User, w http.ResponseWriter)
 	sessionState.User = user
 	sessionState.BeginTime = time.Now()
 
-	_, err := sessions.BeginSession(ctx.Key, ctx.Session, sessionState, w)
+	_, err := sessions.BeginSession(ctx.Key, ctx.SessionStore, sessionState, w)
 	if err != nil {
 		fmt.Errorf("Could not begin session")
 	}

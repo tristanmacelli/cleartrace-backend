@@ -3,8 +3,11 @@ package users
 import (
 	"database/sql"
 	"fmt"
+	"net/http"
 	"os"
 	"strconv"
+	"strings"
+	"time"
 
 	// Necessary to run db commands
 	_ "github.com/go-sql-driver/mysql"
@@ -73,8 +76,7 @@ func (ms *MysqlStore) GetByUserName(username string) (*User, error) {
 //Insert inserts the user into the database, and returns
 //the newly-inserted User, complete with the DBMS-assigned ID
 func (ms *MysqlStore) Insert(user *User) (*User, error) {
-	// This inserts a new row into the "users" table
-	// Using ? markers for the values will defeat SQL
+	// This inserts a new row into the "users" table Using ? markers for the values will defeat SQL
 	// injection attacks
 
 	insq := "INSERT INTO users(email, passHash, username, firstname, lastname, photoURL) VALUES (?,?,?,?,?,?)"
@@ -85,7 +87,6 @@ func (ms *MysqlStore) Insert(user *User) (*User, error) {
 		fmt.Printf("error inserting new row: %v\n", err)
 		return nil, err
 	}
-
 	//get the auto-assigned ID for the new row
 	id, err := res.LastInsertId()
 	if err != nil {
@@ -95,6 +96,27 @@ func (ms *MysqlStore) Insert(user *User) (*User, error) {
 	fmt.Printf("ID for new row is %d\n", id)
 	// Get and return this new user
 	return ms.GetByID(id)
+}
+
+//LogSuccessfulSignIns does something
+func (ms *MysqlStore) LogSuccessfulSignIns(user *User, r *http.Request) {
+	uid := user.ID
+	timeOfSignIn := time.Now()
+	clientIP := r.RemoteAddr
+	ips := r.Header.Get("X-Forwarded-For")
+
+	if len(ips) > 1 {
+		clientIP = strings.Split(ips, ",")[0]
+	} else if len(ips) == 1 {
+		clientIP = ips
+	}
+	insq := "INSERT INTO userSignIn(userID, signinDT, ip) VALUES (?,?,?)"
+	_, err := ms.DB.Exec(insq, uid, timeOfSignIn, clientIP)
+
+	if err != nil {
+		fmt.Printf("error inserting new row: %v\n", err)
+		return
+	}
 }
 
 //Update applies UserUpdates to the given user ID
