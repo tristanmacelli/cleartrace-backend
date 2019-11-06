@@ -77,20 +77,14 @@ func (ms *MysqlStore) Insert(user *User) (*User, error) {
 	// Using ? markers for the values will defeat SQL
 	// injection attacks
 
-	// Open a reserved connection to make an individual transaction
-	tx, _ := ms.DB.Begin()
 	insq := "INSERT INTO users(email, passHash, username, firstname, lastname, photoURL) VALUES (?,?,?,?,?,?)"
-	res, err := tx.Exec(insq, user.Email, user.PassHash, user.UserName,
+	res, err := ms.DB.Exec(insq, user.Email, user.PassHash, user.UserName,
 		user.FirstName, user.LastName, user.PhotoURL)
 
 	if err != nil {
 		fmt.Printf("error inserting new row: %v\n", err)
-		// Close the reserved connection upon failure
-		tx.Rollback()
 		return nil, err
 	}
-	// Close the reserved connection upon success
-	tx.Commit()
 
 	//get the auto-assigned ID for the new row
 	id, err := res.LastInsertId()
@@ -106,38 +100,22 @@ func (ms *MysqlStore) Insert(user *User) (*User, error) {
 //Update applies UserUpdates to the given user ID
 //and returns the newly-updated user
 func (ms *MysqlStore) Update(id int64, updates *Updates) (*User, error) {
-
-	// Open a reserved connection to db to make an individual transaction
-	tx, _ := ms.DB.Begin()
 	insq := "UPDATE users SET firstname = ?, lastname = ? WHERE ID = ?"
-	// This will close the prepared statement once Exec is called
-	_, err := tx.Exec(insq, updates.FirstName, updates.LastName, strconv.FormatInt(id, 10))
+	_, err := ms.DB.Exec(insq, updates.FirstName, updates.LastName, strconv.FormatInt(id, 10))
 	if err != nil {
 		fmt.Printf("error updating row: %v\n", err)
-		// Close the reserved connection upon failure
-		tx.Rollback()
 		return nil, err
 	}
-	// Close the reserved connection upon success
-	tx.Commit()
 	return ms.GetByID(id)
 }
 
 //Delete deletes the user with the given ID
 func (ms *MysqlStore) Delete(id int64) error {
-
-	// Open a reserved connection to db to make an individual transaction
-	tx, _ := ms.DB.Begin()
 	insq := "DELETE FROM users WHERE ID = ?"
-	// This will close the prepared statement once Exec is called
-	_, err := tx.Exec(insq, strconv.FormatInt(id, 10))
+	_, err := ms.DB.Exec(insq, strconv.FormatInt(id, 10))
 	if err != nil {
 		fmt.Printf("error deleting row: %v\n", err)
-		// Close the reserved connection upon failure
-		tx.Rollback()
 		return err
 	}
-	// Close the reserved connection upon success
-	tx.Commit()
 	return nil
 }
