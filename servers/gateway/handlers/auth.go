@@ -44,23 +44,23 @@ func (ctx *HandlerContext) UsersHandler(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// save user to database
-	userStore := *ctx.UserStore
-	user, err = userStore.Insert(user)
-	if err != nil {
-		http.Error(w, "Could not save user", http.StatusInternalServerError)
-		return
-	}
+	// userStore := *ctx.UserStore
+	// user, err = userStore.Insert(user)
+	// if err != nil {
+	// 	http.Error(w, "Could not save user", http.StatusInternalServerError)
+	// 	return
+	// }
 
-	// ensure anotherUser contains the new database-assigned primary key value
-	user, err = userStore.GetByID(user.ID)
-	// Unreachable (assuming we succeed to insert, there will be a user with the given ID)
-	if err != nil {
-		http.Error(w, "Could not find user", http.StatusInternalServerError)
-		return
-	}
+	// // ensure anotherUser contains the new database-assigned primary key value
+	// user, err = userStore.GetByID(user.ID)
+	// // Unreachable (assuming we succeed to insert, there will be a user with the given ID)
+	// if err != nil {
+	// 	http.Error(w, "Could not find user", http.StatusInternalServerError)
+	// 	return
+	// }
 
 	userJSON := encodeUser(user)
-	ctx.beginSession(user, w)
+	// ctx.beginSession(user, w)
 	formatResponse(w, http.StatusCreated, userJSON)
 }
 
@@ -91,9 +91,8 @@ func (ctx *HandlerContext) SpecificUserHandler(w http.ResponseWriter, r *http.Re
 	var userID []string = strings.Split(r.URL.String(), "users/")
 
 	if r.Method == http.MethodGet {
-		userStore := *ctx.UserStore
 		id, _ := strconv.ParseInt(userID[1], 10, 64)
-		user, err := userStore.GetByID(id)
+		user, err := ctx.UserStore.GetByID(id)
 
 		// We are checking for a nil value since our GetBy method will not return an
 		// error if there were no matches (since this is not necessarily a failure)
@@ -125,8 +124,7 @@ func (ctx *HandlerContext) SpecificUserHandler(w http.ResponseWriter, r *http.Re
 			panic(err)
 		}
 
-		userStore := *ctx.UserStore
-		user, err := userStore.Update(1, &up)
+		user, err := ctx.UserStore.Update(1, &up)
 		userJSON := encodeUser(user)
 		formatResponse(w, http.StatusOK, userJSON)
 	}
@@ -150,8 +148,7 @@ func (ctx *HandlerContext) SessionsHandler(w http.ResponseWriter, r *http.Reques
 			panic(err)
 		}
 
-		userStore := *ctx.UserStore
-		user, err := userStore.GetByEmail(creds.Email)
+		user, err := ctx.UserStore.GetByEmail(creds.Email)
 		// TODO: do something that would take about the same amount of time as authenticating
 		if err != nil {
 			http.Error(w, "invalid credentials", http.StatusUnauthorized)
@@ -164,7 +161,7 @@ func (ctx *HandlerContext) SessionsHandler(w http.ResponseWriter, r *http.Reques
 			return
 		}
 		// log all successful user sign-in attempts
-		userStore.LogSuccessfulSignIns(user, r)
+		ctx.UserStore.LogSuccessfulSignIns(user, r)
 
 		userJSON := encodeUser(user)
 		ctx.beginSession(user, w)
@@ -217,6 +214,9 @@ func (ctx *HandlerContext) beginSession(user *users.User, w http.ResponseWriter)
 	sessionState.User = user
 	sessionState.BeginTime = time.Now()
 
+	fmt.Println("This is the issue")
+	fmt.Println(ctx.SessionStore)
+	fmt.Println("This is not the issue")
 	_, err := sessions.BeginSession(ctx.Key, ctx.SessionStore, sessionState, w)
 	if err != nil {
 		fmt.Errorf("Could not begin session")
