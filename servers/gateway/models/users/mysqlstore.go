@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"fmt"
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -22,9 +21,9 @@ type MysqlStore struct {
 const queryString = "SELECT * FROM users WHERE"
 
 //NewMysqlStore creates an open database connection to do queries and transactions on
-func NewMysqlStore() *MysqlStore {
-	// See docker run command for env vars that define database name & password
-	dsn := fmt.Sprintf("root:%s@tcp(127.0.0.1:3306)/insert-database-name-here", os.Getenv("MYSQL_ROOT_PASSWORD"))
+// For help on forming dsn (https://drstearns.github.io/tutorials/godb/#secconnectingfromagoprogram)
+// See docker run command for env vars that define database name & password
+func NewMysqlStore(dsn string) *MysqlStore {
 	// We are using a persistent connection for all transactions
 	db, _ := sql.Open("mysql", dsn)
 	return &MysqlStore{
