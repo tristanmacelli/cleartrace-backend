@@ -17,7 +17,7 @@ import (
 //access to things like the session store and user store.
 
 // NewHandlerContext does something
-func NewHandlerContext(key string, user *users.Store, session *sessions.Store) *HandlerContext {
+func NewHandlerContext(key string, user *users.MysqlStore, session *sessions.Store) *HandlerContext {
 	if user == nil {
 		panic("No user")
 	} else if session == nil {
@@ -194,9 +194,8 @@ func (ctx *HandlerContext) logSuccessfulSignIns(user *users.User, r *http.Reques
 	} else if len(ips) == 1 {
 		clientIP = ips
 	}
-	store := *ctx.User
-	db := store.NewStore()
-	tx, _ := db.DB.Begin()
+	db := *ctx.User.DB
+	tx, _ := db.Begin()
 	insq := "INSERT INTO userSignIn(userID, signinDT, ip) VALUES (?,?,?)"
 	_, err := tx.Exec(insq, uid, timeOfSignIn, clientIP)
 

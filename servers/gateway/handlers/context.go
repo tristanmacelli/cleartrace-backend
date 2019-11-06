@@ -13,6 +13,6 @@ import (
 //and the user store
 type HandlerContext struct {
 	Key     string
-	User    *users.Store
+	User    *users.MysqlStore
 	Session *sessions.Store
 }
