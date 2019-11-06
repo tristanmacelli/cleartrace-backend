@@ -17,13 +17,13 @@ import (
 //access to things like the session store and user store.
 
 // NewHandlerContext does something
-func NewHandlerContext(key string, user *users.MysqlStore, session *sessions.Store) *HandlerContext {
-	if user == nil {
+func NewHandlerContext(key string, user *users.MysqlStore, session *sessions.RedisStore) *HandlerContext {
+	if len(key) == 0 {
+		panic("No User key")
+	} else if user == nil {
 		panic("No user")
 	} else if session == nil {
 		panic("No Session")
-	} else if len(key) == 0 {
-		panic("No User key")
 	}
 	return &HandlerContext{key, user, session}
 }
@@ -69,6 +69,9 @@ func (ctx *HandlerContext) UsersHandler(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// ensure anotherUser contains the new database-assigned primary key value
+	fmt.Println()
+	fmt.Println("userID is: ", user.ID)
+	fmt.Println()
 	user, err = dbUser.GetByID(user.ID)
 	if err != nil {
 		fmt.Errorf("id does not contain the db primary key value")
@@ -220,7 +223,7 @@ func (ctx *HandlerContext) SpecificSessionsHandler(w http.ResponseWriter, r *htt
 			http.Error(w, "access denied", http.StatusForbidden)
 			return
 		}
-		_, err := sessions.EndSession(r, ctx.Key, *ctx.Session)
+		_, err := sessions.EndSession(r, ctx.Key, ctx.Session)
 		if err != nil {
 			fmt.Errorf("Could not end session")
 		}
@@ -253,7 +256,7 @@ func (ctx *HandlerContext) beginSession(user *users.User, w http.ResponseWriter)
 	sessionState.User = user
 	sessionState.BeginTime = time.Now()
 
-	_, err := sessions.BeginSession(ctx.Key, *ctx.Session, sessionState, w)
+	_, err := sessions.BeginSession(ctx.Key, ctx.Session, sessionState, w)
 	if err != nil {
 		fmt.Errorf("Could not begin session")
 	}

@@ -14,5 +14,5 @@ import (
 type HandlerContext struct {
 	Key     string
 	User    *users.MysqlStore
-	Session *sessions.Store
+	Session *sessions.RedisStore
 }
