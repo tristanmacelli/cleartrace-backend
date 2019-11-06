@@ -39,23 +39,24 @@ func (ctx *HandlerContext) UsersHandler(w http.ResponseWriter, r *http.Request) 
 
 	user, err := nu.ToUser()
 	if err != nil {
-		fmt.Errorf("Could not create a new user")
+		http.Error(w, "Invalid user information", http.StatusUnprocessableEntity)
+		return
 	}
 
 	// save user to database
 	userStore := *ctx.UserStore
 	user, err = userStore.Insert(user)
 	if err != nil {
-		fmt.Errorf("Could not insert user to DB")
+		http.Error(w, "Could not save user", http.StatusInternalServerError)
+		return
 	}
 
 	// ensure anotherUser contains the new database-assigned primary key value
-	fmt.Println()
-	fmt.Println("userID is: ", user.ID)
-	fmt.Println()
 	user, err = userStore.GetByID(user.ID)
+	// Unreachable (assuming we succeed to insert, there will be a user with the given ID)
 	if err != nil {
-		fmt.Errorf("id does not contain the db primary key value")
+		http.Error(w, "Could not find user", http.StatusInternalServerError)
+		return
 	}
 
 	userJSON := encodeUser(user)
@@ -94,6 +95,11 @@ func (ctx *HandlerContext) SpecificUserHandler(w http.ResponseWriter, r *http.Re
 		id, _ := strconv.ParseInt(userID[1], 10, 64)
 		user, err := userStore.GetByID(id)
 
+		// We are checking for a nil value since our GetBy method will not return an
+		// error if there were no matches (since this is not necessarily a failure)
+		// We are also checking for an unpopulated user field because in the case that nobody
+		// is found, the field will not be populated (in the case that someone is found the
+		// user should always have that value)
 		if user.FirstName == "" && err == nil {
 			http.Error(w, "There is no user with the corresponding ID", http.StatusNotFound)
 			return
@@ -179,7 +185,8 @@ func (ctx *HandlerContext) SpecificSessionsHandler(w http.ResponseWriter, r *htt
 		}
 		_, err := sessions.EndSession(r, ctx.Key, ctx.SessionStore)
 		if err != nil {
-			fmt.Errorf("Could not end session")
+			http.Error(w, "Could not find user", http.StatusInternalServerError)
+			return
 		}
 		w.Write([]byte("signed out"))
 	}

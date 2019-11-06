@@ -91,8 +91,9 @@ func buildRequest(t *testing.T, method string, contentType string, valueMap map[
 	authValue := schemeBearer + sessionID
 	req.Header.Set(headerAuthorization, authValue)
 
-	// db, moc, err := sqlmock.New()
-	dsn := fmt.Sprintf("root:%s@tcp(127.0.0.1:3306)/demo", os.Getenv("MYSQL_ROOT_PASSWORD"))
+	// If we are going to use a concrete user store to test, we need to use the values we
+	// generate from the docker run command to get database-name & MYSQL_ROOT_PASSWORD
+	dsn := fmt.Sprintf("root:%s@tcp(127.0.0.1:3306)/database-name", os.Getenv("MYSQL_ROOT_PASSWORD"))
 	userStore := users.NewMysqlStore(dsn)
 	// Add fields to this after running docker container to run tests
 	sessionStore := sessions.RedisStore{}
@@ -105,6 +106,8 @@ func buildRequest(t *testing.T, method string, contentType string, valueMap map[
 	return rr
 }
 
+// TestUserHandler does something
+// TODO: Check if we need getbyid cases
 func TestUserHandler(t *testing.T) {
 
 	rr := buildRequest(t, "POST", "", correctNewUser, "")
@@ -148,9 +151,43 @@ func TestUserHandler(t *testing.T) {
 		t.Errorf(
 			"we expected an http.StatusUnprocessableEntity but the handler returned wrong status code")
 	}
+
+	// Need test cases for INSERT
+	rr = buildRequest(t, "POST", "application/json", correctNewUser, "")
+	// SUCCESS CASE
+	if status := rr.Code; status == http.StatusInternalServerError {
+		t.Errorf(
+			"we did not expect a http.StatusInternalServerError but the handler returned this status code")
+	}
+
+	// Pass incorrect dsn/invalid store reference
+	rr = buildRequest(t, "POST", "application/json", correctNewUser, "")
+	// FAIL CASE
+	if status := rr.Code; status != http.StatusInternalServerError {
+		t.Errorf(
+			"we expected an http.StatusInternalServerError but the handler returned wrong status code")
+	}
+
+	// Need test cases for GetByID
+	// Unnecessary? Since INSERT success implies that there will be a user therefore no way to test
+	// a user without that ID
+	rr = buildRequest(t, "POST", "application/json", correctNewUser, "")
+	// SUCCESS CASE
+	if status := rr.Code; status == http.StatusInternalServerError {
+		t.Errorf(
+			"we did not expect a http.StatusInternalServerError but the handler returned this status code")
+	}
+
+	rr = buildRequest(t, "POST", "application/json", correctNewUser, "")
+	// FAIL CASE
+	if status := rr.Code; status != http.StatusInternalServerError {
+		t.Errorf(
+			"we expected an http.StatusInternalServerError but the handler returned wrong status code")
+	}
 }
 
 // TestSpecificUserHandler does something
+// All test cases written
 func TestSpecificUserHandler(t *testing.T) {
 	rr := buildRequest(t, "GET", "application/json", correctNewUser, "")
 	// SUCCESS CASE
@@ -172,8 +209,94 @@ func TestSpecificUserHandler(t *testing.T) {
 			"we expected an http.StatusMethodNotAllowed but the handler returned wrong status code: got %v want %v",
 			status, http.StatusMethodNotAllowed)
 	}
+
+	// Need test cases for GetSessionID
+	// passing sessionid in ctx that does exist in our sessions
+	rr = buildRequest(t, "GET", "application/json", correctNewUser, "1234")
+	// SUCCESS CASE
+	if status := rr.Code; status == http.StatusUnauthorized {
+		t.Errorf(
+			"we did not expect a http.StatusNotFound but the handler returned this status code")
+	}
+
+	// passing sessionid in ctx that does not exist in our sessions
+	rr = buildRequest(t, "GET", "alication/json", correctNewUser, "123")
+	// FAIL CASE
+	if status := rr.Code; status != http.StatusUnauthorized {
+		t.Errorf(
+			"we expected an http.StatusNotFound but the handler returned wrong status code")
+	}
+
+	// In If branch
+	// Need test cases for GetByID when using GET method
+	// passing sessionid in path does exist in our sessions
+	rr = buildRequest(t, "GET", "application/json", correctNewUser, "1234")
+	// SUCCESS CASE
+	if status := rr.Code; status == http.StatusNotFound {
+		t.Errorf(
+			"we did not expect a http.StatusNotFound but the handler returned this status code")
+	}
+
+	// passing sessionid in path that does not exist in our sessions
+	rr = buildRequest(t, "GET", "alication/json", correctNewUser, "123")
+	// FAIL CASE
+	if status := rr.Code; status != http.StatusNotFound {
+		t.Errorf(
+			"we expected an http.StatusNotFound but the handler returned wrong status code")
+	}
+
+	// In else branch
+	// Need test cases for authenticated OR matching sessionID
+	// TODO: Refactor build request to accept an sessionID to handle this testing
+	rr = buildRequest(t, "PATCH", "application/json", correctNewUser, "1234")
+	// SUCCESS CASE
+	if status := rr.Code; status == http.StatusForbidden {
+		t.Errorf(
+			"we did not expect a http.StatusForbidden but the handler returned this status code")
+	}
+
+	rr = buildRequest(t, "PATCH", "application/json", correctNewUser, "me")
+	// SUCCESS CASE
+	if status := rr.Code; status == http.StatusForbidden {
+		t.Errorf(
+			"we did not expect a http.StatusForbidden but the handler returned this status code")
+	}
+
+	// User is authorized, but not allowed to access user id 123
+	rr = buildRequest(t, "PATCH", "alication/json", correctNewUser, "123")
+	// FAIL CASE
+	if status := rr.Code; status != http.StatusUnsupportedMediaType {
+		t.Errorf(
+			"we expected an http.StatusUnsupportedMediaType but the handler returned wrong status code")
+	}
+
+	// malformed path
+	rr = buildRequest(t, "PATCH", "alication/json", correctNewUser, "m")
+	// FAIL CASE
+	if status := rr.Code; status != http.StatusUnsupportedMediaType {
+		t.Errorf(
+			"we expected an http.StatusUnsupportedMediaType but the handler returned wrong status code")
+	}
+
+	// Checking for correct headers
+	rr = buildRequest(t, "PATCH", "application/json", correctNewUser, "")
+	// SUCCESS CASE
+	if status := rr.Code; status == http.StatusUnsupportedMediaType {
+		t.Errorf(
+			"we did not expect a http.StatusUnsupportedMediaType but the handler returned this status code")
+	}
+
+	rr = buildRequest(t, "PATCH", "alication/json", correctNewUser, "")
+	// FAIL CASE
+	if status := rr.Code; status != http.StatusUnsupportedMediaType {
+		t.Errorf(
+			"we expected an http.StatusUnsupportedMediaType but the handler returned wrong status code")
+	}
+
 }
 
+// TestSessionsHandler does something
+// All test cases written
 func TestSessionsHandler(t *testing.T) {
 	rr := buildRequest(t, "POST", "application/json", correctNewUser, "")
 	// SUCCESS CASE
@@ -226,6 +349,7 @@ func TestSessionsHandler(t *testing.T) {
 }
 
 // TestSpecificSessionsHandler does something
+// TODO: Write 2 test cases
 func TestSpecificSessionsHandler(t *testing.T) {
 	rr := buildRequest(t, "DELETE", "application/json", correctNewUser, "")
 	// SUCCESS CASE
@@ -253,6 +377,23 @@ func TestSpecificSessionsHandler(t *testing.T) {
 	if status := rr.Code; status != http.StatusForbidden {
 		t.Errorf(
 			"we expected a http.StatusForbidden but the handler did not return this status code")
+	}
+
+	// Need test cases for EndSession
+	// Pass a signing key that exists in sessions
+	rr = buildRequest(t, "DELETE", "application/json", correctNewUser, "mine")
+	// SUCCESS CASE
+	if status := rr.Code; status == http.StatusInternalServerError {
+		t.Errorf(
+			"we did not expect a http.StatusInternalServerError but the handler returned this status code")
+	}
+
+	// Pass a signing key that does not exist in sessions
+	rr = buildRequest(t, "DELETE", "application/json", incorrectNewUser, "mine")
+	// FAIL CASE
+	if status := rr.Code; status != http.StatusInternalServerError {
+		t.Errorf(
+			"we expected a http.StatusInternalServerError but the handler did not return this status code")
 	}
 }
 

@@ -13,12 +13,12 @@ import (
 //and the user store
 type HandlerContext struct {
 	Key          string
-	UserStore    *users.Store
+	UserStore    *users.MysqlStore
 	SessionStore *sessions.RedisStore
 }
 
 // NewHandlerContext does something
-func NewHandlerContext(key string, userStore users.Store, sessionStore *sessions.RedisStore) *HandlerContext {
+func NewHandlerContext(key string, userStore *users.MysqlStore, sessionStore *sessions.RedisStore) *HandlerContext {
 	if len(key) == 0 {
 		panic("No User key")
 	} else if userStore == nil {
