@@ -44,12 +44,6 @@ func (ctx *HandlerContext) UsersHandler(w http.ResponseWriter, r *http.Request) 
 
 	// ensure anotherUser contains the new database-assigned primary key value
 	user, _ = userStore.GetByID(user.ID)
-	// Unreachable (assuming we succeed to insert, there will be a user with the given ID)
-	// if err != nil {
-	// 	http.Error(w, "Could not find user", http.StatusInternalServerError)
-	// 	return
-	// }
-
 	userJSON := encodeUser(user)
 	ctx.beginSession(user, w)
 	formatResponse(w, http.StatusCreated, userJSON)
@@ -63,6 +57,7 @@ func (ctx *HandlerContext) SpecificUserHandler(w http.ResponseWriter, r *http.Re
 	}
 	//Authentication process
 	// Check the values in the authentication handler passed to the responsewriter
+
 	authValue := r.Header.Get("Authorization")
 	sessionID, err := sessions.GetSessionID(r, authValue)
 	if err != nil {
