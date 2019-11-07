@@ -12,31 +12,6 @@ import (
 	"time"
 )
 
-// NewUser Formats
-// var nu users.NewUser
-// 	nu.Password = "mypassword123"
-// 	nu.PasswordConf = "mypassword123"
-// 	nu.UserName = "TMcGee123"
-// 	nu.Email = "myexampleEmail@live.com"
-// 	nu.FirstName = "Tester"
-// 	nu.LastName = "McGee"
-
-//email        string `json:"email"`
-// Password     string `json:"password"`
-// PasswordConf string `json:"passwordConf"`
-// UserName     string `json:"userName"`
-// FirstName    string `json:"firstName"`
-// LastName
-
-// User format
-// ID        int64  `json:"id"`
-// Email     string `json:"-"` //never JSON encoded/decoded
-// PassHash  []byte `json:"-"` //never JSON encoded/decoded
-// UserName  string `json:"userName"`
-// FirstName string `json:"firstName"`
-// LastName  string `json:"lastName"`
-// PhotoURL
-
 var correctNewUser = map[string]string{
 	"Email":        "myexampleEmail@live.com",
 	"Password":     "mypassword123",
@@ -164,7 +139,7 @@ func buildCtxSpecificUser(t *testing.T, method string, contentType string,
 
 	ctx := NewHandlerContext("1234", userStore, sessionStore)
 	rr := httptest.NewRecorder()
-	// sessions.BeginSession(testID, sessionStore, sessionState, rr)
+	sessions.BeginSession(testID, sessionStore, sessionState, rr)
 	handler := http.HandlerFunc(ctx.SpecificUserHandler)
 	handler.ServeHTTP(rr, req)
 	return rr
@@ -278,7 +253,6 @@ func TestUserHandler(t *testing.T) {
 }
 
 // TestSpecificUserHandler does something
-// All test cases written
 // Authorization dependent test cases (6) not operational
 func TestSpecificUserHandler(t *testing.T) {
 	rr := buildCtxSpecificUser(t, "GET", "application/json", correctNewUser, "", "1234", true, false)
@@ -305,7 +279,8 @@ func TestSpecificUserHandler(t *testing.T) {
 	//
 
 	// Test cases for GetSessionID
-	// THESE CURRENTLY DO NOT WORK FOR UNKNOWN REASONS
+	// THESE CURRENTLY DO NOT WORK BECAUSE WE WERE SURE HOW TO SAVE TO THE SESSIONID TO
+	// THE SESSION STORE FOR TESTING PURPOSES.
 	// passing sessionid in ctx that does exist in our sessions
 	// rr = buildCtxSpecificUser(t, "GET", "application/json", correctNewUser, "1234", "1234", true, false)
 	// // SUCCESS CASE
