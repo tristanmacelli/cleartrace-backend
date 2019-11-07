@@ -94,27 +94,21 @@ func buildNewRequest(t *testing.T, method string, contentType string,
 	valueMap map[string]string, pathExtras string, sessionID string) *http.Request {
 
 	jsonBody, _ := json.Marshal(valueMap)
-
 	path := "v1/users/" + pathExtras
 	req, err := http.NewRequest(method, path, bytes.NewBuffer(jsonBody))
 	if err != nil {
 		t.Fatal(err)
 	}
 	req.Header.Set("Content-Type", contentType)
-
 	authValue := schemeBearer + sessionID
 	req.Header.Set(headerAuthorization, authValue)
 	return req
 }
 
 func buildNewStores() (users.Store, sessions.Store) {
-	// If we are going to use a concrete user store to test, we need to use the values we
-	// generate from the docker run command to get database-name & MYSQL_ROOT_PASSWORD
-	// dsn := fmt.Sprintf("root:%s@tcp(127.0.0.1:3306)/database-name", os.Getenv("MYSQL_ROOT_PASSWORD"))
 	ustore := users.MockStore{}
 	var userStore users.Store
 	userStore = &ustore
-	// Add fields to this after running docker container to run tests
 	sStore := sessions.NewMemStore((time.Second * 20), (time.Second * 19))
 	var sessionStore sessions.Store
 	sessionStore = sStore
@@ -122,28 +116,20 @@ func buildNewStores() (users.Store, sessions.Store) {
 }
 
 func buildCtxUser(t *testing.T, method string, contentType string,
-	valueMap map[string]string, err bool) *httptest.ResponseRecorder {
+	valueMap map[string]string, expectedErr bool) *httptest.ResponseRecorder {
 
 	req := buildNewRequest(t, method, contentType, valueMap, "", "1234")
 	userStore, sessionStore := buildNewStores()
 
-	if err {
+	if expectedErr {
 		users.SetErr(errors.New("Could not connect to db"))
 	} else {
 		users.SetErr(nil)
 	}
-	var nu users.NewUser
-	nu.Email = valueMap["Email"]
-	nu.Password = valueMap["Password"]
-	nu.PasswordConf = valueMap["PasswordConf"]
-	nu.UserName = valueMap["UserName"]
-	nu.FirstName = valueMap["FirstName"]
-	nu.LastName = valueMap["LastName"]
-	user, _ := nu.ToUser()
+	user := valueMapToUser(valueMap)
 	users.SetInsertNextReturn(user)
 	users.SetGetByIDNextReturn(user)
 
-	// func NewHandlerContext(key string, user *users.Store, session *sessions.Store) *HandlerContext {
 	ctx := NewHandlerContext("This should be a valid key", userStore, sessionStore)
 	rr := httptest.NewRecorder()
 	handler := http.HandlerFunc(ctx.UsersHandler)
@@ -153,12 +139,12 @@ func buildCtxUser(t *testing.T, method string, contentType string,
 
 func buildCtxSpecificUser(t *testing.T, method string, contentType string,
 	valueMap map[string]string, pathExtras string, sessionID string,
-	foundUser bool, err bool) *httptest.ResponseRecorder {
+	foundUser bool, expectedErr bool) *httptest.ResponseRecorder {
 
 	req := buildNewRequest(t, method, contentType, valueMap, pathExtras, sessionID)
 	userStore, sessionStore := buildNewStores()
 
-	if err {
+	if expectedErr {
 		users.SetErr(errors.New("Attn: No User"))
 	} else {
 		users.SetErr(nil)
@@ -179,22 +165,15 @@ func buildCtxSpecificUser(t *testing.T, method string, contentType string,
 }
 
 func buildCtxSession(t *testing.T, method string, contentType string,
-	valueMap map[string]string, pathExtras string, err bool) *httptest.ResponseRecorder {
+	valueMap map[string]string, pathExtras string, expectedErr bool) *httptest.ResponseRecorder {
 
 	req := buildNewRequest(t, method, contentType, valueMap, pathExtras, "1234")
 	userStore, sessionStore := buildNewStores()
 
-	if err {
+	if expectedErr {
 		users.SetErr(errors.New("Invalid Credentials, try again"))
 	} else {
-		var nu users.NewUser
-		nu.Email = correctNewUser["Email"]
-		nu.Password = correctNewUser["Password"]
-		nu.PasswordConf = correctNewUser["PasswordConf"]
-		nu.UserName = correctNewUser["UserName"]
-		nu.FirstName = correctNewUser["FirstName"]
-		nu.LastName = correctNewUser["LastName"]
-		user, _ := nu.ToUser()
+		user := valueMapToUser(correctNewUser)
 		users.SetGetByEmailNextReturn(user)
 		users.SetErr(nil)
 	}
@@ -522,23 +501,3 @@ func TestSpecificSessionsHandler(t *testing.T) {
 	// 		"we expected a http.StatusInternalServerError but the handler did not return this status code")
 	// }
 }
-
-// Random Comments
-
-// expected := `{"alive": true}`
-// if rr.Body.String() != expected {
-//     t.Errorf("handler returned unexpected body: got %v want %v",
-//         rr.Body.String(), expected)
-// }
-
-// userStore := users.UserStore{}
-// sessionStore := sessions.SessionStore{}
-
-// func newSessionStore() (sessions.SessionID, error) {
-
-// 	key := "test key"
-// 	state := 100
-// 	respRec := httptest.NewRecorder()
-// 	sid, err := sessions.BeginSession(key, store, state, respRec)
-// 	return sid, err
-// }
