@@ -50,9 +50,9 @@ func (ctx *HandlerContext) UsersHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	// // ensure anotherUser contains the new database-assigned primary key value
-	// user, err = userStore.GetByID(user.ID)
-	// // Unreachable (assuming we succeed to insert, there will be a user with the given ID)
+	// ensure anotherUser contains the new database-assigned primary key value
+	user, _ = userStore.GetByID(user.ID)
+	// Unreachable (assuming we succeed to insert, there will be a user with the given ID)
 	// if err != nil {
 	// 	http.Error(w, "Could not find user", http.StatusInternalServerError)
 	// 	return

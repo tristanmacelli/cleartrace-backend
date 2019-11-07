@@ -77,7 +77,9 @@ const schemeBearer = "Bearer "
 // before moving to TestSpecificUserHandler
 const sessionID = "1234"
 
-func buildNewRequest(t *testing.T, method string, contentType string, valueMap map[string]string, pathExtras string) *http.Request {
+func buildNewRequest(t *testing.T, method string, contentType string,
+	valueMap map[string]string, pathExtras string, sessionID string) *http.Request {
+
 	jsonBody, _ := json.Marshal(valueMap)
 
 	path := "v1/users/" + pathExtras
@@ -109,7 +111,7 @@ func buildNewStores() (users.Store, sessions.Store) {
 func buildCtxUser(t *testing.T, method string, contentType string,
 	valueMap map[string]string, err bool) *httptest.ResponseRecorder {
 
-	req := buildNewRequest(t, method, contentType, valueMap, "")
+	req := buildNewRequest(t, method, contentType, valueMap, "", "1234")
 	userStore, sessionStore := buildNewStores()
 
 	if err {
@@ -136,9 +138,9 @@ func buildCtxUser(t *testing.T, method string, contentType string,
 }
 
 func buildCtxSpecificUser(t *testing.T, method string, contentType string,
-	valueMap map[string]string, pathExtras string) *httptest.ResponseRecorder {
+	valueMap map[string]string, pathExtras string, sessionID string) *httptest.ResponseRecorder {
 
-	req := buildNewRequest(t, method, contentType, valueMap, pathExtras)
+	req := buildNewRequest(t, method, contentType, valueMap, pathExtras, sessionID)
 	userStore, sessionStore := buildNewStores()
 
 	// func NewHandlerContext(key string, user *users.Store, session *sessions.Store) *HandlerContext {
@@ -152,7 +154,7 @@ func buildCtxSpecificUser(t *testing.T, method string, contentType string,
 func buildCtxSession(t *testing.T, method string, contentType string,
 	valueMap map[string]string, pathExtras string) *httptest.ResponseRecorder {
 
-	req := buildNewRequest(t, method, contentType, valueMap, pathExtras)
+	req := buildNewRequest(t, method, contentType, valueMap, pathExtras, "1234")
 	userStore, sessionStore := buildNewStores()
 
 	// func NewHandlerContext(key string, user *users.Store, session *sessions.Store) *HandlerContext {
@@ -166,7 +168,7 @@ func buildCtxSession(t *testing.T, method string, contentType string,
 func buildCtxSpecificSession(t *testing.T, method string, contentType string,
 	valueMap map[string]string, pathExtras string) *httptest.ResponseRecorder {
 
-	req := buildNewRequest(t, method, contentType, valueMap, pathExtras)
+	req := buildNewRequest(t, method, contentType, valueMap, pathExtras, "1234")
 	userStore, sessionStore := buildNewStores()
 
 	// func NewHandlerContext(key string, user *users.Store, session *sessions.Store) *HandlerContext {
@@ -241,9 +243,7 @@ func TestUserHandler(t *testing.T) {
 			"we expected an http.StatusInternalServerError but the handler returned wrong status code %v", status)
 	}
 
-	// // Need test cases for GetByID
-	// // Unnecessary? Since INSERT success implies that there will be a user therefore no way to test
-	// // a user without that ID
+	// Test cases for GetByID
 	// rr = buildCtxUser(t, "POST", "application/json", correctNewUser)
 	// // SUCCESS CASE
 	// if status := rr.Code; status == http.StatusInternalServerError {
@@ -262,20 +262,20 @@ func TestUserHandler(t *testing.T) {
 // TestSpecificUserHandler does something
 // All test cases written
 func TestSpecificUserHandler(t *testing.T) {
-	rr := buildCtxSpecificUser(t, "GET", "application/json", correctNewUser, "")
+	rr := buildCtxSpecificUser(t, "GET", "application/json", correctNewUser, "", "1234")
 	// SUCCESS CASE
 	if status := rr.Code; status == http.StatusMethodNotAllowed {
 		t.Errorf(
 			"we did not expect a http.StatusMethodNotAllowed but the handler returned this status code")
 	}
-	rr = buildCtxSpecificUser(t, "PATCH", "application/json", correctNewUser, "")
+	rr = buildCtxSpecificUser(t, "PATCH", "application/json", correctNewUser, "", "1234")
 	// SUCCESS CASE
 	if status := rr.Code; status == http.StatusMethodNotAllowed {
 		t.Errorf(
 			"we did not expect a http.StatusMethodNotAllowed but the handler returned this status code")
 	}
 
-	rr = buildCtxSpecificUser(t, "POST", "alication/json", incorrectNewUser, "")
+	rr = buildCtxSpecificUser(t, "POST", "alication/json", incorrectNewUser, "", "1234")
 	// FAIL CASE
 	if status := rr.Code; status != http.StatusMethodNotAllowed {
 		t.Errorf(
@@ -285,20 +285,20 @@ func TestSpecificUserHandler(t *testing.T) {
 
 	// Need test cases for GetSessionID
 	// passing sessionid in ctx that does exist in our sessions
-	// rr = buildCtxSpecificUser(t, "GET", "application/json", correctNewUser, "1234")
-	// // SUCCESS CASE
-	// if status := rr.Code; status == http.StatusUnauthorized {
-	// 	t.Errorf(
-	// 		"we did not expect a http.StatusNotFound but the handler returned this status code")
-	// }
+	rr = buildCtxSpecificUser(t, "GET", "application/json", correctNewUser, "1234", "1234")
+	// SUCCESS CASE
+	if status := rr.Code; status == http.StatusUnauthorized {
+		t.Errorf(
+			"we did not expect a http.StatusNotFound but the handler returned this status code")
+	}
 
-	// // passing sessionid in ctx that does not exist in our sessions
-	// rr = buildCtxSpecificUser(t, "GET", "alication/json", correctNewUser, "123")
-	// // FAIL CASE
-	// if status := rr.Code; status != http.StatusUnauthorized {
-	// 	t.Errorf(
-	// 		"we expected an http.StatusNotFound but the handler returned wrong status code")
-	// }
+	// passing sessionid in ctx that does not exist in our sessions
+	rr = buildCtxSpecificUser(t, "GET", "alication/json", correctNewUser, "123", "1234")
+	// FAIL CASE
+	if status := rr.Code; status != http.StatusUnauthorized {
+		t.Errorf(
+			"we expected an http.StatusNotFound but the handler returned wrong status code")
+	}
 
 	// In If branch
 	// Need test cases for GetByID when using GET method
