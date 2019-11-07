@@ -120,7 +120,7 @@ func (ctx *HandlerContext) SessionsHandler(w http.ResponseWriter, r *http.Reques
 	if r.Method != http.MethodPost {
 		http.Error(w, "Incorrect HTTP Method", http.StatusMethodNotAllowed)
 	} else {
-		if correctHeader(w, r) {
+		if !correctHeader(w, r) {
 			return
 		}
 		var creds users.Credentials

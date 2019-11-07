@@ -78,6 +78,18 @@ const schemeBearer = "Bearer "
 // before moving to TestSpecificUserHandler
 const sessionID = "1234"
 
+func valueMapToUser(newUser map[string]string) *users.User {
+	var nu users.NewUser
+	nu.Email = newUser["Email"]
+	nu.Password = newUser["Password"]
+	nu.PasswordConf = newUser["PasswordConf"]
+	nu.UserName = newUser["UserName"]
+	nu.FirstName = newUser["FirstName"]
+	nu.LastName = newUser["LastName"]
+	user, _ := nu.ToUser()
+	return user
+}
+
 func buildNewRequest(t *testing.T, method string, contentType string,
 	valueMap map[string]string, pathExtras string, sessionID string) *http.Request {
 
@@ -152,14 +164,7 @@ func buildCtxSpecificUser(t *testing.T, method string, contentType string,
 		users.SetErr(nil)
 	}
 	if method == "GET" && foundUser {
-		var nu users.NewUser
-		nu.Email = valueMap["Email"]
-		nu.Password = valueMap["Password"]
-		nu.PasswordConf = valueMap["PasswordConf"]
-		nu.UserName = valueMap["UserName"]
-		nu.FirstName = valueMap["FirstName"]
-		nu.LastName = valueMap["LastName"]
-		user, _ := nu.ToUser()
+		user := valueMapToUser(valueMap)
 		users.SetGetByIDNextReturn(user)
 	} else if method == "GET" {
 		users.SetGetByIDNextReturn(&users.User{})
@@ -174,10 +179,25 @@ func buildCtxSpecificUser(t *testing.T, method string, contentType string,
 }
 
 func buildCtxSession(t *testing.T, method string, contentType string,
-	valueMap map[string]string, pathExtras string) *httptest.ResponseRecorder {
+	valueMap map[string]string, pathExtras string, err bool) *httptest.ResponseRecorder {
 
 	req := buildNewRequest(t, method, contentType, valueMap, pathExtras, "1234")
 	userStore, sessionStore := buildNewStores()
+
+	if err {
+		users.SetErr(errors.New("Invalid Credentials, try again"))
+	} else {
+		var nu users.NewUser
+		nu.Email = correctNewUser["Email"]
+		nu.Password = correctNewUser["Password"]
+		nu.PasswordConf = correctNewUser["PasswordConf"]
+		nu.UserName = correctNewUser["UserName"]
+		nu.FirstName = correctNewUser["FirstName"]
+		nu.LastName = correctNewUser["LastName"]
+		user, _ := nu.ToUser()
+		users.SetGetByEmailNextReturn(user)
+		users.SetErr(nil)
+	}
 
 	// func NewHandlerContext(key string, user *users.Store, session *sessions.Store) *HandlerContext {
 	ctx := NewHandlerContext("anything", userStore, sessionStore)
@@ -193,9 +213,15 @@ func buildCtxSpecificSession(t *testing.T, method string, contentType string,
 	req := buildNewRequest(t, method, contentType, valueMap, pathExtras, "1234")
 	userStore, sessionStore := buildNewStores()
 
+	user := valueMapToUser(valueMap)
+	var sessionState SessionState
+	sessionState.User = user
+	sessionState.BeginTime = time.Now()
+
 	// func NewHandlerContext(key string, user *users.Store, session *sessions.Store) *HandlerContext {
 	ctx := NewHandlerContext("anything", userStore, sessionStore)
 	rr := httptest.NewRecorder()
+	_, _ = sessions.BeginSession("anything", sessionStore, sessionState, rr)
 	handler := http.HandlerFunc(ctx.SpecificSessionsHandler)
 	handler.ServeHTTP(rr, req)
 	return rr
@@ -283,6 +309,7 @@ func TestUserHandler(t *testing.T) {
 
 // TestSpecificUserHandler does something
 // All test cases written
+// Authorization dependent test cases (6) not operational
 func TestSpecificUserHandler(t *testing.T) {
 	rr := buildCtxSpecificUser(t, "GET", "application/json", correctNewUser, "", "1234", true, false)
 	// SUCCESS CASE
@@ -394,60 +421,61 @@ func TestSpecificUserHandler(t *testing.T) {
 }
 
 // TestSessionsHandler does something
-// All test cases written
+// All tests pass!
 func TestSessionsHandler(t *testing.T) {
-	rr := buildCtxSession(t, "POST", "application/json", correctNewUser, "")
+	rr := buildCtxSession(t, "POST", "application/json", correctNewUser, "", false)
 	// SUCCESS CASE
 	if status := rr.Code; status == http.StatusMethodNotAllowed {
 		t.Errorf(
 			"we did not expect a http.StatusMethodNotAllowed but the handler returned this status code")
 	}
 
-	rr = buildCtxSession(t, "PATCH", "alication/json", incorrectNewUser, "")
+	rr = buildCtxSession(t, "PATCH", "alication/json", incorrectNewUser, "", false)
 	// FAIL CASE
 	if status := rr.Code; status != http.StatusMethodNotAllowed {
 		t.Errorf(
 			"we expected an http.StatusMethodNotAllowed but the handler returned wrong status code")
 	}
 
-	rr = buildCtxSession(t, "POST", "application/json", correctNewUser, "")
+	rr = buildCtxSession(t, "POST", "application/json", correctNewUser, "", false)
 	// SUCCESS CASE
 	if status := rr.Code; status == http.StatusUnsupportedMediaType {
 		t.Errorf(
 			"we did not expect a http.StatusUnsupportedMediaType but the handler returned this status code")
 	}
 
-	rr = buildCtxSession(t, "POST", "alication/json", correctNewUser, "")
+	rr = buildCtxSession(t, "POST", "alication/json", correctNewUser, "", false)
 	// FAIL CASE
 	if status := rr.Code; status != http.StatusUnsupportedMediaType {
 		t.Errorf(
 			"we expected an http.StatusUnsupportedMediaType but the handler returned wrong status code")
 	}
 
-	// rr = buildCtxSession(t, "POST", "application/json", correctCreds, "")
-	// // SUCCESS CASE
-	// if status := rr.Code; status == http.StatusUnauthorized {
-	// 	t.Errorf(
-	// 		"we did not expect a http.StatusUnauthorized but the handler returned this status code")
-	// }
+	rr = buildCtxSession(t, "POST", "application/json", correctCreds, "", false)
+	// SUCCESS CASE
+	if status := rr.Code; status == http.StatusUnauthorized {
+		t.Errorf(
+			"we did not expect a http.StatusUnauthorized but the handler returned this status code")
+	}
 
-	// rr = buildCtxSession(t, "POST", "application/json", incorrectEmailCreds, "")
-	// // FAIL CASE
-	// if status := rr.Code; status != http.StatusUnauthorized {
-	// 	t.Errorf(
-	// 		"we expected an http.StatusUnauthorized but the handler returned wrong status code")
-	// }
+	rr = buildCtxSession(t, "POST", "application/json", incorrectEmailCreds, "", true)
+	// FAIL CASE
+	if status := rr.Code; status != http.StatusUnauthorized {
+		t.Errorf(
+			"we expected an http.StatusUnauthorized but the handler returned wrong status code: %v",
+			status)
+	}
 
-	// rr = buildCtxSession(t, "POST", "application/json", incorrectPassCreds, "")
-	// // FAIL CASE
-	// if status := rr.Code; status != http.StatusUnauthorized {
-	// 	t.Errorf(
-	// 		"we expected an http.StatusUnauthorized but the handler returned wrong status code")
-	// }
+	rr = buildCtxSession(t, "POST", "application/json", incorrectPassCreds, "", false)
+	// FAIL CASE
+	if status := rr.Code; status != http.StatusUnauthorized {
+		t.Errorf(
+			"we expected an http.StatusUnauthorized but the handler returned wrong status code")
+	}
 }
 
 // TestSpecificSessionsHandler does something
-// TODO: Write 2 test cases
+// EndSession test cases (2) not operational
 func TestSpecificSessionsHandler(t *testing.T) {
 	rr := buildCtxSpecificSession(t, "DELETE", "application/json", correctNewUser, "")
 	// SUCCESS CASE
@@ -456,7 +484,7 @@ func TestSpecificSessionsHandler(t *testing.T) {
 			"we did not expect a http.StatusMethodNotAllowed but the handler returned this status code")
 	}
 
-	rr = buildCtxSpecificSession(t, "PATCH", "alication/json", incorrectNewUser, "")
+	rr = buildCtxSpecificSession(t, "PATCH", "alication/json", correctNewUser, "")
 	// FAIL CASE
 	if status := rr.Code; status != http.StatusMethodNotAllowed {
 		t.Errorf(
@@ -470,15 +498,15 @@ func TestSpecificSessionsHandler(t *testing.T) {
 			"we did not expect a http.StatusForbidden but the handler returned this status code")
 	}
 
-	rr = buildCtxSpecificSession(t, "DELETE", "alication/json", incorrectNewUser, "")
+	rr = buildCtxSpecificSession(t, "DELETE", "alication/json", correctNewUser, "")
 	// FAIL CASE
 	if status := rr.Code; status != http.StatusForbidden {
 		t.Errorf(
 			"we expected a http.StatusForbidden but the handler did not return this status code")
 	}
 
-	// Need test cases for EndSession
-	// Pass a signing key that exists in sessions
+	// // Need test cases for EndSession
+	// // Pass a signing key that exists in sessions
 	// rr = buildCtxSpecificSession(t, "DELETE", "application/json", correctNewUser, "mine")
 	// // SUCCESS CASE
 	// if status := rr.Code; status == http.StatusInternalServerError {
@@ -487,7 +515,7 @@ func TestSpecificSessionsHandler(t *testing.T) {
 	// }
 
 	// // Pass a signing key that does not exist in sessions
-	// rr = buildCtxSpecificSession(t, "DELETE", "application/json", incorrectNewUser, "mine")
+	// rr = buildCtxSpecificSession(t, "DELETE", "application/json", correctNewUser, "mine")
 	// // FAIL CASE
 	// if status := rr.Code; status != http.StatusInternalServerError {
 	// 	t.Errorf(
