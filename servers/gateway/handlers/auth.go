@@ -23,7 +23,7 @@ func (ctx *HandlerContext) UsersHandler(w http.ResponseWriter, r *http.Request) 
 		http.Error(w, "Incorrect HTTP Method", http.StatusMethodNotAllowed)
 		return
 	}
-	if correctHeader(w, r) {
+	if !correctHeader(w, r) {
 		return
 	}
 	var nu users.NewUser
@@ -35,8 +35,6 @@ func (ctx *HandlerContext) UsersHandler(w http.ResponseWriter, r *http.Request) 
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println(r.Body)
-
 	user, err := nu.ToUser()
 	if err != nil {
 		http.Error(w, "Invalid user information", http.StatusUnprocessableEntity)
@@ -46,6 +44,7 @@ func (ctx *HandlerContext) UsersHandler(w http.ResponseWriter, r *http.Request) 
 	// save user to database
 	userStore := ctx.UserStore
 	user, err = userStore.Insert(user)
+	fmt.Println("This is the err: ", err)
 	if err != nil {
 		http.Error(w, "Could not save user", http.StatusInternalServerError)
 		return

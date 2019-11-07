@@ -21,8 +21,15 @@ func main() {
 	tlsKeyPath := os.Getenv("TLSKEY")
 	tlsCertPath := os.Getenv("TLSCERT")
 
+	sessionkey := os.Getenv("SESSIONKEY")
+	redisaddr := os.Getenv("REDISADDR")
+	dsn := os.Getenv("DSN")
 	// starting a new mux session
 	mux := http.NewServeMux()
+	mux.HandleFunc("/v1/users", handlers.UserHandler)
+	mux.HandleFunc("/v1/users/", handlers.SpecificUserHandler)
+	mux.HandleFunc("/v1/sessions", handlers.SessionsHandler)
+	mux.HandleFunc("/v1/sessions/", handlers.SpecificUserHandler)
 	mux.HandleFunc("/v1/summary", handlers.SummaryHandler)
 
 	// logging server location or errors

@@ -114,6 +114,8 @@ func buildCtxUser(t *testing.T, method string, contentType string,
 
 	if err {
 		users.SetErr(errors.New("Could not insert"))
+	} else {
+		users.SetErr(nil)
 	}
 	var nu users.NewUser
 	nu.Email = valueMap["Email"]
@@ -180,40 +182,40 @@ func buildCtxSpecificSession(t *testing.T, method string, contentType string,
 // NOTE: 1 case outside of stores fails
 func TestUserHandler(t *testing.T) {
 
-	// rr := buildCtxUser(t, "POST", "", correctNewUser, false)
-	// // Success Case
-	// if status := rr.Code; status == http.StatusMethodNotAllowed {
-	// 	t.Errorf(
-	// 		"we did not expect a http.StatusMethodNotAllowed but the handler returned this status code")
-	// }
+	rr := buildCtxUser(t, "POST", "", correctNewUser, false)
+	// Success Case
+	if status := rr.Code; status == http.StatusMethodNotAllowed {
+		t.Errorf(
+			"we did not expect a http.StatusMethodNotAllowed but the handler returned this status code")
+	}
 
-	// rr = buildCtxUser(t, "GET", "", correctNewUser, false)
-	// // FAIL CASE
-	// if status := rr.Code; status != http.StatusMethodNotAllowed {
-	// 	t.Errorf(
-	// 		"we expected an http.StatusMethodNotAllowed but the handler returned wrong status code")
-	// }
+	rr = buildCtxUser(t, "GET", "", correctNewUser, false)
+	// FAIL CASE
+	if status := rr.Code; status != http.StatusMethodNotAllowed {
+		t.Errorf(
+			"we expected an http.StatusMethodNotAllowed but the handler returned wrong status code")
+	}
 
-	// rr = buildCtxUser(t, "POST", "application/json", correctNewUser, false)
-	// // SUCCESS CASE
-	// if status := rr.Code; status == http.StatusUnsupportedMediaType {
-	// 	t.Errorf(
-	// 		"we did not expect a http.StatusUnsupportedMediaType but the handler returned this status code")
-	// }
+	rr = buildCtxUser(t, "POST", "application/json", correctNewUser, false)
+	// SUCCESS CASE
+	if status := rr.Code; status == http.StatusUnsupportedMediaType {
+		t.Errorf(
+			"we did not expect a http.StatusUnsupportedMediaType but the handler returned this status code")
+	}
 
-	// rr = buildCtxUser(t, "POST", "alication/json", correctNewUser, false)
-	// // FAIL CASE
-	// if status := rr.Code; status != http.StatusUnsupportedMediaType {
-	// 	t.Errorf(
-	// 		"we expected an http.StatusUnsupportedMediaType but the handler returned wrong status code")
-	// }
+	rr = buildCtxUser(t, "POST", "alication/json", correctNewUser, false)
+	// FAIL CASE
+	if status := rr.Code; status != http.StatusUnsupportedMediaType {
+		t.Errorf(
+			"we expected an http.StatusUnsupportedMediaType but the handler returned wrong status code")
+	}
 
-	// rr = buildCtxUser(t, "POST", "application/json", correctNewUser, false)
-	// // SUCCESS CASE
-	// if status := rr.Code; status == http.StatusUnprocessableEntity {
-	// 	t.Errorf(
-	// 		"we did not expect a http.StatusUnprocessableEntity but the handler returned this status code")
-	// }
+	rr = buildCtxUser(t, "POST", "application/json", correctNewUser, false)
+	// SUCCESS CASE
+	if status := rr.Code; status == http.StatusUnprocessableEntity {
+		t.Errorf(
+			"we did not expect a http.StatusUnprocessableEntity but the handler returned this status code")
+	}
 
 	// rr = buildCtxUser(t, "POST", "application/json", incorrectNewUser, false)
 	// // FAIL CASE
@@ -224,7 +226,7 @@ func TestUserHandler(t *testing.T) {
 	// }
 
 	// Need test cases for INSERT
-	rr := buildCtxUser(t, "POST", "application/json", correctNewUser, false)
+	rr = buildCtxUser(t, "POST", "application/json", correctNewUser, false)
 	// SUCCESS CASE
 	if status := rr.Code; status == http.StatusInternalServerError {
 		t.Errorf(
