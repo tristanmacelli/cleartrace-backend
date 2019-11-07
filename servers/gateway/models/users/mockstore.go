@@ -22,28 +22,28 @@ func NewMockStore() *MockStore {
 	return &MockStore{}
 }
 
-// SetGetByID does something
-func SetGetByID(user *User) {
+// SetGetByIDNextReturn does something
+func SetGetByIDNextReturn(user *User) {
 	getByIDnextReturn = *user
 }
 
-// SetGetByEmailnextReturn does something
-func SetGetByEmailnextReturn(user *User) {
+// SetGetByEmailNextReturn does something
+func SetGetByEmailNextReturn(user *User) {
 	getByEmailnextReturn = *user
 }
 
-// SetGetByUserNamenextReturn does something
-func SetGetByUserNamenextReturn(user *User) {
+// SetGetByUserNameNextReturn does something
+func SetGetByUserNameNextReturn(user *User) {
 	getByUserNamenextReturn = *user
 }
 
-// SetInsertnextReturn does something
-func SetInsertnextReturn(user *User) {
+// SetInsertNextReturn does something
+func SetInsertNextReturn(user *User) {
 	insertnextReturn = *user
 }
 
-// SetUpdatenextReturn does something
-func SetUpdatenextReturn(user *User) {
+// SetUpdateNextReturn does something
+func SetUpdateNextReturn(user *User) {
 	updatenextReturn = *user
 }
 

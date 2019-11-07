@@ -85,9 +85,8 @@ func (nu *NewUser) ToUser() (*User, error) {
 	// Validating the NewUser and returning any validation
 	// errors that may occur.
 	err := nu.Validate()
-	fmt.Println(err)
-	if err != nil { // there was an error.
-		return nil, err
+	if err != nil {
+		return &User{}, err
 	}
 	// Creating a new *User and setting the fields
 	// based on the field values in `nu`.

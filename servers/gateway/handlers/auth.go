@@ -27,8 +27,6 @@ func (ctx *HandlerContext) UsersHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	var nu users.NewUser
-	// jsonBody := r.Body
-
 	// make sure this json is valid
 	decoder := json.NewDecoder(r.Body)
 	err := decoder.Decode(&nu)
@@ -44,7 +42,6 @@ func (ctx *HandlerContext) UsersHandler(w http.ResponseWriter, r *http.Request) 
 	// save user to database
 	userStore := ctx.UserStore
 	user, err = userStore.Insert(user)
-	fmt.Println("This is the err: ", err)
 	if err != nil {
 		http.Error(w, "Could not save user", http.StatusInternalServerError)
 		return
@@ -59,7 +56,7 @@ func (ctx *HandlerContext) UsersHandler(w http.ResponseWriter, r *http.Request) 
 	// }
 
 	userJSON := encodeUser(user)
-	// ctx.beginSession(user, w)
+	ctx.beginSession(user, w)
 	formatResponse(w, http.StatusCreated, userJSON)
 }
 
@@ -213,9 +210,6 @@ func (ctx *HandlerContext) beginSession(user *users.User, w http.ResponseWriter)
 	sessionState.User = user
 	sessionState.BeginTime = time.Now()
 
-	fmt.Println("This is the issue")
-	fmt.Println(ctx.SessionStore)
-	fmt.Println("This is not the issue")
 	_, err := sessions.BeginSession(ctx.Key, ctx.SessionStore, sessionState, w)
 	if err != nil {
 		fmt.Errorf("Could not begin session")
