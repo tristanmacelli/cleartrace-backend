@@ -44,12 +44,12 @@ func (ctx *HandlerContext) UsersHandler(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// save user to database
-	// userStore := ctx.UserStore
-	// user, err = userStore.Insert(user)
-	// if err != nil {
-	// 	http.Error(w, "Could not save user", http.StatusInternalServerError)
-	// 	return
-	// }
+	userStore := ctx.UserStore
+	user, err = userStore.Insert(user)
+	if err != nil {
+		http.Error(w, "Could not save user", http.StatusInternalServerError)
+		return
+	}
 
 	// // ensure anotherUser contains the new database-assigned primary key value
 	// user, err = userStore.GetByID(user.ID)

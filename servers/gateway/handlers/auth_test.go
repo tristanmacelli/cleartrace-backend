@@ -5,6 +5,7 @@ import (
 	"assignments-Tristan6/servers/gateway/sessions"
 	"bytes"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -91,7 +92,7 @@ func buildNewRequest(t *testing.T, method string, contentType string, valueMap m
 	return req
 }
 
-func buildNewStores() (*users.MysqlStore, sessions.Store) {
+func buildNewStores() (users.Store, sessions.Store) {
 	// If we are going to use a concrete user store to test, we need to use the values we
 	// generate from the docker run command to get database-name & MYSQL_ROOT_PASSWORD
 	// dsn := fmt.Sprintf("root:%s@tcp(127.0.0.1:3306)/database-name", os.Getenv("MYSQL_ROOT_PASSWORD"))
@@ -110,6 +111,14 @@ func buildCtxUser(t *testing.T, method string, contentType string,
 
 	req := buildNewRequest(t, method, contentType, valueMap, "")
 	userStore, sessionStore := buildNewStores()
+
+	var buf bytes.Buffer
+	r := io.TeeReader(req.Body, &buf)
+	var nu users.NewUser
+	decoder := json.NewDecoder(r)
+	decoder.Decode(&nu)
+	user, _ := nu.ToUser()
+	users.SetInsertnextReturn(user)
 
 	// func NewHandlerContext(key string, user *users.Store, session *sessions.Store) *HandlerContext {
 	ctx := NewHandlerContext("anything", userStore, sessionStore)
@@ -209,21 +218,21 @@ func TestUserHandler(t *testing.T) {
 			status)
 	}
 
-	// // Need test cases for INSERT
-	// rr = buildCtxUser(t, "POST", "application/json", correctNewUser)
-	// // SUCCESS CASE
-	// if status := rr.Code; status == http.StatusInternalServerError {
-	// 	t.Errorf(
-	// 		"we did not expect a http.StatusInternalServerError but the handler returned this status code")
-	// }
+	// Need test cases for INSERT
+	rr = buildCtxUser(t, "POST", "application/json", correctNewUser)
+	// SUCCESS CASE
+	if status := rr.Code; status == http.StatusInternalServerError {
+		t.Errorf(
+			"we did not expect a http.StatusInternalServerError but the handler returned this status code")
+	}
 
 	// // Pass incorrect dsn/invalid store reference
-	// rr = buildCtxUser(t, "POST", "application/json", correctNewUser)
-	// // FAIL CASE
-	// if status := rr.Code; status != http.StatusInternalServerError {
-	// 	t.Errorf(
-	// 		"we expected an http.StatusInternalServerError but the handler returned wrong status code")
-	// }
+	rr = buildCtxUser(t, "POST", "application/json", correctNewUser)
+	// FAIL CASE
+	if status := rr.Code; status != http.StatusInternalServerError {
+		t.Errorf(
+			"we expected an http.StatusInternalServerError but the handler returned wrong status code")
+	}
 
 	// // Need test cases for GetByID
 	// // Unnecessary? Since INSERT success implies that there will be a user therefore no way to test

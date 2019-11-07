@@ -14,12 +14,11 @@ var errNext = errors.New("generic error")
 
 //MockStore represents a mock user store
 type MockStore struct {
-	// fields
+	// pointless string
 }
 
 // NewMockStore does something
 func NewMockStore() *MockStore {
-
 	return &MockStore{}
 }
 
@@ -54,38 +53,38 @@ func SetErr(err error) {
 }
 
 //GetByID returns the User with the given ID
-func GetByID(id int64) (*User, error) {
+func (ms *MockStore) GetByID(id int64) (*User, error) {
 	return &getByIDnextReturn, errNext
 }
 
 //GetByEmail returns the User with the given email
-func GetByEmail(email string) (*User, error) {
+func (ms *MockStore) GetByEmail(email string) (*User, error) {
 	return &getByEmailnextReturn, errNext
 }
 
 //GetByUserName returns the User with the given Username
-func GetByUserName(username string) (*User, error) {
+func (ms *MockStore) GetByUserName(username string) (*User, error) {
 	return &getByUserNamenextReturn, errNext
 }
 
 //Insert inserts the user into the database, and returns
 //the newly-inserted User, complete with the DBMS-assigned ID
-func Insert(user *User) (*User, error) {
+func (ms *MockStore) Insert(user *User) (*User, error) {
 	return &insertnextReturn, errNext
 }
 
 // LogSuccessfulSignIns does something
-func LogSuccessfulSignIns(user *User, r *http.Request) {
+func (ms *MockStore) LogSuccessfulSignIns(user *User, r *http.Request) {
 
 }
 
 //Update applies UserUpdates to the given user ID
 //and returns the newly-updated user
-func Update(id int64, updates *Updates) (*User, error) {
+func (ms *MockStore) Update(id int64, updates *Updates) (*User, error) {
 	return &updatenextReturn, errNext
 }
 
 //Delete deletes the user with the given ID
-func Delete(id int64) error {
+func (ms *MockStore) Delete(id int64) error {
 	return errNext
 }
