@@ -11,11 +11,6 @@ import (
 	"time"
 )
 
-//TODO: define HTTP handler functions as described in the
-//assignment description. Remember to use your handler context
-//struct as the receiver on these functions so that you have
-//access to things like the session store and user store.
-
 // UsersHandler does something
 func (ctx *HandlerContext) UsersHandler(w http.ResponseWriter, r *http.Request) {
 	// check for POST
@@ -107,7 +102,6 @@ func (ctx *HandlerContext) SpecificUserHandler(w http.ResponseWriter, r *http.Re
 		if err != nil {
 			panic(err)
 		}
-
 		user, err := ctx.UserStore.Update(1, &up)
 		userJSON := encodeUser(user)
 		formatResponse(w, http.StatusOK, userJSON)
@@ -124,7 +118,6 @@ func (ctx *HandlerContext) SessionsHandler(w http.ResponseWriter, r *http.Reques
 			return
 		}
 		var creds users.Credentials
-
 		// make sure this json is valid
 		decoder := json.NewDecoder(r.Body)
 		err := decoder.Decode(&creds)
