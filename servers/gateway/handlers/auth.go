@@ -26,7 +26,6 @@ func (ctx *HandlerContext) UsersHandler(w http.ResponseWriter, r *http.Request) 
 	if correctHeader(w, r) {
 		return
 	}
-	fmt.Println(r.Body)
 	var nu users.NewUser
 	// jsonBody := r.Body
 
@@ -36,6 +35,7 @@ func (ctx *HandlerContext) UsersHandler(w http.ResponseWriter, r *http.Request) 
 	if err != nil {
 		panic(err)
 	}
+	fmt.Println(r.Body)
 
 	user, err := nu.ToUser()
 	if err != nil {

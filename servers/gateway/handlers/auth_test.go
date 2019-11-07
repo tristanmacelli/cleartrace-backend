@@ -5,10 +5,8 @@ import (
 	"assignments-Tristan6/servers/gateway/sessions"
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"testing"
 )
 
@@ -47,7 +45,7 @@ var correctNewUser = map[string]string{
 }
 
 var incorrectNewUser = map[string]string{
-	"Email":        "myexampleEmail@@@@live.com",
+	"Email":        "#@%^%#$@#$@#.com",
 	"Password":     "mypassword123",
 	"PasswordConf": "mypassword123",
 	"UserName":     "TMcGee123",
@@ -96,12 +94,14 @@ func buildNewRequest(t *testing.T, method string, contentType string, valueMap m
 func buildNewStores() (*users.MysqlStore, sessions.Store) {
 	// If we are going to use a concrete user store to test, we need to use the values we
 	// generate from the docker run command to get database-name & MYSQL_ROOT_PASSWORD
-	dsn := fmt.Sprintf("root:%s@tcp(127.0.0.1:3306)/database-name", os.Getenv("MYSQL_ROOT_PASSWORD"))
-	userStore := users.NewMysqlStore(dsn)
+	// dsn := fmt.Sprintf("root:%s@tcp(127.0.0.1:3306)/database-name", os.Getenv("MYSQL_ROOT_PASSWORD"))
+	ustore := users.MockStore{}
+	var userStore users.Store
+	userStore = &ustore
 	// Add fields to this after running docker container to run tests
-	store := sessions.MemStore{}
+	sStore := sessions.MemStore{}
 	var sessionStore sessions.Store
-	sessionStore = &store
+	sessionStore = &sStore
 	return userStore, sessionStore
 }
 
@@ -201,11 +201,12 @@ func TestUserHandler(t *testing.T) {
 			"we did not expect a http.StatusUnprocessableEntity but the handler returned this status code")
 	}
 
-	rr = buildCtxUser(t, "POST", "alication/json", incorrectNewUser)
+	rr = buildCtxUser(t, "POST", "application/json", incorrectNewUser)
 	// FAIL CASE
 	if status := rr.Code; status != http.StatusUnprocessableEntity {
 		t.Errorf(
-			"we expected an http.StatusUnprocessableEntity but the handler returned wrong status code")
+			"we expected an http.StatusUnsupportedMediaType but the handler returned wrong status code: %v",
+			status)
 	}
 
 	// // Need test cases for INSERT
