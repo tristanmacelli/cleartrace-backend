@@ -149,16 +149,20 @@ func buildCtxSpecificUser(t *testing.T, method string, contentType string,
 	} else {
 		users.SetErr(nil)
 	}
+	user := valueMapToUser(valueMap)
 	if method == "GET" && foundUser {
-		user := valueMapToUser(valueMap)
 		users.SetGetByIDNextReturn(user)
 	} else if method == "GET" {
 		users.SetGetByIDNextReturn(&users.User{})
 	}
+	var sessionState SessionState
+	sessionState.User = user
+	sessionState.BeginTime = time.Now()
 
 	// func NewHandlerContext(key string, user *users.Store, session *sessions.Store) *HandlerContext {
 	ctx := NewHandlerContext("anything", userStore, sessionStore)
 	rr := httptest.NewRecorder()
+	sessions.BeginSession("anything", sessionStore, sessionState, rr)
 	handler := http.HandlerFunc(ctx.SpecificUserHandler)
 	handler.ServeHTTP(rr, req)
 	return rr
@@ -314,21 +318,21 @@ func TestSpecificUserHandler(t *testing.T) {
 	// Test cases for GetSessionID
 	// THESE CURRENTLY DO NOT WORK FOR UNKNOWN REASONS
 	// passing sessionid in ctx that does exist in our sessions
-	// rr = buildCtxSpecificUser(t, "GET", "application/json", correctNewUser, "1234", "1234", false)
-	// // SUCCESS CASE
-	// if status := rr.Code; status == http.StatusUnauthorized {
-	// 	t.Errorf(
-	// 		"we did not expect a http.StatusNotFound but the handler returned this status code: %v",
-	// 		status)
-	// }
+	rr = buildCtxSpecificUser(t, "GET", "application/json", correctNewUser, "1234", "1234", true, false)
+	// SUCCESS CASE
+	if status := rr.Code; status == http.StatusUnauthorized {
+		t.Errorf(
+			"we did not expect a http.StatusNotFound but the handler returned this status code: %v",
+			status)
+	}
 
-	// // passing sessionid in ctx that does not exist in our sessions
-	// rr = buildCtxSpecificUser(t, "GET", "alication/json", correctNewUser, "123", "1234", false)
-	// // FAIL CASE
-	// if status := rr.Code; status != http.StatusUnauthorized {
-	// 	t.Errorf(
-	// 		"we expected an http.StatusNotFound but the handler returned wrong status code")
-	// }
+	// passing sessionid in ctx that does not exist in our sessions
+	rr = buildCtxSpecificUser(t, "GET", "application/json", correctNewUser, "123", "1234", true, false)
+	// FAIL CASE
+	if status := rr.Code; status != http.StatusUnauthorized {
+		t.Errorf(
+			"we expected an http.StatusNotFound but the handler returned wrong status code")
+	}
 
 	// In If branch
 	// Need test cases for GetByID when using GET method
