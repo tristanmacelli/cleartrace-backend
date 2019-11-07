@@ -139,7 +139,7 @@ func buildCtxSpecificUser(t *testing.T, method string, contentType string,
 
 	ctx := NewHandlerContext("1234", userStore, sessionStore)
 	rr := httptest.NewRecorder()
-	sessions.BeginSession(testID, sessionStore, sessionState, rr)
+	sessions.BeginSession("1234", sessionStore, sessionState, rr)
 	handler := http.HandlerFunc(ctx.SpecificUserHandler)
 	handler.ServeHTTP(rr, req)
 	return rr
