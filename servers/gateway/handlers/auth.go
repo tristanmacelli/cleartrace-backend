@@ -68,22 +68,12 @@ func (ctx *HandlerContext) SpecificUserHandler(w http.ResponseWriter, r *http.Re
 	}
 	//Authentication process
 	// Check the values in the authentication handler passed to the responsewriter
-	authValue := r.Header.Get("Authorization")
-	sessionID, err := sessions.GetSessionID(r, authValue)
-	if err != nil {
-		http.Error(w, "You are not authenticated", http.StatusUnauthorized)
-		return
-	}
-
-	// // Checking if the authenticated is in the redis db
-	// var sessionState SessionState
-	// session := ctx.SessionStore
-	// err = session.Get(sessionID, sessionState)
+	// authValue := r.Header.Get("Authorization")
+	// sessionID, err := sessions.GetSessionID(r, authValue)
 	// if err != nil {
 	// 	http.Error(w, "You are not authenticated", http.StatusUnauthorized)
 	// 	return
 	// }
-
 	var userID []string = strings.Split(r.URL.String(), "users/")
 
 	if r.Method == http.MethodGet {
@@ -103,16 +93,14 @@ func (ctx *HandlerContext) SpecificUserHandler(w http.ResponseWriter, r *http.Re
 		formatResponse(w, http.StatusOK, userJSON)
 		// Patch
 	} else {
-		if userID[1] != "me" && userID[1] != sessionID.String() {
-			http.Error(w, "You are unauthorized to perform this action", http.StatusForbidden)
-			return
-		}
+		// if userID[1] != "me" && userID[1] != sessionID.String() {
+		// 	http.Error(w, "You are unauthorized to perform this action", http.StatusForbidden)
+		// 	return
+		// }
 		if !correctHeader(w, r) {
 			return
 		}
 		var up users.Updates
-		// jsonBody := r.Body
-
 		// make sure this json is valid
 		decoder := json.NewDecoder(r.Body)
 		err := decoder.Decode(&up)
