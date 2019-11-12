@@ -126,6 +126,8 @@ func buildCtxSpecificUser(t *testing.T, method string, contentType string,
 	req := buildNewRequest(t, method, contentType, valueMap, pathExtras, sessionID)
 	userStore, sessionStore := buildNewStores()
 
+	// https://blog.questionable.services/article/testing-http-handlers-go/
+
 	if expectedErr {
 		users.SetErr(errors.New("Attn: No User"))
 	} else {
@@ -441,20 +443,26 @@ func TestSpecificUserHandler(t *testing.T) {
 			"we expected a http.StatusUnsupportedMediaType but the handler did not return this status code",
 		},
 	}
-	for i, c := range cases {
+	for i, fc := range failcases {
 		// SUCCESS CASE
+		c := cases[i]
 		rr := buildCtxSpecificUser(t, c.method, c.encoding, c.nu, c.pathExtras, c.sessionID,
 			c.foundUser, c.expectedErr)
 		if status := rr.Code; status == c.status {
 			t.Errorf(c.expected)
 		}
 		// FAIL CASE
-		fc := failcases[i]
 		rr = buildCtxSpecificUser(t, fc.method, fc.encoding, fc.nu, fc.pathExtras, c.sessionID,
 			c.foundUser, c.expectedErr)
 		if status := rr.Code; status != fc.status {
 			t.Errorf(fc.expected)
 		}
+	}
+	c := cases[len(cases)-1]
+	rr := buildCtxSpecificUser(t, c.method, c.encoding, c.nu, c.pathExtras, c.sessionID,
+		c.foundUser, c.expectedErr)
+	if status := rr.Code; status == c.status {
+		t.Errorf(c.expected)
 	}
 
 	// Method header checks
