@@ -31,10 +31,11 @@ func main() {
 	mux.HandleFunc("/v1/sessions", handlers.SessionsHandler)
 	mux.HandleFunc("/v1/sessions/", handlers.SpecificUserHandler)
 	mux.HandleFunc("/v1/summary", summary.main)
+	wrappedMux := NewLogger(mux)
 
 	// logging server location or errors
 	log.Printf("server is listening at %s...", address)
-	log.Fatal(http.ListenAndServeTLS(addr, tlsCertPath, tlsKeyPath, mux))
+	log.Fatal(http.ListenAndServeTLS(addr, tlsCertPath, tlsKeyPath, wrappedMux))
 
 	/* To host server:
 	- change path until in folder with main.go in it
