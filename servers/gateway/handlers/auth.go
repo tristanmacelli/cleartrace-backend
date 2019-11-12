@@ -26,7 +26,8 @@ func (ctx *HandlerContext) UsersHandler(w http.ResponseWriter, r *http.Request) 
 	decoder := json.NewDecoder(r.Body)
 	err := decoder.Decode(&nu)
 	if err != nil {
-		panic(err)
+		http.Error(w, "Could not parse new user.", http.StatusInternalServerError)
+		return
 	}
 	user, err := nu.ToUser()
 	if err != nil {
@@ -81,26 +82,26 @@ func (ctx *HandlerContext) SpecificUserHandler(w http.ResponseWriter, r *http.Re
 		}
 		userJSON := encodeUser(user)
 		formatResponse(w, http.StatusOK, userJSON)
+		return
 		// Patch
-	} else {
-		if userID[1] != "me" && userID[1] != sessionID.String() {
-			http.Error(w, "You are unauthorized to perform this action", http.StatusForbidden)
-			return
-		}
-		if !correctHeader(w, r) {
-			return
-		}
-		var up users.Updates
-		// make sure this json is valid
-		decoder := json.NewDecoder(r.Body)
-		err := decoder.Decode(&up)
-		if err != nil {
-			panic(err)
-		}
-		user, err := ctx.UserStore.Update(1, &up)
-		userJSON := encodeUser(user)
-		formatResponse(w, http.StatusOK, userJSON)
 	}
+	if userID[1] != "me" && userID[1] != sessionID.String() {
+		http.Error(w, "You are unauthorized to perform this action", http.StatusForbidden)
+		return
+	}
+	if !correctHeader(w, r) {
+		return
+	}
+	var up users.Updates
+	// make sure this json is valid
+	decoder := json.NewDecoder(r.Body)
+	err = decoder.Decode(&up)
+	if err != nil {
+		panic(err)
+	}
+	user, err := ctx.UserStore.Update(1, &up)
+	userJSON := encodeUser(user)
+	formatResponse(w, http.StatusOK, userJSON)
 }
 
 // SessionsHandler does something
@@ -108,37 +109,37 @@ func (ctx *HandlerContext) SessionsHandler(w http.ResponseWriter, r *http.Reques
 	// check for POST
 	if r.Method != http.MethodPost {
 		http.Error(w, "Incorrect HTTP Method", http.StatusMethodNotAllowed)
-	} else {
-		if !correctHeader(w, r) {
-			return
-		}
-		var creds users.Credentials
-		// make sure this json is valid
-		decoder := json.NewDecoder(r.Body)
-		err := decoder.Decode(&creds)
-		if err != nil {
-			panic(err)
-		}
-
-		user, err := ctx.UserStore.GetByEmail(creds.Email)
-		// TODO: do something that would take about the same amount of time as authenticating
-		if err != nil {
-			http.Error(w, "invalid credentials", http.StatusUnauthorized)
-			return
-		}
-
-		err = user.Authenticate(creds.Password)
-		if err != nil {
-			http.Error(w, "invalid credentials", http.StatusUnauthorized)
-			return
-		}
-		// log all successful user sign-in attempts
-		ctx.UserStore.LogSuccessfulSignIns(user, r)
-
-		userJSON := encodeUser(user)
-		ctx.beginSession(user, w)
-		formatResponse(w, http.StatusCreated, userJSON)
+		return
 	}
+	if !correctHeader(w, r) {
+		return
+	}
+	var creds users.Credentials
+	// make sure this json is valid
+	decoder := json.NewDecoder(r.Body)
+	err := decoder.Decode(&creds)
+	if err != nil {
+		panic(err)
+	}
+
+	user, err := ctx.UserStore.GetByEmail(creds.Email)
+	// TODO: do something that would take about the same amount of time as authenticating
+	if err != nil {
+		http.Error(w, "invalid credentials", http.StatusUnauthorized)
+		return
+	}
+
+	err = user.Authenticate(creds.Password)
+	if err != nil {
+		http.Error(w, "invalid credentials", http.StatusUnauthorized)
+		return
+	}
+	// log all successful user sign-in attempts
+	ctx.UserStore.LogSuccessfulSignIns(user, r)
+
+	userJSON := encodeUser(user)
+	ctx.beginSession(user, w)
+	formatResponse(w, http.StatusCreated, userJSON)
 }
 
 // SpecificSessionsHandler does something
