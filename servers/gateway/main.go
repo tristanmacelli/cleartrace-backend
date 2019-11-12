@@ -30,7 +30,7 @@ func main() {
 	mux.HandleFunc("/v1/users/", handlers.SpecificUserHandler)
 	mux.HandleFunc("/v1/sessions", handlers.SessionsHandler)
 	mux.HandleFunc("/v1/sessions/", handlers.SpecificUserHandler)
-	mux.HandleFunc("/v1/summary", handlers.SummaryHandler)
+	mux.HandleFunc("/v1/summary", summary.main)
 
 	// logging server location or errors
 	log.Printf("server is listening at %s...", address)
