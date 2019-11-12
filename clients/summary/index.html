@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Sample ajax request</title>
+</head>
+
+<body>
+    <h3>Please enter a url below</h3>
+    <form id="myform" action="http://localhost:4000/v1/summary" method="POST" accept-charset="UTF-8">
+        <input type="text" id="url" name="utf8" value="">
+        <input type="submit" id="btn" value="submit" />
+    </form>
+
+    <div id="result" style="border:0.5px solid black">
+
+    </div>
+</body>
+<script type="text/javascript" src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+<script type="text/javascript" src="app.js"></script>
+
+</html>

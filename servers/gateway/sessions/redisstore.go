@@ -1,6 +1,8 @@
 package sessions
 
 import (
+	"encoding/json"
+
 	"time"
 
 	"github.com/go-redis/redis"
@@ -17,7 +19,11 @@ type RedisStore struct {
 //NewRedisStore constructs a new RedisStore
 func NewRedisStore(client *redis.Client, sessionDuration time.Duration) *RedisStore {
 	//initialize and return a new RedisStore struct
-	return nil
+	// keets track of client and session duration
+	return &RedisStore{
+		Client:          client,
+		SessionDuration: sessionDuration,
+	}
 }
 
 //Store implementation
@@ -29,6 +35,24 @@ func (rs *RedisStore) Save(sid SessionID, sessionState interface{}) error {
 	//TODO: marshal the `sessionState` to JSON and save it in the redis database,
 	//using `sid.getRedisKey()` for the key.
 	//return any errors that occur along the way.
+
+	// marshal the json and resolve errors
+	j, err := json.Marshal(&sessionState)
+	if nil != err {
+		// json can not be marshalled
+		return err
+	}
+
+	// get redis key
+	redisKey := sid.getRedisKey()
+
+	// save state to database
+	err = rs.Client.Set(redisKey, j, 0).Err()
+	if err != nil {
+		return err
+	}
+
+	// no error return
 	return nil
 }
 
@@ -40,9 +64,28 @@ func (rs *RedisStore) Get(sid SessionID, sessionState interface{}) error {
 	//and reset the expiry time, so that it doesn't get deleted until
 	//the SessionDuration has elapsed.
 
-	//for extra-credit using the Pipeline feature of the redis
-	//package to do both the get and the reset of the expiry time
-	//in just one network round trip!
+	// get redis frmatted key
+	redisKey := sid.getRedisKey()
+
+	// get the state information from redis
+	marshalledJSON, err := rs.Client.Get(redisKey).Result()
+	if err != nil {
+		// state does not exist for the key
+		return ErrStateNotFound
+	}
+
+	// unmarshal the fetched state and put it into session state using pointer
+	err = json.Unmarshal([]byte(marshalledJSON), &sessionState)
+	if err != nil {
+		return err
+	}
+
+	// reset the expiry time
+	rs.SessionDuration = time.Hour
+	err = rs.Client.Set(redisKey, marshalledJSON, rs.SessionDuration).Err()
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -50,6 +93,12 @@ func (rs *RedisStore) Get(sid SessionID, sessionState interface{}) error {
 //Delete deletes all state data associated with the SessionID from the store.
 func (rs *RedisStore) Delete(sid SessionID) error {
 	//TODO: delete the data stored in redis for the provided SessionID
+	redisKey := sid.getRedisKey()
+	// handle errors here
+	err := rs.Client.Del(redisKey).Err()
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
