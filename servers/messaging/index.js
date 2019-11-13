@@ -47,12 +47,14 @@ app.use("/v1/channels", (req, res, next) => {
 });
 
 // Specific channel handler
-app.use("/v1/channels/{channelID}", (req, res, next) => {
+app.use("/v1/channels/:channelID", (req, res, next) => {
+    // 
     switch (req.method) {
         case 'GET':
             // Is this necessary if we already have it in JSON in the request?
+            // TODO: QUERY for the channel based on req.params.channelID
             var channel = createChannel(req);
-            if (!isChannelMember(channel, req.Xuser)) {
+            if (!isChannelMember(channel, req.Header.Xuser)) {
                 res.status(403)
                 break;
             }
@@ -66,7 +68,7 @@ app.use("/v1/channels/{channelID}", (req, res, next) => {
         case 'POST':
             // Is this necessary if we already have it in JSON in the request?
             var channel = createChannel(req);
-            if (!isChannelMember(channel, req.Xuser)) {
+            if (!isChannelMember(channel, req.Header.Xuser)) {
                 res.status(403)
                 break;
             }
@@ -81,7 +83,7 @@ app.use("/v1/channels/{channelID}", (req, res, next) => {
         case 'PATCH':
             // Is this necessary if we already have it in JSON in the request?
             var channel = createChannel(req);
-            if (!isChannelCreator(channel, req.Xuser)) {
+            if (!isChannelCreator(channel, req.Header.Xuser)) {
                 res.status(403)
                 break;
             }
@@ -92,8 +94,9 @@ app.use("/v1/channels/{channelID}", (req, res, next) => {
             break;
         case 'DELETE':
             // Is this necessary if we already have it in JSON in the request?
+            // TODO: QUERY for the channel based on req.params.channelID
             var channel = createChannel(req);
-            if (!isChannelCreator(channel, req.Xuser)) {
+            if (!isChannelCreator(channel, req.Header.Xuser)) {
                 res.status(403)
                 break;
             }
@@ -107,12 +110,12 @@ app.use("/v1/channels/{channelID}", (req, res, next) => {
 });
 
 // Adding and removing members from your channel
-app.use("/v1/channels/{channelID}/members", (req, res, next) => {
+app.use("/v1/channels/:channelID/members", (req, res, next) => {
     switch (req.method) {
         case 'POST':
             // Is this necessary if we already have it in JSON in the request?
             var channel = createChannel(req);
-            if (!isChannelCreator(channel, req.Xuser)) {
+            if (!isChannelCreator(channel, req.Header.Xuser)) {
                 res.status(403)
                 break;
             }
@@ -126,8 +129,9 @@ app.use("/v1/channels/{channelID}/members", (req, res, next) => {
             break;
         case 'DELETE':
             // Is this necessary if we already have it in JSON in the request?
+            // TODO: QUERY for the channel based on req.params.channelID
             var channel = createChannel(req);
-            if (!isChannelCreator(channel, req.Xuser)) {
+            if (!isChannelCreator(channel, req.Header['X-user'])) {
                 res.status(403)
                 break;
             }
@@ -144,12 +148,12 @@ app.use("/v1/channels/{channelID}/members", (req, res, next) => {
 });
 
 // message handler
-app.use("/v1/messages/{messageID}", (req, res, next) => {
+app.use("/v1/messages/:messageID", (req, res, next) => {
     switch (req.method) {
         case 'PATCH':
             // Is this necessary if we already have it in JSON in the request?
             var channel = createMessage(req);
-            if (!isMessageCreator(channel, req.Xuser)) {
+            if (!isMessageCreator(channel, req.Header.Xuser)) {
                 res.status(403)
                 break;
             }
@@ -163,7 +167,7 @@ app.use("/v1/messages/{messageID}", (req, res, next) => {
         case 'DELETE':
             // Is this necessary if we already have it in JSON in the request?
             var channel = createMessage(req);
-            if (!isMessageCreator(channel, req.Xuser)) {
+            if (!isMessageCreator(channel, req.Header.Xuser)) {
                 res.status(403)
                 break;
             }
@@ -184,7 +188,7 @@ function createChannel(req) {
 
 function createMessage(req) {
     var m = req.body.message;
-    return new message(m.ChannelID, m.CreatedAt, m.Body,
+    return new message(req.params.ChannelID, m.CreatedAt, m.Body,
         m.Creator, m.EditedAt);
 }
 
