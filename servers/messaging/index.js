@@ -133,7 +133,7 @@ app.use("/v1/channels/{channelID}/members", (req, res, next) => {
             }
             // TODO: QUERY the database for the specified channel
             // TODO: Get the list of members
-            // TODO: Remove the specified member
+            // TODO: Remove the specified member from this channel's list of members
             // TODO: Call database to UPDATE the current channel
             res.set("Content-Type", "text/plain");
             res.status(200).send(req.user.ID + " was removed from your channel")
@@ -155,7 +155,7 @@ app.use("/v1/messages/{messageID}", (req, res, next) => {
             }
             // TODO: QUERY the database for the message using the messageID 
             // TODO: Update the message body
-            // TODO: Call the database to UPDATE the specified message using the messageID
+            // TODO: Call the database to UPDATE the message in the database using the messageID
             updatedMessage = null // fn call to UPDATE existing message in the database
             res.set("Content-Type", "application/json");
             res.json(updatedMessage);
@@ -192,8 +192,7 @@ function isChannelMember(channel, user) {
     var isMember = false;
     if (channel.Private) {
         for (i = 0; i < channel.Members.length; i++) {
-            // TODO: Check a specific property, DO NOT compare objects this way
-            if (channel.Members[i] == user) {
+            if (channel.Members[i].ID == user.ID) {
                 isMember = true;
                 break;
             }
