@@ -3,6 +3,8 @@ package main
 import (
 	"log"
 	"net/http"
+	"net/http/httputil"
+	"net/url"
 	"os"
 
 	"./handlers"
@@ -24,13 +26,28 @@ func main() {
 	sessionkey := os.Getenv("SESSIONKEY")
 	redisaddr := os.Getenv("REDISADDR")
 	dsn := os.Getenv("DSN")
+
+	messagesaddr := os.Getenv("MESSAGESADDR")
+	summaryaddr := os.Getenv("SUMMARYADDR")
+
+	// If there are multiple addresses for either messages or summary then do the following
+	// TODO: random number generator to pick between the available addresses
+
+	// proxy
+	messagesProxy := httputil.NewSingleHostReverseProxy(&url.URL{Scheme: "http", Host: messagesaddr})
+	summaryProxy := httputil.NewSingleHostReverseProxy(&url.URL{Scheme: "http", Host: summaryaddr})
+
 	// starting a new mux session
 	mux := http.NewServeMux()
 	mux.HandleFunc("/v1/users", handlers.UserHandler)
 	mux.HandleFunc("/v1/users/", handlers.SpecificUserHandler)
 	mux.HandleFunc("/v1/sessions", handlers.SessionsHandler)
 	mux.HandleFunc("/v1/sessions/", handlers.SpecificUserHandler)
-	mux.HandleFunc("/v1/summary", summary.main)
+	mux.Handle("/v1/summary", summaryProxy)
+	mux.Handle("/v1/channels", messagesProxy)
+	mux.Handle("/v1/channels/{channelID}", messagesProxy)
+	mux.Handle("/v1/channels/{channelID}/members", messagesProxy)
+	mux.Handle("/v1/messages/{messageID}", messagesProxy)
 	wrappedMux := NewLogger(mux)
 
 	// logging server location or errors
