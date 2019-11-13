@@ -1,3 +1,5 @@
+"use strict";
+
 class Message {
     constructor() {
         this.ID = null;

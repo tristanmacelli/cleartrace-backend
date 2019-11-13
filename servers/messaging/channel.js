@@ -1,3 +1,5 @@
+"use strict";
+
 class Channel {
     constructor() {
         this.ID = null;
