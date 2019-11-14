@@ -22,7 +22,14 @@ function openConnection() {
 
         db = client.db(dbName);
     });
-    // insertNewChannel(general channel that we always want at startup);
+    general = new Channel("general", "an open channel for all", false,
+        [], "enter timestamp here", "-1 (created by the system)", "not yet edited");
+    // channel that we always want at startup
+    result = insertNewChannel(general);
+    if (result == null) {
+        console.log("failed to create general channel upon opening connection to DB");
+        // res.status(500);
+    }
     return db;
 }
 
@@ -91,6 +98,10 @@ function updatedChannel(existingChannel, req) {
 // !!SAURAV!! Please make sure that these lines will delete all messages for the specified channelID
 // deleteChannel does something
 function deleteChannel(existingChannel) {
+    // We are not allowed to delete the general channel
+    if (existingChannel.Creator == -1) {
+        return null;
+    }
     db.channels.remove({ _id: ObjectId(existingChannel._id) });
     result = db.messages.remove({ channelID: existingChannel._id });
     if (result.hasWriteError()) {
