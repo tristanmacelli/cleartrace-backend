@@ -33,9 +33,9 @@ app.use("/v1/channels", (req, res, next) => {
             break;
 
         case 'POST':
-            console.log(req.body)
+            console.log(req.body);
             if (req.body.channel.name == null) {
-                next()
+                res.status(500);
                 //do something about the name property being null
             }
             // The following line seems to be unnecessary process which we could probably
@@ -49,7 +49,7 @@ app.use("/v1/channels", (req, res, next) => {
             }
             res.set("Content-Type", "application/json");
             res.json(insertResult);
-            res.status(201)  //probably cant do this >>> .send("success");
+            res.status(201);  //probably cant do this >>> .send("success");
             break;
         default:
             break;
@@ -59,7 +59,7 @@ app.use("/v1/channels", (req, res, next) => {
 // Specific channel handler
 app.use("/v1/channels/:channelID", (req, res, next) => {
     // QUERY for the channel based on req.params.channelID
-    resultChannel = mongo.getChannelByID(req.params.channelID)
+    resultChannel = mongo.getChannelByID(req.params.channelID);
     if (resultChannel == null) {
         res.status(404);
     }
@@ -86,7 +86,8 @@ app.use("/v1/channels/:channelID", (req, res, next) => {
                 break;
             }
             // Create a new message
-            // Thi
+            // The following line seems to be unnecessary process which we could probably
+            //  just do within insertNewMessage() instead
             // newMessage = createMessage(req);
             // Call database to INSERT a new message to the channel
             // TODO: change internals to process message props from req as passed
@@ -96,11 +97,11 @@ app.use("/v1/channels/:channelID", (req, res, next) => {
             }
             res.set("Content-Type", "application/json");
             res.json(insertedMessage);
-            res.status(201)  // probably cant do this >>> .send("success");
+            res.status(201);  // probably cant do this >>> .send("success");
             break;
         case 'PATCH':
             if (!isChannelCreator(resultChannel, req.Header.Xuser)) {
-                res.status(403)
+                res.status(403);
                 break;
             }
             // Call database to UPDATE the channel name and/or description
@@ -132,7 +133,7 @@ app.use("/v1/channels/:channelID", (req, res, next) => {
 // Adding and removing members from your channel
 app.use("/v1/channels/:channelID/members", (req, res, next) => {
     // QUERY for the channel based on req.params.channelID
-    resultChannel = mongo.getChannelByID(req.params.channelID)
+    resultChannel = mongo.getChannelByID(req.params.channelID);
     if (resultChannel == null) {
         res.status(404);
     }
@@ -142,7 +143,6 @@ app.use("/v1/channels/:channelID/members", (req, res, next) => {
                 res.status(403);
                 break;
             }
-            // TODO: QUERY the database for the specified channel using the channelID
             // TODO: Get the list of members
             // TODO: Add the specified member
             // TODO: Call database to UPDATE the current channel
@@ -155,19 +155,18 @@ app.use("/v1/channels/:channelID/members", (req, res, next) => {
                 res.status(403)
                 break;
             }
-            // TODO: QUERY the database for the specified channel
             // TODO: Get the list of members
             // TODO: Remove the specified member from this channel's list of members
             // TODO: Call database to UPDATE the current channel
             res.set("Content-Type", "text/plain");
-            res.status(200).send(req.user.ID + " was removed from your channel")
+            res.status(200).send(req.user.ID + " was removed from your channel");
             break;
         default:
             break;
     }
 });
 
-// message handler
+// Editing the body of or deleting a message
 app.use("/v1/messages/:messageID", (req, res, next) => {
     resultMessage = mongo.getMessageByID(req.params.messageID);
     if (resultMessage == null) {
@@ -176,10 +175,9 @@ app.use("/v1/messages/:messageID", (req, res, next) => {
     switch (req.method) {
         case 'PATCH':
             if (!isMessageCreator(resultMessage, req.Header.Xuser)) {
-                res.status(403)
+                res.status(403);
                 break;
             }
-            // TODO: QUERY the database for the message using the messageID 
             // TODO: Update the message body
             // TODO: Call the database to UPDATE the message in the database using the messageID
             updatedMessage = null // fn call to UPDATE existing message in the database
@@ -193,7 +191,7 @@ app.use("/v1/messages/:messageID", (req, res, next) => {
             }
             // TODO: Call database to DELETE the specified message using the messageID
             res.set("Content-Type", "text/plain");
-            res.send("Message deleted")
+            res.send("Message deleted");
             break;
         default:
             break;
@@ -228,11 +226,11 @@ function isChannelMember(channel, user) {
 }
 
 function isChannelCreator(channel, user) {
-    return channel.Creator.ID == user.ID
+    return channel.Creator == user._id;
 }
 
 function isMessageCreator(message, user) {
-    return message.Creator.ID == user.ID
+    return message.Creator == user._id;
 }
 
 //error handler that will be called if

@@ -22,6 +22,7 @@ function openConnection() {
 
         db = client.db(dbName);
     });
+    // insertNewChannel(general channel that we always want at startup);
     return db;
 }
 
@@ -30,7 +31,7 @@ const db = openConnection();
 // getAllChannels does something
 function getAllChannels() {
     // if channels does not yet exist
-    cursor = db.channels.find()
+    cursor = db.channels.find();
     if (!cursor.hasNext()) {
         // Throw error
         console.log("No channels collection found");
@@ -90,8 +91,8 @@ function updatedChannel(existingChannel, req) {
 // !!SAURAV!! Please make sure that these lines will delete all messages for the specified channelID
 // deleteChannel does something
 function deleteChannel(existingChannel) {
-    db.channels.remove({ _id: ObjectId(existingChannel._id) })
-    result = db.messages.remove({ channelID: existingChannel._id })
+    db.channels.remove({ _id: ObjectId(existingChannel._id) });
+    result = db.messages.remove({ channelID: existingChannel._id });
     if (result.hasWriteError()) {
         return null;
     }
