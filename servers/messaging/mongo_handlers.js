@@ -11,7 +11,6 @@ const dbName = 'messaging';
 
 // Create a new MongoClient
 const client = new MongoClient(url);
-const db = openConnection();
 
 // openConnection does something
 function openConnection() {
@@ -25,6 +24,8 @@ function openConnection() {
     });
     return db;
 }
+
+const db = openConnection();
 
 // getAllChannels does something
 function getAllChannels() {
@@ -98,11 +99,18 @@ function deleteChannel(existingChannel) {
 }
 
 // queryByChannelID does something
-function queryByChannelID(id) {
+function getChannelByID(id) {
     if (id == null) {
         return null;
     }
     return db.channels.find(_id = id);
+}
+
+function getMessageByID(id) {
+    if (id == null) {
+        return null;
+    }
+    return db.messages.find(_id = id);
 }
 
 // last100Messages does something
@@ -127,7 +135,8 @@ module.exports = {
     insertNewMessage,
     updatedChannel,
     deleteChannel,
-    queryByChannelID,
+    getChannelByID,
+    getMessageByID,
     last100Messages,
     closeConnection
 }
