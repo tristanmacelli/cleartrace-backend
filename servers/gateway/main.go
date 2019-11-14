@@ -10,6 +10,8 @@ import (
 	"./handlers"
 )
 
+// TODO: Check if its an authenticated user
+
 //main is the main entry point for the server
 func main() {
 	address := os.Getenv("ADDR")

@@ -1,11 +1,10 @@
 "use strict";
 
-
-
 //require the express and morgan packages
 const express = require("express");
 const morgan = require("morgan");
-var http = require('http');
+// var http = require('http');
+const mongo = require('./mongo_handlers.js');
 
 //create a new express application
 const app = express();
@@ -25,6 +24,7 @@ app.use("/v1/channels", (req, res, next) => {
         case 'GET':
             res.set("Content-Type", "application/json");
             // TODO: QUERY for all channels here
+            allChannels = mongo.getAllChannels()
             // write those to the client, encoded in JSON
             res.json(allChannels);
             break;
