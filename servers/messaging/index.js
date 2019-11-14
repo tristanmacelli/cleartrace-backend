@@ -38,9 +38,12 @@ app.use("/v1/channels", (req, res, next) => {
                 next()
                 //do something about the name property being null
             }
-            let insert = createChannel(req);
+            // The following line seems to be unnecessary process which we could probably
+            //  just do within insertNewChannel() instead
+            // let insert = createChannel(req);
             // Call database to INSERT this new channel
-            insertResult = mongo.insertNewChannel(insert);
+            // TODO: change internals to process channel props from req as passed
+            insertResult = mongo.insertNewChannel(req);
             if (insertResult == null) {
                 res.status(500);
             }
@@ -55,10 +58,10 @@ app.use("/v1/channels", (req, res, next) => {
 
 // Specific channel handler
 app.use("/v1/channels/:channelID", (req, res, next) => {
-    // TODO: QUERY for the channel based on req.params.channelID
-    resultChannel = mongo.queryByChannelID(req.params.channelID)
+    // QUERY for the channel based on req.params.channelID
+    resultChannel = mongo.getChannelByID(req.params.channelID)
     if (resultChannel == null) {
-        res.status(500);
+        res.status(404);
     }
     switch (req.method) {
         case 'GET':
@@ -83,9 +86,11 @@ app.use("/v1/channels/:channelID", (req, res, next) => {
                 break;
             }
             // Create a new message
-            newMessage = createMessage(req);
+            // Thi
+            // newMessage = createMessage(req);
             // Call database to INSERT a new message to the channel
-            insertedMessage = mongo.insertNewMessage(newMessage);
+            // TODO: change internals to process message props from req as passed
+            insertedMessage = mongo.insertNewMessage(req);
             if (insertedMessage == null) {
                 res.status(500);
             }
@@ -126,11 +131,14 @@ app.use("/v1/channels/:channelID", (req, res, next) => {
 
 // Adding and removing members from your channel
 app.use("/v1/channels/:channelID/members", (req, res, next) => {
+    // QUERY for the channel based on req.params.channelID
+    resultChannel = mongo.getChannelByID(req.params.channelID)
+    if (resultChannel == null) {
+        res.status(404);
+    }
     switch (req.method) {
         case 'POST':
-            // Is this necessary if we already have it in JSON in the request?
-            let channel = createChannel(req);
-            if (!isChannelCreator(channel, req.Header.Xuser)) {
+            if (!isChannelCreator(resultChannel, req.Header.Xuser)) {
                 res.status(403);
                 break;
             }
@@ -143,10 +151,7 @@ app.use("/v1/channels/:channelID/members", (req, res, next) => {
             res.status(201).send(req.user.ID + " was added to your channel");
             break;
         case 'DELETE':
-            // Is this necessary if we already have it in JSON in the request?
-            // TODO: QUERY for the channel based on req.params.channelID
-            let channel = createChannel(req);
-            if (!isChannelCreator(channel, req.Header['X-user'])) {
+            if (!isChannelCreator(resultChannel, req.Header['X-user'])) {
                 res.status(403)
                 break;
             }
@@ -164,11 +169,13 @@ app.use("/v1/channels/:channelID/members", (req, res, next) => {
 
 // message handler
 app.use("/v1/messages/:messageID", (req, res, next) => {
+    resultMessage = mongo.getMessageByID(req.params.messageID);
+    if (resultMessage == null) {
+        res.status(404);
+    }
     switch (req.method) {
         case 'PATCH':
-            // Is this necessary if we already have it in JSON in the request?
-            let channel = createMessage(req);
-            if (!isMessageCreator(channel, req.Header.Xuser)) {
+            if (!isMessageCreator(resultMessage, req.Header.Xuser)) {
                 res.status(403)
                 break;
             }
@@ -180,9 +187,7 @@ app.use("/v1/messages/:messageID", (req, res, next) => {
             res.json(updatedMessage);
             break;
         case 'DELETE':
-            // Is this necessary if we already have it in JSON in the request?
-            let channel = createMessage(req);
-            if (!isMessageCreator(channel, req.Header.Xuser)) {
+            if (!isMessageCreator(resultMessage, req.Header.Xuser)) {
                 res.status(403)
                 break;
             }
@@ -195,17 +200,17 @@ app.use("/v1/messages/:messageID", (req, res, next) => {
     }
 });
 
-function createChannel(req) {
-    let c = req.body.channel;
-    return new channel(c.Name, c.Description, c.Private,
-        c.Members, c.CreatedAt, c.Creator, c.EditedAt);
-}
+// function createChannel(req) {
+//     let c = req.body.channel;
+//     return new channel(c.Name, c.Description, c.Private,
+//         c.Members, c.CreatedAt, c.Creator, c.EditedAt);
+// }
 
-function createMessage(req) {
-    let m = req.body.message;
-    return new message(req.params.ChannelID, m.CreatedAt, m.Body,
-        m.Creator, m.EditedAt);
-}
+// function createMessage(req) {
+//     let m = req.body.message;
+//     return new message(req.params.ChannelID, m.CreatedAt, m.Body,
+//         m.Creator, m.EditedAt);
+// }
 
 function isChannelMember(channel, user) {
     let isMember = false;
