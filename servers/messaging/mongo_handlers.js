@@ -13,6 +13,7 @@ const dbName = 'messaging';
 const client = new MongoClient(url);
 const db = openConnection();
 
+// openConnection does something
 function openConnection() {
     const db;
     // Use connect method to connect to the Server
@@ -25,16 +26,19 @@ function openConnection() {
     return db;
 }
 
+// getAllChannels does something
 function getAllChannels() {
     // if channels does not yet exist
     cursor = db.channels.find()
     if (!cursor.hasNext()) {
         // Throw error
         console.log("No channels collection found");
+        return null;
     }
     return cursor.forEach(printjson);
 }
 
+// insertNewChannel does something
 function insertNewChannel(newChannel) {
     result = db.channels.save({
         name: newChannel.Name, description: newChannel.Description,
@@ -43,12 +47,13 @@ function insertNewChannel(newChannel) {
         editedAt: newChannel.EditedAt
     });
     if (result.hasWriteError()) {
-        return;
+        return null;
     }
     newChannel._id = result._id;
     return newChannel;
 }
 
+// insertNewMessage does something
 function insertNewMessage(newMessage) {
     if (newMessage.ChannelID == null) {
         return null;
@@ -65,6 +70,7 @@ function insertNewMessage(newMessage) {
     return newMessage;
 }
 
+// updatedChannel updates name and body of channel
 function updatedChannel(existingChannel, req) {
     result = db.channels.save({
         name: req.body.name, description: req.body.description,
@@ -73,14 +79,15 @@ function updatedChannel(existingChannel, req) {
         editedAt: existingChannel.EditedAt
     });
     if (result.hasWriteError()) {
-        return;
+        return null;
     }
     existingChannel.name = result.name;
     existingChannel.description = result.description;
     return newChannel;
 }
 
-// Please make sure that these lines will delete all messages for the specified channelID
+// !!SAURAV!! Please make sure that these lines will delete all messages for the specified channelID
+// deleteChannel does something
 function deleteChannel(existingChannel) {
     db.channels.remove({ _id: ObjectId(existingChannel._id) })
     result = db.messages.remove({ channelID: existingChannel._id })
@@ -90,7 +97,7 @@ function deleteChannel(existingChannel) {
     return result;
 }
 
-// 
+// queryByChannelID does something
 function queryByChannelID(id) {
     if (id == null) {
         return null;
@@ -98,6 +105,7 @@ function queryByChannelID(id) {
     return db.channels.find(_id = id);
 }
 
+// last100Messages does something
 function last100Messages(id) {
     if (id == null) {
         return null;
@@ -106,6 +114,7 @@ function last100Messages(id) {
     return db.messages.find(channelID = id).sort({ createdAt = -1 }).limit(100);
 }
 
+// closeConnection does something
 function closeConnection() {
     client.close();
 }

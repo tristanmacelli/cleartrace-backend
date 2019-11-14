@@ -3,7 +3,7 @@
 //require the express and morgan packages
 const express = require("express");
 const morgan = require("morgan");
-// var http = require('http');
+// let http = require('http');
 const mongo = require('./mongo_handlers.js');
 
 //create a new express application
@@ -23,8 +23,11 @@ app.use("/v1/channels", (req, res, next) => {
     switch (req.method) {
         case 'GET':
             res.set("Content-Type", "application/json");
-            // TODO: QUERY for all channels here
+            // QUERY for all channels here
             allChannels = mongo.getAllChannels();
+            if (allChannels == null) {
+                res.status(500);
+            }
             // write those to the client, encoded in JSON
             res.json(allChannels);
             break;
@@ -35,9 +38,12 @@ app.use("/v1/channels", (req, res, next) => {
                 next()
                 //do something about the name property being null
             }
-            var insert = createChannel(req);
-            // TODO: Call database to INSERT this new channel
+            let insert = createChannel(req);
+            // Call database to INSERT this new channel
             insertResult = mongo.insertNewChannel(insert);
+            if (insertResult == null) {
+                res.status(500);
+            }
             res.set("Content-Type", "application/json");
             res.json(insertResult);
             res.status(201)  //probably cant do this >>> .send("success");
@@ -80,6 +86,9 @@ app.use("/v1/channels/:channelID", (req, res, next) => {
             newMessage = createMessage(req);
             // Call database to INSERT a new message to the channel
             insertedMessage = mongo.insertNewMessage(newMessage);
+            if (insertedMessage == null) {
+                res.status(500);
+            }
             res.set("Content-Type", "application/json");
             res.json(insertedMessage);
             res.status(201)  // probably cant do this >>> .send("success");
@@ -91,6 +100,9 @@ app.use("/v1/channels/:channelID", (req, res, next) => {
             }
             // Call database to UPDATE the channel name and/or description
             updatedChannel = mongo.updatedChannel(resultChannel, req);
+            if (updatedChannel == null) {
+                res.status(500);
+            }
             res.set("Content-Type", "application/json");
             res.json(updatedChannel);
             break;
@@ -117,7 +129,7 @@ app.use("/v1/channels/:channelID/members", (req, res, next) => {
     switch (req.method) {
         case 'POST':
             // Is this necessary if we already have it in JSON in the request?
-            var channel = createChannel(req);
+            let channel = createChannel(req);
             if (!isChannelCreator(channel, req.Header.Xuser)) {
                 res.status(403);
                 break;
@@ -133,7 +145,7 @@ app.use("/v1/channels/:channelID/members", (req, res, next) => {
         case 'DELETE':
             // Is this necessary if we already have it in JSON in the request?
             // TODO: QUERY for the channel based on req.params.channelID
-            var channel = createChannel(req);
+            let channel = createChannel(req);
             if (!isChannelCreator(channel, req.Header['X-user'])) {
                 res.status(403)
                 break;
@@ -155,7 +167,7 @@ app.use("/v1/messages/:messageID", (req, res, next) => {
     switch (req.method) {
         case 'PATCH':
             // Is this necessary if we already have it in JSON in the request?
-            var channel = createMessage(req);
+            let channel = createMessage(req);
             if (!isMessageCreator(channel, req.Header.Xuser)) {
                 res.status(403)
                 break;
@@ -169,7 +181,7 @@ app.use("/v1/messages/:messageID", (req, res, next) => {
             break;
         case 'DELETE':
             // Is this necessary if we already have it in JSON in the request?
-            var channel = createMessage(req);
+            let channel = createMessage(req);
             if (!isMessageCreator(channel, req.Header.Xuser)) {
                 res.status(403)
                 break;
@@ -184,19 +196,19 @@ app.use("/v1/messages/:messageID", (req, res, next) => {
 });
 
 function createChannel(req) {
-    var c = req.body.channel;
+    let c = req.body.channel;
     return new channel(c.Name, c.Description, c.Private,
         c.Members, c.CreatedAt, c.Creator, c.EditedAt);
 }
 
 function createMessage(req) {
-    var m = req.body.message;
+    let m = req.body.message;
     return new message(req.params.ChannelID, m.CreatedAt, m.Body,
         m.Creator, m.EditedAt);
 }
 
 function isChannelMember(channel, user) {
-    var isMember = false;
+    let isMember = false;
     if (channel.Private) {
         for (i = 0; i < channel.Members.length; i++) {
             if (channel.Members[i].ID == user.ID) {
