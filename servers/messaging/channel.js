@@ -2,7 +2,7 @@
 
 class Channel {
     constructor() {
-        this.ID = null;
+        this._id = null;
         this.Name = null;
         this.Description = null;
         this.Private = null;
@@ -13,7 +13,7 @@ class Channel {
     }
 
     constructor(Name, Description, Private, Members, CreatedAt, Creator, EditedAt) {
-        this.ID = null;
+        this._id = null;
         this.Name = Name;
         this.Description = Description;
         this.Private = Private;

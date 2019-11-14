@@ -2,7 +2,7 @@
 
 class Message {
     constructor() {
-        this.ID = null;
+        this._id = null;
         this.ChannelID = null;
         this.CreatedAt = null;
         this.Body = null;
@@ -11,7 +11,7 @@ class Message {
     }
 
     constructor(ChannelID, CreatedAt, Body, Creator, EditedAt) {
-        this.ID = null;
+        this._id = null;
         this.ChannelID = ChannelID;
         this.CreatedAt = CreatedAt;
         this.Body = Body;
