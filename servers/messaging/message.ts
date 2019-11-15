@@ -1,6 +1,6 @@
 "use strict";
 
-class Message {
+export class Message {
     // constructor() {
     //     this._id = null;
     //     this.ChannelID = null;
@@ -11,17 +11,19 @@ class Message {
     // }
 
     _id : string;
-    ChannelID :string;
-    CreatedAt :string;
-    Body :string;
-    Creator : string;
-    EditedAt : string;
-    constructor(ChannelID, CreatedAt, Body, Creator, EditedAt) {
-        this._id = null;
-        this.ChannelID = ChannelID;
-        this.CreatedAt = CreatedAt;
-        this.Body = Body;
-        this.Creator = Creator;
-        this.EditedAt = EditedAt;
+    channelID :string;
+    createdAt :string;
+    body :string;
+    creator : string;
+    editedAt : string;
+    constructor(ChannelID:string, CreatedAt:string, Body:string, Creator:string, EditedAt:string) {
+        this._id = "";
+        this.channelID = ChannelID;
+        this.createdAt = CreatedAt;
+        this.body = Body;
+        this.creator = Creator;
+        this.editedAt = EditedAt;
     }
 }
+
+// export default Message;

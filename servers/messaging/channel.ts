@@ -1,6 +1,6 @@
 "use strict";
 
-class Channel {
+export class Channel {
     // constructor() {
     //     this._id = null;
     //     this.Name = null;
@@ -11,24 +11,24 @@ class Channel {
     //     this.Creator = null;
     //     this.EditedAt = null;
     // }
-    _id = null;
-    Name :string;
-    Description : string;
-    Private : boolean;
-    Members : number[];
-    CreatedAt : string;
-    Creator : number;
-    EditedAt : string;
-    constructor(Name, Description, Private, Members, CreatedAt, Creator, EditedAt) {
-        this._id = null;
-        this.Name = Name;
-        this.Description = Description;
-        this.Private = Private;
-        this.Members = Members;
-        this.CreatedAt = CreatedAt;
-        this.Creator = Creator;
-        this.EditedAt = EditedAt;
+    _id : string;
+    name :string;
+    description : string;
+    private : boolean;
+    members : number[];
+    createdAt : string;
+    creator : number;
+    editedAt : string;
+    constructor(Name:string, Description:string, Private:boolean, Members:number[], CreatedAt:string, Creator:number, EditedAt:string) {
+        this._id = "";
+        this.name = Name;
+        this.description = Description;
+        this.private = Private;
+        this.members = Members;
+        this.createdAt = CreatedAt;
+        this.creator = Creator;
+        this.editedAt = EditedAt;
     }
 }
 
-module.exports=Channel
+// export default Channel;

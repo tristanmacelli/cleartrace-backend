@@ -4,7 +4,7 @@
 const express = require("express");
 const morgan = require("morgan");
 // let http = require('http');
-const mongo = require('./mongo_handlers.js');
+const mongo = require('./mongo_handlers.ts');
 
 //create a new express application
 const app = express();
