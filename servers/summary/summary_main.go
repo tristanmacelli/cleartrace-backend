@@ -1,4 +1,4 @@
-package main
+package summary
 
 import (
 	"log"
@@ -20,7 +20,7 @@ func main() {
 
 	// logging server location or errors
 	log.Printf("server is listening at %s...", address)
-	log.Fatal(http.ListenAndServe(addr, mux))
+	log.Fatal(http.ListenAndServe(address, mux))
 
 	/* To host server:
 	- change path until in folder with main.go in it
