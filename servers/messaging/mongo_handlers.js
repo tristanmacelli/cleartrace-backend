@@ -23,7 +23,7 @@ function openConnection() {
         db = client.db(dbName);
     });
     general = new Channel("general", "an open channel for all", false,
-        [], "enter timestamp here", "-1 (created by the system)", "not yet edited");
+        [], "enter timestamp here", "-1", "not yet edited");
     // channel that we always want at startup
     result = insertNewChannel(general);
     if (result == null) {
@@ -95,7 +95,50 @@ function updatedChannel(existingChannel, req) {
     return newChannel;
 }
 
-// !!SAURAV!! Please make sure that these lines will delete all messages for the specified channelID
+function addChannelMembers(existingChannel, req) {
+    existingChannel.members.push(req.body.message.id);
+    result = db.channels.save({
+        name: existingChannel.name, description: existingChannel.description,
+        private: existingChannel.private, members: existingChannel.members,
+        createdAt: existingChannel.createdAt, creator: existingChannel.creator,
+        editedAt: existingChannel.editedAt
+    });
+    if (result.hasWriteError()) {
+        return null;
+    }
+    // Add the specified member
+    existingChannel.members = newMembers;
+    return existingChannel;
+}
+
+function removeChannelMembers(existingChannel, req) {
+    // Remove the specified member from this channel's list of members
+    existingChannel.members.splice(req.body.message.id, 1);
+    result = db.channels.save({
+        name: existingChannel.name, description: existingChannel.description,
+        private: existingChannel.private, members: existingChannel.members,
+        createdAt: existingChannel.createdAt, creator: existingChannel.creator,
+        editedAt: existingChannel.editedAt
+    });
+    if (result.hasWriteError()) {
+        return null;
+    }
+    return existingChannel;
+}
+
+function updateMessage(existingMessage, req) {
+    result = db.messages.save({
+        body: req.body, creator: existingChannel.Creator,
+        createdAt: existingChannel.CreatedAt, channelID: existingMessage.channelID,
+        editedAt: existingChannel.EditedAt
+    });
+    if (result.hasWriteError()) {
+        return null;
+    }
+    existingMessage.body = result.body;
+    return existingMessage;
+}
+
 // deleteChannel does something
 function deleteChannel(existingChannel) {
     // We are not allowed to delete the general channel
@@ -104,6 +147,14 @@ function deleteChannel(existingChannel) {
     }
     db.channels.remove({ _id: ObjectId(existingChannel._id) });
     result = db.messages.remove({ channelID: existingChannel._id });
+    if (result.hasWriteError()) {
+        return null;
+    }
+    return result;
+}
+
+function deleteMessage(existingMessage) {
+    result = db.messages.remove({ messageID: existingMessage._id });
     if (result.hasWriteError()) {
         return null;
     }
@@ -146,7 +197,11 @@ module.exports = {
     insertNewChannel,
     insertNewMessage,
     updatedChannel,
+    addChannelMembers,
+    removeChannelMembers,
+    updateMessage,
     deleteChannel,
+    deleteMessage,
     getChannelByID,
     getMessageByID,
     last100Messages,

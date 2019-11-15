@@ -40,9 +40,9 @@ app.use("/v1/channels", (req, res, next) => {
             }
             // The following line seems to be unnecessary process which we could probably
             //  just do within insertNewChannel() instead
-            // let insert = createChannel(req);
             // Call database to INSERT this new channel
-            // TODO: change internals to process channel props from req as passed
+            // TODO?? change internals to process channel props from req as passed
+            let insert = createChannel(req);
             insertResult = mongo.insertNewChannel(req);
             if (insertResult == null) {
                 res.status(500);
@@ -88,9 +88,9 @@ app.use("/v1/channels/:channelID", (req, res, next) => {
             // Create a new message
             // The following line seems to be unnecessary process which we could probably
             //  just do within insertNewMessage() instead
-            // newMessage = createMessage(req);
             // Call database to INSERT a new message to the channel
-            // TODO: change internals to process message props from req as passed
+            // TODO?? change internals to process message props from req as passed
+            newMessage = createMessage(req);
             insertedMessage = mongo.insertNewMessage(req);
             if (insertedMessage == null) {
                 res.status(500);
@@ -143,10 +143,10 @@ app.use("/v1/channels/:channelID/members", (req, res, next) => {
                 res.status(403);
                 break;
             }
-            // TODO: Get the list of members
-            // TODO: Add the specified member
-            // TODO: Call database to UPDATE the current channel
-            updatedChannel = null // fn call to UPDATE existing channel in the database
+            // Get the list of members
+            newMembers = resultChannel.members;
+            // Call database to UPDATE the current channel
+            updatedChannel = mongo.addChannelMembers(resultChannel, req);
             res.set("Content-Type", "application/json");
             res.status(201).send(req.user.ID + " was added to your channel");
             break;
@@ -155,9 +155,8 @@ app.use("/v1/channels/:channelID/members", (req, res, next) => {
                 res.status(403)
                 break;
             }
-            // TODO: Get the list of members
-            // TODO: Remove the specified member from this channel's list of members
-            // TODO: Call database to UPDATE the current channel
+            // database to UPDATE the current channel members
+            updatedChannel = mongo.removeChannelMembers(resultChannel, req);
             res.set("Content-Type", "text/plain");
             res.status(200).send(req.user.ID + " was removed from your channel");
             break;
@@ -178,9 +177,12 @@ app.use("/v1/messages/:messageID", (req, res, next) => {
                 res.status(403);
                 break;
             }
-            // TODO: Update the message body
             // TODO: Call the database to UPDATE the message in the database using the messageID
-            updatedMessage = null // fn call to UPDATE existing message in the database
+            updatedMessage = mongo.updateMessage(resultMessage, req);
+            if (updatedMessage == null) {
+                res.status(500);
+                break;
+            }
             res.set("Content-Type", "application/json");
             res.json(updatedMessage);
             break;
@@ -190,6 +192,11 @@ app.use("/v1/messages/:messageID", (req, res, next) => {
                 break;
             }
             // TODO: Call database to DELETE the specified message using the messageID
+            // Call database to DELETE this channel
+            result = mongo.deleteMessage(resultMessage);
+            if (result == null) {
+                res.status(500);
+            }
             res.set("Content-Type", "text/plain");
             res.send("Message deleted");
             break;
@@ -200,13 +207,13 @@ app.use("/v1/messages/:messageID", (req, res, next) => {
 
 // function createChannel(req) {
 //     let c = req.body.channel;
-//     return new channel(c.Name, c.Description, c.Private,
+//     return new Channel(c.Name, c.Description, c.Private,
 //         c.Members, c.CreatedAt, c.Creator, c.EditedAt);
 // }
 
 // function createMessage(req) {
 //     let m = req.body.message;
-//     return new message(req.params.ChannelID, m.CreatedAt, m.Body,
+//     return new Message(req.params.ChannelID, m.CreatedAt, m.Body,
 //         m.Creator, m.EditedAt);
 // }
 
