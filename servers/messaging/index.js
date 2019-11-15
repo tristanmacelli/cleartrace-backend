@@ -3,8 +3,9 @@
 //require the express and morgan packages
 const express = require("express");
 const morgan = require("morgan");
-// let http = require('http');
-const mongo = require('./mongo_handlers.ts');
+const mongo = require('./mongo_handlers.js');
+const channel = require("./channel.js");
+const message = require("./message.js");
 
 //create a new express application
 const app = express();
@@ -24,7 +25,7 @@ app.use("/v1/channels", (req, res, next) => {
         case 'GET':
             res.set("Content-Type", "application/json");
             // QUERY for all channels here
-            allChannels = mongo.getAllChannels();
+            let allChannels = mongo.getAllChannels();
             if (allChannels == null) {
                 res.status(500);
             }
@@ -43,7 +44,7 @@ app.use("/v1/channels", (req, res, next) => {
             // Call database to INSERT this new channel
             // TODO?? change internals to process channel props from req as passed
             let insert = createChannel(req);
-            insertResult = mongo.insertNewChannel(req);
+            let insertResult = mongo.insertNewChannel(insert);
             if (insertResult == null) {
                 res.status(500);
             }
@@ -59,7 +60,7 @@ app.use("/v1/channels", (req, res, next) => {
 // Specific channel handler
 app.use("/v1/channels/:channelID", (req, res, next) => {
     // QUERY for the channel based on req.params.channelID
-    resultChannel = mongo.getChannelByID(req.params.channelID);
+    let resultChannel = mongo.getChannelByID(req.params.channelID);
     if (resultChannel == null) {
         res.status(404);
     }
@@ -70,7 +71,7 @@ app.use("/v1/channels/:channelID", (req, res, next) => {
                 break;
             }
             // QUERY for last 100 messages here
-            last100Messages = mongo.last100Messages(resultChannel._id);
+            let last100Messages = mongo.last100Messages(resultChannel._id);
             if (last100Messages == null) {
                 res.status(500);
                 break;
@@ -90,8 +91,8 @@ app.use("/v1/channels/:channelID", (req, res, next) => {
             //  just do within insertNewMessage() instead
             // Call database to INSERT a new message to the channel
             // TODO?? change internals to process message props from req as passed
-            newMessage = createMessage(req);
-            insertedMessage = mongo.insertNewMessage(req);
+            let newMessage = createMessage(req);
+            let insertedMessage = mongo.insertNewMessage(newMessage);
             if (insertedMessage == null) {
                 res.status(500);
             }
@@ -105,7 +106,7 @@ app.use("/v1/channels/:channelID", (req, res, next) => {
                 break;
             }
             // Call database to UPDATE the channel name and/or description
-            updatedChannel = mongo.updatedChannel(resultChannel, req);
+            let updatedChannel = mongo.updateChannel(resultChannel, req);
             if (updatedChannel == null) {
                 res.status(500);
             }
@@ -118,7 +119,7 @@ app.use("/v1/channels/:channelID", (req, res, next) => {
                 break;
             }
             // Call database to DELETE this channel
-            result = mongo.deleteChannel(resultChannel);
+            let result = mongo.deleteChannel(resultChannel);
             if (result == null) {
                 res.status(500);
             }
@@ -133,7 +134,7 @@ app.use("/v1/channels/:channelID", (req, res, next) => {
 // Adding and removing members from your channel
 app.use("/v1/channels/:channelID/members", (req, res, next) => {
     // QUERY for the channel based on req.params.channelID
-    resultChannel = mongo.getChannelByID(req.params.channelID);
+    let resultChannel = mongo.getChannelByID(req.params.channelID);
     if (resultChannel == null) {
         res.status(404);
     }
@@ -143,10 +144,12 @@ app.use("/v1/channels/:channelID/members", (req, res, next) => {
                 res.status(403);
                 break;
             }
-            // Get the list of members
-            newMembers = resultChannel.members;
             // Call database to UPDATE the current channel
-            updatedChannel = mongo.addChannelMembers(resultChannel, req);
+            let updatedChannel = mongo.addChannelMembers(resultChannel, req);
+            if (updatedChannel == null) {
+                res.status(500);
+                break;
+            }
             res.set("Content-Type", "application/json");
             res.status(201).send(req.user.ID + " was added to your channel");
             break;
@@ -157,6 +160,10 @@ app.use("/v1/channels/:channelID/members", (req, res, next) => {
             }
             // database to UPDATE the current channel members
             updatedChannel = mongo.removeChannelMembers(resultChannel, req);
+            if (updatedChannel == null) {
+                res.status(500);
+                break;
+            }
             res.set("Content-Type", "text/plain");
             res.status(200).send(req.user.ID + " was removed from your channel");
             break;
@@ -167,7 +174,7 @@ app.use("/v1/channels/:channelID/members", (req, res, next) => {
 
 // Editing the body of or deleting a message
 app.use("/v1/messages/:messageID", (req, res, next) => {
-    resultMessage = mongo.getMessageByID(req.params.messageID);
+    let resultMessage = mongo.getMessageByID(req.params.messageID);
     if (resultMessage == null) {
         res.status(404);
     }
@@ -178,7 +185,7 @@ app.use("/v1/messages/:messageID", (req, res, next) => {
                 break;
             }
             // TODO: Call the database to UPDATE the message in the database using the messageID
-            updatedMessage = mongo.updateMessage(resultMessage, req);
+            let updatedMessage = mongo.updateMessage(resultMessage, req);
             if (updatedMessage == null) {
                 res.status(500);
                 break;
@@ -193,7 +200,7 @@ app.use("/v1/messages/:messageID", (req, res, next) => {
             }
             // TODO: Call database to DELETE the specified message using the messageID
             // Call database to DELETE this channel
-            result = mongo.deleteMessage(resultMessage);
+            let result = mongo.deleteMessage(resultMessage);
             if (result == null) {
                 res.status(500);
             }
@@ -205,22 +212,22 @@ app.use("/v1/messages/:messageID", (req, res, next) => {
     }
 });
 
-// function createChannel(req) {
-//     let c = req.body.channel;
-//     return new Channel(c.Name, c.Description, c.Private,
-//         c.Members, c.CreatedAt, c.Creator, c.EditedAt);
-// }
+function createChannel(req) {
+    let c = req.body.channel;
+    return new channel.Channel(c.Name, c.Description, c.Private,
+        c.Members, c.CreatedAt, c.Creator, c.EditedAt);
+}
 
-// function createMessage(req) {
-//     let m = req.body.message;
-//     return new Message(req.params.ChannelID, m.CreatedAt, m.Body,
-//         m.Creator, m.EditedAt);
-// }
+function createMessage(req) {
+    let m = req.body.message;
+    return new message.Message(req.params.ChannelID, m.CreatedAt, m.Body,
+        m.Creator, m.EditedAt);
+}
 
 function isChannelMember(channel, user) {
     let isMember = false;
     if (channel.Private) {
-        for (i = 0; i < channel.Members.length; i++) {
+        for (let i = 0; i < channel.Members.length; i++) {
             if (channel.Members[i].ID == user.ID) {
                 isMember = true;
                 break;
@@ -254,3 +261,9 @@ app.use((err, req, res, next) => {
     res.status(500).send(err.message);
 });
 
+app.listen(port, "", () => {
+    //callback is executed once server is listening
+    console.log(`server is listening at http://:${port}...`);
+    console.log("port : " + port);
+    console.log("host : " + host);
+});
