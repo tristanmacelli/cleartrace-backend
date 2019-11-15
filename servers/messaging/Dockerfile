@@ -1,7 +1,7 @@
 # use `node` image as the base
 FROM node
 # set the current working directory to /app
-WORKDIR /app
+WORKDIR /src
 # copy the package.json and package-lock.json files to the work directory
 COPY package.json package-lock.json ./
 # run npm install to install all dependent packages

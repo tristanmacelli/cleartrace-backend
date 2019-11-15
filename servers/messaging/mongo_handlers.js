@@ -1,4 +1,5 @@
 "use strict";
+var Channel = require('./channel.js');
 
 const MongoClient = require('mongodb').MongoClient;
 const assert = require('assert');
@@ -11,10 +12,10 @@ const dbName = 'messaging';
 
 // Create a new MongoClient
 const client = new MongoClient(url);
+var db = null;
 
 // openConnection does something
 function openConnection() {
-    const db;
     // Use connect method to connect to the Server
     client.connect(function (err) {
         assert.equal(null, err);
@@ -22,8 +23,7 @@ function openConnection() {
 
         db = client.db(dbName);
     });
-    general = new Channel("general", "an open channel for all", false,
-        [], "enter timestamp here", "-1", "not yet edited");
+    var general = new Channel("general", "an open channel for all", false,[], "enter timestamp here", "-1", "not yet edited");
     // channel that we always want at startup
     result = insertNewChannel(general);
     if (result == null) {
@@ -33,7 +33,7 @@ function openConnection() {
     return db;
 }
 
-const db = openConnection();
+db = openConnection();
 
 // getAllChannels does something
 function getAllChannels() {
@@ -182,7 +182,7 @@ function last100Messages(id) {
         return null;
     }
     id = toString(id);
-    return db.messages.find(channelID = id).sort({ createdAt = -1 }).limit(100);
+    return db.messages.find(channelID = id).sort({ createdAt : -1 }).limit(100);
 }
 
 // closeConnection does something
