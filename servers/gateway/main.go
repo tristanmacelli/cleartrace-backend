@@ -10,6 +10,11 @@ import (
 	"./handlers"
 )
 
+// IndexHandler does something
+func IndexHandler(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte("Hello from API Gateway"))
+}
+
 // TODO: Check if its an authenticated user
 
 //main is the main entry point for the server
@@ -17,7 +22,7 @@ func main() {
 	address := os.Getenv("ADDR")
 	// Default address the server should listen on
 	if len(address) == 0 {
-		address = ":80"
+		addr = ":4000"
 	}
 	//get the TLS key and cert paths from environment variables
 	//this allows us to use a self-signed cert/key during development
@@ -41,6 +46,7 @@ func main() {
 
 	// starting a new mux session
 	mux := http.NewServeMux()
+	mux.HandleFunc("/", IndexHandler)
 	mux.HandleFunc("/v1/users", handlers.UserHandler)
 	mux.HandleFunc("/v1/users/", handlers.SpecificUserHandler)
 	mux.HandleFunc("/v1/sessions", handlers.SessionsHandler)
