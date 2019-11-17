@@ -7,6 +7,7 @@ import { Channel } from "./channel";
 import { Message } from "./message";
 
 // getAllChannels does something
+// TODO: make sure the returned value is a shape that we can actually use
 export function getAllChannels(channels: Collection) {
     // if channels does not yet exist
     let cursor = channels.find();
@@ -18,8 +19,8 @@ export function getAllChannels(channels: Collection) {
     return cursor.forEach(function (m: any) { JSON.stringify(m) });
 }
 
-// TODO: for each function that is returning result as a raw object
-//       we need to do a transformation of that data
+// TODO: for each function that is returning result as a raw Promise<WriteOpResult>
+//       we need to do a transformation of that data into an actual Channel or Message object
 
 // insertNewChannel takes in a new Channel and
 export function insertNewChannel(channels: Collection, newChannel: Channel): Channel | null {
@@ -169,21 +170,3 @@ export function last100Messages(messages: Collection, id: string) {
 }
 
 export * from "./mongo_handlers";
-// export default mongo_handlers;
-//export the public functions
-// module.exports = {
-//     openConnection,
-//     getAllChannels,
-//     insertNewChannel,
-//     insertNewMessage,
-//     updateChannel,
-//     addChannelMember,
-//     removeChannelMember,
-//     updateMessage,
-//     deleteChannel,
-//     deleteMessage,
-//     getChannelByID,
-//     getMessageByID,
-//     last100Messages,
-//     closeConnection
-// }
