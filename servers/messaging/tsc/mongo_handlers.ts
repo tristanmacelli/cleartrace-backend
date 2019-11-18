@@ -137,28 +137,92 @@ export function deleteMessage(messages: Collection, existingMessage: Message) {
     return result;
 }
 
-// queryByChannelID does something
+// getByChannelID does something
 // TODO: process cursor returned by .find() and return a new Channel object
-export function getChannelByID(channels: Collection, id: string): Channel {
-    if (id == null) {
-        // Can we throw an exception instead of returning null, since returning null implies that 
-        // we cannot use the properties of a newly created channel in index.js?
-        throw "No id value passed";
+// export async function getChannelByID(channels: Collection, id: string, res: any) {
+//     // Since id's are auto-generated and unique we chose to use find instead of findOne()
+//     let channelCursor = await channels.find({ _id: id }, function (err, res) {
+
+//     });//.limit(1);//.toArray().then((result) => result);
+//     // .findOne({ _id: id });
+//     // if (channelObj) {
+//     //     new Channel(channelObj.name, channelObj.description, channelObj.private,
+//     //         channelObj.members, channelObj.createdAt, channelObj.creator, channelObj.editedAt)
+//     //     return;
+//     // }
+//     let channelJSON: string = "";
+//     while (await channelCursor.hasNext()) {
+//         let channelObj = await channelCursor.next();
+//         channelJSON = JSON.stringify(channelObj);
+//     }
+//     return channelJSON;
+// }
+
+export function getChannelByID(channels: Collection, id: string) {
+    // Since id's are auto-generated and unique we chose to use find instead of findOne() 
+    let finalResponse: any;
+    let errString: any;
+
+    channels.find({ _id: id }).next().then(doc => {
+        finalResponse = doc
+        errString = ""
+    }).catch(err => {
+        finalResponse = null
+        errString = err
+    });
+    let finalChannel: Channel;
+    if (finalResponse == null) {
+        finalChannel = new Channel("", "", false, [], "", -1, "");
+        return { finalChannel, errString };
     }
-    // TODO: process cursor here before returning a new Channel()
-    channels.find({ _id: id });
-    return new Channel();
+    finalChannel = new Channel(finalResponse.name, finalResponse.description, finalResponse.private,
+        finalResponse.members, finalResponse.createdAt, finalResponse.Creator, finalResponse.editedAt);
+    return { finalChannel, errString };
 }
 
 // TODO: process cursor returned by .find() and return a new Message object
-export function getMessageByID(messages: Collection, id: string): Message {
-    if (id == null) {
-        throw "No id value passed";
+export function getMessageByID(messages: Collection, id: string) {
+
+    // Since id's are auto-generated and unique we chose to use find instead of findOne() 
+    let finalResponse: any;
+    let errString: any;
+
+    messages.find({ _id: id }).next().then(doc => {
+        finalResponse = doc;
+        errString = "";
+    }).catch(err => {
+        finalResponse = null;
+        errString = err;
+    })
+
+    let finalMessage: Message;
+    if (finalResponse == null) {
+        finalMessage = new Message("", "", "", "", "");
+        return { finalMessage, errString };
     }
-    // TODO: process cursor here before returning a new Message()
-    messages.find({ _id: id });
-    return new Message();
+    finalMessage = new Message(finalResponse.channelID, finalResponse.createdAt, finalResponse.body,
+        finalResponse.creator, finalResponse.editedAt)
+    return { finalMessage, errString }
 }
+
+// let messageObj: Channel[] = await messages.find({ _id: id }).limit(1).toArray();
+// if (messageObj.length == 0) {
+//     return null;
+// }
+// return messageObj[0];
+
+// .findOne({ _id: id });
+// if (channelObj) {
+//     new Channel(channelObj.name, channelObj.description, channelObj.private,
+//         channelObj.members, channelObj.createdAt, channelObj.creator, channelObj.editedAt)
+//     return;
+// }
+// find({ _id: id }).forEach(element => {
+//     print(element)
+//     channelObj = element;
+//     newChannel = new Channel(channelObj.name, channelObj.description, channelObj.private,
+//         channelObj.members, channelObj.createdAt, channelObj.creator, channelObj.editedAt);
+// });
 
 // last100Messages does something
 export function last100Messages(messages: Collection, id: string) {
@@ -167,6 +231,15 @@ export function last100Messages(messages: Collection, id: string) {
     }
     id = id.toString();
     return messages.find({ channelID: id }).sort({ createdAt: -1 }).limit(100);
+}
+
+// last100Messages does something
+export function last100SpecificMessages(messages: Collection, channelID: string, messageID: string) {
+    if (channelID == null) {
+        throw "No id value passed";
+    }
+    channelID = channelID.toString();
+    return messages.find({ channelID: channelID, _id: { $lt: messageID } }).sort({ createdAt: -1 }).limit(100);
 }
 
 export * from "./mongo_handlers";

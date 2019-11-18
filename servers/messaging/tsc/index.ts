@@ -3,8 +3,8 @@
 // to compile run tsc --outDir ../
 
 //require the express and morgan packages
-const express = require("express");
-const morgan = require("morgan");
+import express from "express";
+import morgan from "morgan";
 import { MongoClient, Db, Collection } from "mongodb";
 import * as mongo from "./mongo_handlers";
 import { Message } from "./message";
@@ -107,25 +107,40 @@ app.use("/v1/channels", (req: any, res: any, next: any) => {
 // Specific channel handler
 app.use("/v1/channels/:channelID", (req: any, res: any, next: any) => {
     // QUERY for the channel based on req.params.channelID
-    let resultChannel = mongo.getChannelByID(channels, req.params.channelID);
-    if (resultChannel === null) {
+    if (req.params.channelID == null) {
         res.status(404);
+        return;
     }
+    let result = mongo.getChannelByID(channels, req.params.channelID);
+    if (result.errString.length() > 0) {
+        res.status(500);
+        return;
+    }
+    let resultChannel = result.finalChannel;
     switch (req.method) {
         case 'GET':
             if (!isChannelMember(resultChannel, req.Header.Xuser)) {
                 res.status(403);
                 break;
             }
+            let returnedMessages;
             // QUERY for last 100 messages here
-            let last100Messages = mongo.last100Messages(messages, resultChannel._id);
-            if (last100Messages == null) {
-                res.status(500);
-                break;
+            if (req.params.before != null) {
+                returnedMessages = mongo.last100SpecificMessages(messages, resultChannel._id, req.params.before);
+                if (returnedMessages == null) {
+                    res.status(500);
+                    break;
+                }
+            } else {
+                returnedMessages = mongo.last100Messages(messages, resultChannel._id);
+                if (returnedMessages == null) {
+                    res.status(500);
+                    break;
+                }
             }
             res.set("Content-Type", "application/json");
             // write last 100 messages to the client, encoded in JSON 
-            res.json(last100Messages);
+            res.json(returnedMessages);
             break;
 
         case 'POST':
@@ -178,10 +193,16 @@ app.use("/v1/channels/:channelID", (req: any, res: any, next: any) => {
 // Adding and removing members from your channel
 app.use("/v1/channels/:channelID/members", (req: any, res: any, next: any) => {
     // QUERY for the channel based on req.params.channelID
-    let resultChannel = mongo.getChannelByID(channels, req.params.channelID);
-    if (resultChannel == null) {
+    if (req.params.channelID == null) {
         res.status(404);
+        return;
     }
+    let result = mongo.getChannelByID(channels, req.params.channelID);
+    if (result.errString.length() > 0) {
+        res.status(500);
+        return;
+    }
+    let resultChannel = result.finalChannel;
     switch (req.method) {
         case 'POST':
             if (!isChannelCreator(resultChannel, req.Header.Xuser)) {
@@ -218,10 +239,16 @@ app.use("/v1/channels/:channelID/members", (req: any, res: any, next: any) => {
 
 // Editing the body of or deleting a message
 app.use("/v1/messages/:messageID", (req: any, res: any, next: any) => {
-    let resultMessage = mongo.getMessageByID(messages, req.params.messageID);
-    if (resultMessage == null) {
+    if (req.params.messageID == null) {
         res.status(404);
+        return;
     }
+    let result = mongo.getMessageByID(messages, req.params.messageID);
+    if (result.errString.length() > 0) {
+        res.status(500);
+        return;
+    }
+    let resultMessage = result.finalMessage;
     switch (req.method) {
         case 'PATCH':
             if (!isMessageCreator(resultMessage, req.Header.Xuser)) {
