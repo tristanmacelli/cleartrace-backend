@@ -19,78 +19,90 @@ export function getAllChannels(channels: Collection) {
     return cursor.forEach(function (m: any) { JSON.stringify(m) });
 }
 
-// TODO: for each function that is returning result as a raw Promise<WriteOpResult>
-//       we need to do a transformation of that data into an actual Channel or Message object
-
 // insertNewChannel takes in a new Channel and
-export function insertNewChannel(channels: Collection, newChannel: Channel): Channel | null {
-    let result = channels.save({
+export function insertNewChannel(channels: Collection, newChannel: Channel) {
+    let errString: string = "";
+    let idWeWant: any;
+    channels.save({
         name: newChannel.name, description: newChannel.description,
         private: newChannel.private, members: newChannel.members,
         createdAt: newChannel.createdAt, creator: newChannel.creator,
         editedAt: newChannel.editedAt
+    }).catch(() => {
+        errString = "Error inserting new channel";
     });
-    if (result) {
-        return null;
-    }
-    newChannel._id = result._id;
-    return newChannel;
+    channels.find({ name: newChannel.name, createdAt: newChannel.createdAt }).next()
+        .then(doc => {
+            idWeWant = doc.id
+        }).catch(err => {
+            idWeWant = ""
+        });
+    newChannel._id = idWeWant;
+    return { newChannel, errString };
 }
 
 // insertNewMessage takes in a new Message and
-export function insertNewMessage(messages: Collection, newMessage: Message): Message | null {
+export function insertNewMessage(messages: Collection, newMessage: Message) {
+    let errString: string = "";
+    let idWeWant: any;
     if (newMessage.channelID == null) {
-        return null;
+        errString = "Could not find ID";
+        return { newMessage, errString };
     }
     let result = messages.save({
         channelID: newMessage.channelID, createdAt: newMessage.createdAt,
         body: newMessage.body, creator: newMessage.creator,
         editedAt: newMessage.editedAt
+    }).catch(() => {
+        errString = "Error inserting new message";
     });
-    if (result.hasWriteError()) {
-        return null;
-    }
-    newMessage._id = result._id;
-    return newMessage;
+    messages.find({ body: newMessage.body, createdAt: newMessage.createdAt }).next()
+        .then(doc => {
+            idWeWant = doc.id
+        }).catch(err => {
+            idWeWant = ""
+        });
+    newMessage._id = idWeWant;
+    return { newMessage, errString };
 }
 
 // updatedChannel updates name and body of an existing Channel using a req (request) object
-export function updateChannel(channels: Collection, existingChannel: Channel, req: any): Channel | null {
-    let result = channels.save({
+export function updateChannel(channels: Collection, existingChannel: Channel, req: any) {
+    let errString: string = "";
+    channels.save({
         name: req.body.name, description: req.body.description,
         private: existingChannel.private, members: existingChannel.members,
         createdAt: existingChannel.createdAt, creator: existingChannel.creator,
         editedAt: existingChannel.editedAt
+    }).catch(() => {
+        errString = "Error updating message";
     });
-    if (result.hasWriteError()) {
-        return null;
-    }
     existingChannel.name = req.body.name;
     existingChannel.description = req.body.description;
-    return existingChannel;
+    return { existingChannel, errString };
 }
 
 // addChannelMembers takes an existing Channel and adds members using a req (request) object
-export function addChannelMember(channels: Collection, existingChannel: Channel, req: any): Channel | null {
+export function addChannelMember(channels: Collection, existingChannel: Channel, req: any): string {
+    let errString: string = "";
     existingChannel.members.push(req.body.message.id);
-    let result = channels.save({
+    channels.save({
         name: existingChannel.name, description: existingChannel.description,
         private: existingChannel.private, members: existingChannel.members,
         createdAt: existingChannel.createdAt, creator: existingChannel.creator,
         editedAt: existingChannel.editedAt
+    }).catch(() => {
+        errString = "Error updating message";
     });
-    if (result.hasWriteError()) {
-        return null;
-    }
-    return existingChannel;
+    return errString;
 }
 
-// addChannelMembers takes an existing Channel and removes members using a req (request) object
-export function removeChannelMember(channels: Collection, existingChannel: Channel, req: any) {
+// removeChannelMember takes an existing Channel and removes members using a req (request) object
+export function removeChannelMember(channels: Collection, existingChannel: Channel, req: any): string {
     // Remove the specified member from this channel's list of members
     let errString: string = "";
     existingChannel.members.splice(req.body.message.id, 1);
-    let result = channels.save({
+    channels.save({
         name: existingChannel.name, description: existingChannel.description,
         private: existingChannel.private, members: existingChannel.members,
         createdAt: existingChannel.createdAt, creator: existingChannel.creator,
@@ -110,15 +122,12 @@ export function updateMessage(messages: Collection, existingMessage: Message, re
     }).catch(() => {
         errString = "Error updating message";
     });
-    if (errString.length > 0) {
-        return { existingMessage, errString };
-    }
     existingMessage.body = req.body;
     return { existingMessage, errString };
 }
 
 // deleteChannel does something
-export function deleteChannel(channels: Collection, messages: Collection, existingChannel: Channel) {
+export function deleteChannel(channels: Collection, messages: Collection, existingChannel: Channel): string {
     // We are not allowed to delete the general channel
     let errString: string = "";
     if (existingChannel.creator == -1) {
@@ -134,7 +143,7 @@ export function deleteChannel(channels: Collection, messages: Collection, existi
 }
 
 // deleteMessage does something
-export function deleteMessage(messages: Collection, existingMessage: Message) {
+export function deleteMessage(messages: Collection, existingMessage: Message): string {
     let errString: string = "";
     messages.remove({ messageID: existingMessage._id }).catch(() => {
         errString = "Error deleting message";
