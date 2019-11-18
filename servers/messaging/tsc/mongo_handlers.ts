@@ -137,27 +137,6 @@ export function deleteMessage(messages: Collection, existingMessage: Message) {
     return result;
 }
 
-// getByChannelID does something
-// TODO: process cursor returned by .find() and return a new Channel object
-// export async function getChannelByID(channels: Collection, id: string, res: any) {
-//     // Since id's are auto-generated and unique we chose to use find instead of findOne()
-//     let channelCursor = await channels.find({ _id: id }, function (err, res) {
-
-//     });//.limit(1);//.toArray().then((result) => result);
-//     // .findOne({ _id: id });
-//     // if (channelObj) {
-//     //     new Channel(channelObj.name, channelObj.description, channelObj.private,
-//     //         channelObj.members, channelObj.createdAt, channelObj.creator, channelObj.editedAt)
-//     //     return;
-//     // }
-//     let channelJSON: string = "";
-//     while (await channelCursor.hasNext()) {
-//         let channelObj = await channelCursor.next();
-//         channelJSON = JSON.stringify(channelObj);
-//     }
-//     return channelJSON;
-// }
-
 export function getChannelByID(channels: Collection, id: string) {
     // Since id's are auto-generated and unique we chose to use find instead of findOne() 
     let finalResponse: any;
@@ -204,25 +183,6 @@ export function getMessageByID(messages: Collection, id: string) {
         finalResponse.creator, finalResponse.editedAt)
     return { finalMessage, errString }
 }
-
-// let messageObj: Channel[] = await messages.find({ _id: id }).limit(1).toArray();
-// if (messageObj.length == 0) {
-//     return null;
-// }
-// return messageObj[0];
-
-// .findOne({ _id: id });
-// if (channelObj) {
-//     new Channel(channelObj.name, channelObj.description, channelObj.private,
-//         channelObj.members, channelObj.createdAt, channelObj.creator, channelObj.editedAt)
-//     return;
-// }
-// find({ _id: id }).forEach(element => {
-//     print(element)
-//     channelObj = element;
-//     newChannel = new Channel(channelObj.name, channelObj.description, channelObj.private,
-//         channelObj.members, channelObj.createdAt, channelObj.creator, channelObj.editedAt);
-// });
 
 // last100Messages does something
 export function last100Messages(messages: Collection, id: string) {
