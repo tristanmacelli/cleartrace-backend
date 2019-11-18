@@ -54,7 +54,7 @@ client.connect(function (err: any) {
     var general = new Channel("general", "an open channel for all", false, [], "enter timestamp here", -1, "not yet edited");
     // channel that we always want at startup
     let result = mongo.insertNewChannel(channels, general);
-    if (result == null) {
+    if (result.errString.length > 0) {
         console.log("failed to create general channel upon opening connection to DB");
         // res.status(500);
     }
@@ -92,11 +92,12 @@ app.use("/v1/channels", (req: any, res: any, next: any) => {
             // Call database to INSERT this new channel
             let newChannel = createChannel(req);
             let insertResult = mongo.insertNewChannel(channels, newChannel);
-            if (insertResult == null) {
+            if (insertResult.errString.length > 0) {
                 res.status(500);
             }
+            let insertChannel = insertResult.newChannel;
             res.set("Content-Type", "application/json");
-            res.json(insertResult);
+            res.json(insertChannel);
             res.status(201);  //probably cant do this >>> .send("success");
             break;
         default:
@@ -151,10 +152,11 @@ app.use("/v1/channels/:channelID", (req: any, res: any, next: any) => {
             // Create a new message
             // Call database to INSERT a new message to the channel
             let newMessage = createMessage(req);
-            let insertedMessage = mongo.insertNewMessage(messages, newMessage);
-            if (insertedMessage == null) {
+            let insertedResult = mongo.insertNewMessage(messages, newMessage);
+            if (insertedResult.errString.length > 0) {
                 res.status(500);
             }
+            let insertedMessage = insertedResult.newMessage;
             res.set("Content-Type", "application/json");
             res.json(insertedMessage);
             res.status(201);  // probably cant do this >>> .send("success");
@@ -165,10 +167,11 @@ app.use("/v1/channels/:channelID", (req: any, res: any, next: any) => {
                 break;
             }
             // Call database to UPDATE the channel name and/or description
-            let updatedChannel = mongo.updateChannel(channels, resultChannel, req);
-            if (updatedChannel == null) {
+            let updateResult = mongo.updateChannel(channels, resultChannel, req);
+            if (updateResult.errString.length > 0) {
                 res.status(500);
             }
+            let updatedChannel = updateResult.existingChannel;
             res.set("Content-Type", "application/json");
             res.json(updatedChannel);
             break;
@@ -210,8 +213,8 @@ app.use("/v1/channels/:channelID/members", (req: any, res: any, next: any) => {
                 break;
             }
             // Call database to UPDATE the current channel
-            let updatedChannel = mongo.addChannelMember(channels, resultChannel, req);
-            if (updatedChannel == null) {
+            let addResult = mongo.addChannelMember(channels, resultChannel, req);
+            if (addResult.length > 0) {
                 res.status(500);
                 break;
             }
