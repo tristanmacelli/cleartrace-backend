@@ -1,41 +1,17 @@
 "use strict";
+function __export(m) {
+    for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
+}
 Object.defineProperty(exports, "__esModule", { value: true });
-// import Channel = require('./channel');
-// import Message = require('./message');
+// to compile run tsc --outDir ../
 var mongodb_1 = require("mongodb");
 var channel_1 = require("./channel");
-// import MongoClient = require('mongodb-typescript');
-// import MongoObject = require('mongodb').ObjectID;
-var assert = require('assert');
-// Connection URL
-var url = 'mongodb://localhost:27017';
-// Database Name
-var dbName = 'messaging';
-// Create a new MongoClient
-var client = new mongodb_1.MongoClient(url);
-var db = null;
-// openConnection does something
-function openConnection() {
-    // Use connect method to connect to the Server
-    client.connect(function (err) {
-        assert.equal(null, err);
-        console.log("Connected successfully to server");
-        db = client.db(dbName);
-    });
-    var general = new channel_1.Channel("general", "an open channel for all", false, [], "enter timestamp here", -1, "not yet edited");
-    // channel that we always want at startup
-    var result = insertNewChannel(general);
-    if (result == null) {
-        console.log("failed to create general channel upon opening connection to DB");
-        // res.status(500);
-    }
-    return db;
-}
-db = openConnection();
+var message_1 = require("./message");
 // getAllChannels does something
-function getAllChannels() {
+// TODO: make sure the returned value is a shape that we can actually use
+function getAllChannels(channels) {
     // if channels does not yet exist
-    var cursor = db.channels.find();
+    var cursor = channels.find();
     if (!cursor.hasNext()) {
         // Throw error
         console.log("No channels collection found");
@@ -43,151 +19,195 @@ function getAllChannels() {
     }
     return cursor.forEach(function (m) { JSON.stringify(m); });
 }
-// insertNewChannel does something
-function insertNewChannel(newChannel) {
-    var result = db.channels.save({
+exports.getAllChannels = getAllChannels;
+// insertNewChannel takes in a new Channel and
+function insertNewChannel(channels, newChannel) {
+    var errString = "";
+    var idWeWant;
+    channels.save({
         name: newChannel.name, description: newChannel.description,
         private: newChannel.private, members: newChannel.members,
         createdAt: newChannel.createdAt, creator: newChannel.creator,
         editedAt: newChannel.editedAt
+    }).catch(function () {
+        errString = "Error inserting new channel";
     });
-    if (result.hasWriteError()) {
-        return null;
-    }
-    newChannel._id = result._id;
-    return newChannel;
+    channels.find({ name: newChannel.name, createdAt: newChannel.createdAt }).next()
+        .then(function (doc) {
+        idWeWant = doc.id;
+    }).catch(function (err) {
+        idWeWant = "";
+    });
+    newChannel._id = idWeWant;
+    return { newChannel: newChannel, errString: errString };
 }
-// insertNewMessage does something
-function insertNewMessage(newMessage) {
+exports.insertNewChannel = insertNewChannel;
+// insertNewMessage takes in a new Message and
+function insertNewMessage(messages, newMessage) {
+    var errString = "";
+    var idWeWant;
     if (newMessage.channelID == null) {
-        return null;
+        errString = "Could not find ID";
+        return { newMessage: newMessage, errString: errString };
     }
-    var result = db.messages.save({
+    var result = messages.save({
         channelID: newMessage.channelID, createdAt: newMessage.createdAt,
         body: newMessage.body, creator: newMessage.creator,
         editedAt: newMessage.editedAt
+    }).catch(function () {
+        errString = "Error inserting new message";
     });
-    if (result.hasWriteError()) {
-        return null;
-    }
-    newMessage._id = result._id;
-    return newMessage;
+    messages.find({ body: newMessage.body, createdAt: newMessage.createdAt }).next()
+        .then(function (doc) {
+        idWeWant = doc.id;
+    }).catch(function (err) {
+        idWeWant = "";
+    });
+    newMessage._id = idWeWant;
+    return { newMessage: newMessage, errString: errString };
 }
-// updatedChannel updates name and body of channel
-function updatedChannel(existingChannel, req) {
-    var result = db.channels.save({
+exports.insertNewMessage = insertNewMessage;
+// updatedChannel updates name and body of an existing Channel using a req (request) object
+function updateChannel(channels, existingChannel, req) {
+    var errString = "";
+    channels.save({
         name: req.body.name, description: req.body.description,
         private: existingChannel.private, members: existingChannel.members,
         createdAt: existingChannel.createdAt, creator: existingChannel.creator,
         editedAt: existingChannel.editedAt
+    }).catch(function () {
+        errString = "Error updating message";
     });
-    if (result.hasWriteError()) {
-        return null;
-    }
-    existingChannel.name = result.name;
-    existingChannel.description = result.description;
-    return existingChannel;
+    existingChannel.name = req.body.name;
+    existingChannel.description = req.body.description;
+    return { existingChannel: existingChannel, errString: errString };
 }
-function addChannelMembers(existingChannel, req) {
+exports.updateChannel = updateChannel;
+// addChannelMembers takes an existing Channel and adds members using a req (request) object
+function addChannelMember(channels, existingChannel, req) {
+    var errString = "";
     existingChannel.members.push(req.body.message.id);
-    var result = db.channels.save({
+    channels.save({
         name: existingChannel.name, description: existingChannel.description,
         private: existingChannel.private, members: existingChannel.members,
         createdAt: existingChannel.createdAt, creator: existingChannel.creator,
         editedAt: existingChannel.editedAt
+    }).catch(function () {
+        errString = "Error updating message";
     });
-    if (result.hasWriteError()) {
-        return null;
-    }
-    // Add the specified member
-    // existingChannel.members = newMembers;
-    return existingChannel;
+    return errString;
 }
-function removeChannelMembers(existingChannel, req) {
+exports.addChannelMember = addChannelMember;
+// removeChannelMember takes an existing Channel and removes members using a req (request) object
+function removeChannelMember(channels, existingChannel, req) {
     // Remove the specified member from this channel's list of members
+    var errString = "";
     existingChannel.members.splice(req.body.message.id, 1);
-    var result = db.channels.save({
+    channels.save({
         name: existingChannel.name, description: existingChannel.description,
         private: existingChannel.private, members: existingChannel.members,
         createdAt: existingChannel.createdAt, creator: existingChannel.creator,
         editedAt: existingChannel.editedAt
+    }).catch(function () {
+        errString = "Error updating message";
     });
-    if (result.hasWriteError()) {
-        return null;
-    }
-    return existingChannel;
+    return errString;
 }
-function updateMessage(existingMessage, req) {
-    var result = db.messages.save({
+exports.removeChannelMember = removeChannelMember;
+function updateMessage(messages, existingMessage, req) {
+    var errString = "";
+    messages.save({
         body: req.body, creator: existingMessage.creator,
         createdAt: existingMessage.createdAt, channelID: existingMessage.channelID,
         editedAt: existingMessage.editedAt
+    }).catch(function () {
+        errString = "Error updating message";
     });
-    if (result.hasWriteError()) {
-        return null;
-    }
-    existingMessage.body = result.body;
-    return existingMessage;
+    existingMessage.body = req.body;
+    return { existingMessage: existingMessage, errString: errString };
 }
+exports.updateMessage = updateMessage;
 // deleteChannel does something
-function deleteChannel(existingChannel) {
+function deleteChannel(channels, messages, existingChannel) {
     // We are not allowed to delete the general channel
+    var errString = "";
     if (existingChannel.creator == -1) {
-        return null;
+        return "Error deleting channel";
     }
-    db.channels.remove({ _id: new mongodb_1.ObjectID(existingChannel._id) });
-    var result = db.messages.remove({ channelID: existingChannel._id });
-    if (result.hasWriteError()) {
-        return null;
-    }
-    return result;
+    channels.remove({ _id: new mongodb_1.ObjectID(existingChannel._id) }).catch(function () {
+        errString = "Error deleting channel";
+    });
+    messages.remove({ channelID: existingChannel._id }).catch(function () {
+        errString = "Error deleting channel";
+    });
+    return errString;
 }
-function deleteMessage(existingMessage) {
-    var result = db.messages.remove({ messageID: existingMessage._id });
-    if (result.hasWriteError()) {
-        return null;
-    }
-    return result;
+exports.deleteChannel = deleteChannel;
+// deleteMessage does something
+function deleteMessage(messages, existingMessage) {
+    var errString = "";
+    messages.remove({ messageID: existingMessage._id }).catch(function () {
+        errString = "Error deleting message";
+    });
+    return errString;
 }
-// queryByChannelID does something
-function getChannelByID(id) {
-    if (id == null) {
-        return null;
+exports.deleteMessage = deleteMessage;
+function getChannelByID(channels, id) {
+    // Since id's are auto-generated and unique we chose to use find instead of findOne() 
+    var finalResponse;
+    var errString;
+    channels.find({ _id: id }).next().then(function (doc) {
+        finalResponse = doc;
+        errString = "";
+    }).catch(function (err) {
+        finalResponse = null;
+        errString = err;
+    });
+    var finalChannel;
+    if (finalResponse == null) {
+        finalChannel = new channel_1.Channel("", "", false, [], "", -1, "");
+        return { finalChannel: finalChannel, errString: errString };
     }
-    return db.channels.find({ _id: id });
+    finalChannel = new channel_1.Channel(finalResponse.name, finalResponse.description, finalResponse.private, finalResponse.members, finalResponse.createdAt, finalResponse.Creator, finalResponse.editedAt);
+    return { finalChannel: finalChannel, errString: errString };
 }
-function getMessageByID(id) {
-    if (id == null) {
-        return null;
+exports.getChannelByID = getChannelByID;
+function getMessageByID(messages, id) {
+    // Since id's are auto-generated and unique we chose to use find instead of findOne() 
+    var finalResponse;
+    var errString;
+    messages.find({ _id: id }).next().then(function (doc) {
+        finalResponse = doc;
+        errString = "";
+    }).catch(function (err) {
+        finalResponse = null;
+        errString = err;
+    });
+    var finalMessage;
+    if (finalResponse == null) {
+        finalMessage = new message_1.Message("", "", "", "", "");
+        return { finalMessage: finalMessage, errString: errString };
     }
-    return db.messages.find({ _id: id });
+    finalMessage = new message_1.Message(finalResponse.channelID, finalResponse.createdAt, finalResponse.body, finalResponse.creator, finalResponse.editedAt);
+    return { finalMessage: finalMessage, errString: errString };
 }
+exports.getMessageByID = getMessageByID;
 // last100Messages does something
-function last100Messages(id) {
+function last100Messages(messages, id) {
     if (id == null) {
-        return null;
+        throw "No id value passed";
     }
     id = id.toString();
-    return db.messages.find({ channelID: id }).sort({ createdAt: -1 }).limit(100);
+    return messages.find({ channelID: id }).sort({ createdAt: -1 }).limit(100);
 }
-// closeConnection does something
-function closeConnection() {
-    client.close();
+exports.last100Messages = last100Messages;
+// last100Messages does something
+function last100SpecificMessages(messages, channelID, messageID) {
+    if (channelID == null) {
+        throw "No id value passed";
+    }
+    channelID = channelID.toString();
+    return messages.find({ channelID: channelID, _id: { $lt: messageID } }).sort({ createdAt: -1 }).limit(100);
 }
-//export the public functions
-module.exports = {
-    openConnection: openConnection,
-    getAllChannels: getAllChannels,
-    insertNewChannel: insertNewChannel,
-    insertNewMessage: insertNewMessage,
-    updatedChannel: updatedChannel,
-    addChannelMembers: addChannelMembers,
-    removeChannelMembers: removeChannelMembers,
-    updateMessage: updateMessage,
-    deleteChannel: deleteChannel,
-    deleteMessage: deleteMessage,
-    getChannelByID: getChannelByID,
-    getMessageByID: getMessageByID,
-    last100Messages: last100Messages,
-    closeConnection: closeConnection
-};
+exports.last100SpecificMessages = last100SpecificMessages;
+__export(require("./mongo_handlers"));

@@ -7,7 +7,7 @@ export TLSCERT=/etc/letsencrypt/live/api.sauravkharb.me/fullchain.pem
 export TLSKEY=/etc/letsencrypt/live/api.sauravkharb.me/privkey.pem
 
 docker run -d \
--p 5001:5001 \
+-p 27017:27017 \
 --name messaging \
 -v /etc/letsencrypt:/etc/letsencrypt:ro \
 -e TLSCERT=$TLSCERT \

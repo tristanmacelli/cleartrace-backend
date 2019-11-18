@@ -60,7 +60,7 @@ client.connect(function (err: any) {
     }
 
     // Start the application after the database connection is ready
-    app.listen(port, "", () => {
+    app.listen(+port, "", () => {
         //callback is executed once server is listening
         console.log(`server is listening at http://:${port}...`);
         console.log("port : " + port);
