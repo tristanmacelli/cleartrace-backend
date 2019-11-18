@@ -49,7 +49,7 @@ export function insertNewMessage(messages: Collection, newMessage: Message) {
         errString = "Could not find ID";
         return { newMessage, errString };
     }
-    let result = messages.save({
+    messages.save({
         channelID: newMessage.channelID, createdAt: newMessage.createdAt,
         body: newMessage.body, creator: newMessage.creator,
         editedAt: newMessage.editedAt
@@ -75,7 +75,7 @@ export function updateChannel(channels: Collection, existingChannel: Channel, re
         createdAt: existingChannel.createdAt, creator: existingChannel.creator,
         editedAt: existingChannel.editedAt
     }).catch(() => {
-        errString = "Error updating message";
+        errString = "Error updating channel";
     });
     existingChannel.name = req.body.name;
     existingChannel.description = req.body.description;
@@ -92,7 +92,7 @@ export function addChannelMember(channels: Collection, existingChannel: Channel,
         createdAt: existingChannel.createdAt, creator: existingChannel.creator,
         editedAt: existingChannel.editedAt
     }).catch(() => {
-        errString = "Error updating message";
+        errString = "Error adding new members to channel";
     });
     return errString;
 }
@@ -108,7 +108,7 @@ export function removeChannelMember(channels: Collection, existingChannel: Chann
         createdAt: existingChannel.createdAt, creator: existingChannel.creator,
         editedAt: existingChannel.editedAt
     }).catch(() => {
-        errString = "Error updating message";
+        errString = "Error removing member from channel";
     });
     return errString;
 }
@@ -128,8 +128,8 @@ export function updateMessage(messages: Collection, existingMessage: Message, re
 
 // deleteChannel does something
 export function deleteChannel(channels: Collection, messages: Collection, existingChannel: Channel): string {
-    // We are not allowed to delete the general channel
     let errString: string = "";
+    // We are not allowed to delete the general channel
     if (existingChannel.creator == -1) {
         return "Error deleting channel";
     }
@@ -137,7 +137,7 @@ export function deleteChannel(channels: Collection, messages: Collection, existi
         errString = "Error deleting channel";
     });
     messages.remove({ channelID: existingChannel._id }).catch(() => {
-        errString = "Error deleting channel";
+        errString = "Error deleting messages associated with the channel";
     });
     return errString;
 }
@@ -161,7 +161,7 @@ export function getChannelByID(channels: Collection, id: string) {
         errString = ""
     }).catch(err => {
         finalResponse = null
-        errString = err
+        errString = "Error finding a channel by id"
     });
     let finalChannel: Channel;
     if (finalResponse == null) {
@@ -184,7 +184,7 @@ export function getMessageByID(messages: Collection, id: string) {
         errString = "";
     }).catch(err => {
         finalResponse = null;
-        errString = err;
+        errString = "Error finding a message by id";
     })
 
     let finalMessage: Message;
