@@ -7,7 +7,6 @@ import { Channel } from "./channel";
 import { Message } from "./message";
 
 // getAllChannels does something
-// TODO: make sure the returned value is a shape that we can actually use
 export function getAllChannels(channels: Collection) {
     // if channels does not yet exist
     let cursor = channels.find();
@@ -16,13 +15,14 @@ export function getAllChannels(channels: Collection) {
         console.log("No channels collection found");
         return null;
     }
+    // TODO: make sure the returned value is a shape that we can actually use
     return cursor.forEach(function (m: any) { JSON.stringify(m) });
 }
 
 // insertNewChannel takes in a new Channel and
 export function insertNewChannel(channels: Collection, newChannel: Channel) {
     let errString: string = "";
-    let idWeWant: any;
+    let autoAssignedID: any;
     channels.save({
         name: newChannel.name, description: newChannel.description,
         private: newChannel.private, members: newChannel.members,
@@ -33,22 +33,18 @@ export function insertNewChannel(channels: Collection, newChannel: Channel) {
     });
     channels.find({ name: newChannel.name, createdAt: newChannel.createdAt }).next()
         .then(doc => {
-            idWeWant = doc.id
-        }).catch(err => {
-            idWeWant = ""
+            autoAssignedID = doc._id
+        }).catch(() => {
+            autoAssignedID = ""
         });
-    newChannel._id = idWeWant;
+    newChannel._id = autoAssignedID;
     return { newChannel, errString };
 }
 
 // insertNewMessage takes in a new Message and
 export function insertNewMessage(messages: Collection, newMessage: Message) {
     let errString: string = "";
-    let idWeWant: any;
-    if (newMessage.channelID == null) {
-        errString = "Could not find ID";
-        return { newMessage, errString };
-    }
+    let autoAssignedID: any;
     messages.save({
         channelID: newMessage.channelID, createdAt: newMessage.createdAt,
         body: newMessage.body, creator: newMessage.creator,
@@ -58,11 +54,11 @@ export function insertNewMessage(messages: Collection, newMessage: Message) {
     });
     messages.find({ body: newMessage.body, createdAt: newMessage.createdAt }).next()
         .then(doc => {
-            idWeWant = doc.id
-        }).catch(err => {
-            idWeWant = ""
+            autoAssignedID = doc._id
+        }).catch(() => {
+            autoAssignedID = ""
         });
-    newMessage._id = idWeWant;
+    newMessage._id = autoAssignedID;
     return { newMessage, errString };
 }
 
@@ -113,6 +109,7 @@ export function removeChannelMember(channels: Collection, existingChannel: Chann
     return errString;
 }
 
+// updateMessage takes an existing Message and a request with updates to apply to the Message's body 
 export function updateMessage(messages: Collection, existingMessage: Message, req: any) {
     let errString: string = "";
     messages.save({
@@ -151,6 +148,7 @@ export function deleteMessage(messages: Collection, existingMessage: Message): s
     return errString;
 }
 
+// getChannelByID does something
 export function getChannelByID(channels: Collection, id: string) {
     // Since id's are auto-generated and unique we chose to use find instead of findOne() 
     let finalResponse: any;
@@ -159,7 +157,7 @@ export function getChannelByID(channels: Collection, id: string) {
     channels.find({ _id: id }).next().then(doc => {
         finalResponse = doc
         errString = ""
-    }).catch(err => {
+    }).catch(() => {
         finalResponse = null
         errString = "Error finding a channel by id"
     });
@@ -173,8 +171,8 @@ export function getChannelByID(channels: Collection, id: string) {
     return { finalChannel, errString };
 }
 
+// getMessageByID does something
 export function getMessageByID(messages: Collection, id: string) {
-
     // Since id's are auto-generated and unique we chose to use find instead of findOne() 
     let finalResponse: any;
     let errString: any;
@@ -182,7 +180,7 @@ export function getMessageByID(messages: Collection, id: string) {
     messages.find({ _id: id }).next().then(doc => {
         finalResponse = doc;
         errString = "";
-    }).catch(err => {
+    }).catch(() => {
         finalResponse = null;
         errString = "Error finding a message by id";
     })
@@ -197,6 +195,7 @@ export function getMessageByID(messages: Collection, id: string) {
     return { finalMessage, errString }
 }
 
+// TODO: Reshape the return value of find to a JSON array of message model objects
 // last100Messages does something
 export function last100Messages(messages: Collection, id: string) {
     if (id == null) {
@@ -206,6 +205,7 @@ export function last100Messages(messages: Collection, id: string) {
     return messages.find({ channelID: id }).sort({ createdAt: -1 }).limit(100);
 }
 
+// TODO: Reshape the return value of find to a JSON array of message model objects
 // last100Messages does something
 export function last100SpecificMessages(messages: Collection, channelID: string, messageID: string) {
     if (channelID == null) {
