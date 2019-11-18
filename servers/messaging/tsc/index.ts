@@ -179,7 +179,7 @@ app.use("/v1/channels/:channelID", (req: any, res: any, next: any) => {
             }
             // Call database to DELETE this channel
             let result = mongo.deleteChannel(channels, messages, resultChannel);
-            if (result == null) {
+            if (result.length > 0) {
                 res.status(500);
             }
             res.set("Content-Type", "text/plain");
@@ -224,8 +224,8 @@ app.use("/v1/channels/:channelID/members", (req: any, res: any, next: any) => {
                 break;
             }
             // database to UPDATE the current channel members
-            updatedChannel = mongo.removeChannelMember(channels, resultChannel, req);
-            if (updatedChannel == null) {
+            let errResult = mongo.removeChannelMember(channels, resultChannel, req);
+            if (errResult.length > 0) {
                 res.status(500);
                 break;
             }
@@ -256,11 +256,12 @@ app.use("/v1/messages/:messageID", (req: any, res: any, next: any) => {
                 break;
             }
             // TODO: Call the database to UPDATE the message in the database using the messageID
-            let updatedMessage = mongo.updateMessage(messages, resultMessage, req);
-            if (updatedMessage == null) {
+            let updatedResult = mongo.updateMessage(messages, resultMessage, req);
+            if (updatedResult.errString.length > 0) {
                 res.status(500);
                 break;
             }
+            let updatedMessage = updatedResult.existingMessage;
             res.set("Content-Type", "application/json");
             res.json(updatedMessage);
             break;
@@ -272,7 +273,7 @@ app.use("/v1/messages/:messageID", (req: any, res: any, next: any) => {
             // Call database to DELETE the specified message using the messageID
             // Call database to DELETE this channel
             let result = mongo.deleteMessage(messages, resultMessage);
-            if (result == null) {
+            if (result.length > 0) {
                 res.status(500);
             }
             res.set("Content-Type", "text/plain");

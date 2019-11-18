@@ -86,55 +86,60 @@ export function addChannelMember(channels: Collection, existingChannel: Channel,
 }
 
 // addChannelMembers takes an existing Channel and removes members using a req (request) object
-export function removeChannelMember(channels: Collection, existingChannel: Channel, req: any): Channel | null {
+export function removeChannelMember(channels: Collection, existingChannel: Channel, req: any) {
     // Remove the specified member from this channel's list of members
+    let errString: string = "";
     existingChannel.members.splice(req.body.message.id, 1);
     let result = channels.save({
         name: existingChannel.name, description: existingChannel.description,
         private: existingChannel.private, members: existingChannel.members,
         createdAt: existingChannel.createdAt, creator: existingChannel.creator,
         editedAt: existingChannel.editedAt
+    }).catch(() => {
+        errString = "Error updating message";
     });
-    if (result.hasWriteError()) {
-        return null;
-    }
-    return existingChannel;
+    return errString;
 }
 
 export function updateMessage(messages: Collection, existingMessage: Message, req: any) {
-    let result = messages.save({
+    let errString: string = "";
+    messages.save({
         body: req.body, creator: existingMessage.creator,
         createdAt: existingMessage.createdAt, channelID: existingMessage.channelID,
         editedAt: existingMessage.editedAt
+    }).catch(() => {
+        errString = "Error updating message";
     });
-    if (result.hasWriteError()) {
-        return null;
+    if (errString.length > 0) {
+        return { existingMessage, errString };
     }
     existingMessage.body = req.body;
-    return existingMessage;
+    return { existingMessage, errString };
 }
 
 // deleteChannel does something
 export function deleteChannel(channels: Collection, messages: Collection, existingChannel: Channel) {
     // We are not allowed to delete the general channel
+    let errString: string = "";
     if (existingChannel.creator == -1) {
-        return null;
+        return "Error deleting channel";
     }
-    channels.remove({ _id: new ObjectID(existingChannel._id) });
-    let result = messages.remove({ channelID: existingChannel._id });
-    if (result.hasWriteError()) {
-        return null;
-    }
-    return result;
+    channels.remove({ _id: new ObjectID(existingChannel._id) }).catch(() => {
+        errString = "Error deleting channel";
+    });
+    messages.remove({ channelID: existingChannel._id }).catch(() => {
+        errString = "Error deleting channel";
+    });
+    return errString;
 }
 
 // deleteMessage does something
 export function deleteMessage(messages: Collection, existingMessage: Message) {
-    let result = messages.remove({ messageID: existingMessage._id });
-    if (result.hasWriteError()) {
-        return null;
-    }
-    return result;
+    let errString: string = "";
+    messages.remove({ messageID: existingMessage._id }).catch(() => {
+        errString = "Error deleting message";
+    });
+    return errString;
 }
 
 export function getChannelByID(channels: Collection, id: string) {
@@ -159,7 +164,6 @@ export function getChannelByID(channels: Collection, id: string) {
     return { finalChannel, errString };
 }
 
-// TODO: process cursor returned by .find() and return a new Message object
 export function getMessageByID(messages: Collection, id: string) {
 
     // Since id's are auto-generated and unique we chose to use find instead of findOne() 
