@@ -69,8 +69,7 @@ client.connect(function (err: any) {
 });
 
 // All channel handler
-// No errors here :)
-app.use("/v1/channels", (req: any, res: any, next: any) => {
+app.use("/v1/channels", (req: any, res: any) => {
     switch (req.method) {
         case 'GET':
             res.set("Content-Type", "application/json");
@@ -106,7 +105,7 @@ app.use("/v1/channels", (req: any, res: any, next: any) => {
 });
 
 // Specific channel handler
-app.use("/v1/channels/:channelID", (req: any, res: any, next: any) => {
+app.use("/v1/channels/:channelID", (req: any, res: any) => {
     // QUERY for the channel based on req.params.channelID
     if (req.params.channelID == null) {
         res.status(404);
@@ -194,7 +193,7 @@ app.use("/v1/channels/:channelID", (req: any, res: any, next: any) => {
 });
 
 // Adding and removing members from your channel
-app.use("/v1/channels/:channelID/members", (req: any, res: any, next: any) => {
+app.use("/v1/channels/:channelID/members", (req: any, res: any) => {
     // QUERY for the channel based on req.params.channelID
     if (req.params.channelID == null) {
         res.status(404);
@@ -241,7 +240,7 @@ app.use("/v1/channels/:channelID/members", (req: any, res: any, next: any) => {
 });
 
 // Editing the body of or deleting a message
-app.use("/v1/messages/:messageID", (req: any, res: any, next: any) => {
+app.use("/v1/messages/:messageID", (req: any, res: any) => {
     if (req.params.messageID == null) {
         res.status(404);
         return;
@@ -315,17 +314,17 @@ function isChannelMember(channel: Channel, user: any): boolean {
 }
 
 function isChannelCreator(channel: Channel, user: any): boolean {
-    return channel.creator == user._id;
+    return channel.creator == user.id;
 }
 
 function isMessageCreator(message: Message, user: any): boolean {
-    return message.creator == user._id;
+    return message.creator == user.id;
 }
 
-//error handler that will be called if
-//any handler earlier in the chain throws
-//an exception or passes an error to next()
-app.use((err: any, req: any, res: any, next: any) => {
+// error handler that will be called if
+// any handler earlier in the chain throws
+// an exception or passes an error to next()
+app.use((err: any, req: any, res: any) => {
     //write a stack trace to standard out,
     //which writes to the server's log
     console.error(err.stack)
