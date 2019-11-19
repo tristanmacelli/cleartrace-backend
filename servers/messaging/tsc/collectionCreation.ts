@@ -1,51 +1,42 @@
-//require the express and morgan packages
-import { MongoClient, Db, Collection } from "mongodb";
+// import the MongoClient and Db
+import { MongoClient, Db } from "mongodb";
 
-// Connection URL
+// Mongo Connection URL
 const url = 'mongo://mongodb:27017';
 
 // Database Name
 const dbName = 'mongodb';
 
 // Create a new MongoClient
-// const client = new MongoClient(url,  { useUnifiedTopology: true });
-var db: Db;
-
 const client = new MongoClient(url);
 
 client.connect(function (err: any) {
     console.log("Connected successfully to server");
-    console.log("the error is ", err)
-    db = client.db(dbName);
+    console.log("the error is ", err);
+    var db: Db = client.db(dbName);
 
     // check if any collection exists
-    db.createCollection('channels', function (err, collection) {
-
-    });
-    db.createCollection('messages', function (err, collection) {
-        client.close()
+    db.createCollection('channels');
+    db.createCollection('messages', function () {
+        client.close();
     });
 });
 
 
 // Reasoning for refactor: 
-// https://mongodb.github.io/node-mongodb-native/driver-articles/mongoclient.html#mongoclient-connection-pooling
+// https://bit.ly/342jCtj
 // Use connect method to connect to the mongo DB
-// MongoClient.connect(url, function (err: any, d:MongoClient) {
+// MongoClient.connect(url, function (err: any, mc:MongoClient) {
 //     console.log("Connected successfully to server");
-//     console.log("there is a fucking error:", err.err)
+//     console.log("there is an error:", err.err);
 //     if (err) throw err;
 
 //     // db = client.db(dbName);
-//     var db = d.db(dbName);
-//     // Create db.channels and db.messages collections in mongo
-//     // https://mongodb.github.io/node-mongodb-native/api-articles/nodekoarticle1.html#mongo-db-and-collections
-//     db.createCollection('channels', function (err, collection) {
-
-//     });
-//     db.createCollection('messages', function (err, collection) {
-//         d.close()
-//     });
+//     var db = mc.db(dbName);
+//     // Create channels and messages collections in mongo
+//     // https://bit.ly/2r57au6
+//     db.createCollection('channels');
+//     db.createCollection('messages');
 //     // var general = new Channel("general", "an open channel for all", false, [], "enter timestamp here", -1, "not yet edited");
 //     // channel that we always want at startup
 //     // let result  = mongo.insertNewChannel(channels, general);
@@ -63,4 +54,5 @@ client.connect(function (err: any) {
 //     //     console.log("failed to create general channel upon opening connection to DB");
 //     //     // res.status(500);
 //     // }
+//     mc.close();
 // });

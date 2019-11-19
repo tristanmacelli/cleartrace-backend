@@ -5,7 +5,7 @@
 //require the express and morgan packages
 import express from "express";
 import morgan from "morgan";
-import { MongoClient, Db, Collection, Server } from "mongodb";
+import { MongoClient, Collection } from "mongodb";
 import * as mongo from "./mongo_handlers";
 import { Message } from "./message";
 import { Channel } from "./channel";
@@ -28,29 +28,29 @@ const url = 'mongo://mongodb:27017/mongodb';
 // Database Name
 const dbName = 'mongodb';
 
+var messages: any;
+var channels: Collection;
 // Create a new MongoClient
 // const client = new MongoClient(url);
 // var db: Db;
-var messages: any;
-var channels: Collection;
 //new Server("mongo://mongodb", 27017)
 // var mc = new MongoClient("mongo://mongodb:27017", {native_parser:true})
 // mc.
 // Reasoning for refactor: 
-// https://mongodb.github.io/node-mongodb-native/driver-articles/mongoclient.html#mongoclient-connection-pooling
+// https://bit.ly/342jCtj
 // Use connect method to connect to the mongo DB
 // client.connect(function (err: any) {
-MongoClient.connect(url, function (err: any, client:MongoClient) {
+MongoClient.connect(url, function (err: any, client: MongoClient) {
+    console.log("the error is: ", err);
     console.log("Connected successfully to server");
     const db = client.db(dbName);
     // db = client.db(dbName);
 
     // check if any collection exists
-    db.collections()
-    .then(doc => {
-        console.log(doc)
+    db.collections().then(doc => {
+        console.log(doc);
     }).catch(err => {
-        console.log(err)
+        console.log(err);
     });
 
     // Start the application after the database connection is ready
