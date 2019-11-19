@@ -1,4 +1,5 @@
 "use strict";
+// "use strict";
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -18,7 +19,6 @@ var mongodb_1 = require("mongodb");
 var mongo = __importStar(require("./mongo_handlers"));
 var message_1 = require("./message");
 var channel_1 = require("./channel");
-var assert_1 = __importDefault(require("assert"));
 //create a new express application
 var app = express_1.default();
 var addr = process.env.ADDR || ":80";
@@ -29,36 +29,32 @@ app.use(express_1.default.json());
 //add the request logging middleware
 app.use(morgan_1.default("dev"));
 // Connection URL
-var url = 'mongodb://localhost:27017';
+var url = 'mongo://mongodb:27017/mongodb';
 // Database Name
-var dbName = 'messaging';
+var dbName = 'mongodb';
 // Create a new MongoClient
-var client = new mongodb_1.MongoClient(url);
-var db;
+// const client = new MongoClient(url);
+// var db: Db;
 var messages;
 var channels;
+//new Server("mongo://mongodb", 27017)
+// var mc = new MongoClient("mongo://mongodb:27017", {native_parser:true})
+// mc.
 // Reasoning for refactor: 
 // https://mongodb.github.io/node-mongodb-native/driver-articles/mongoclient.html#mongoclient-connection-pooling
 // Use connect method to connect to the mongo DB
-client.connect(function (err) {
-    assert_1.default.equal(null, err);
+// client.connect(function (err: any) {
+mongodb_1.MongoClient.connect(url, function (err, client) {
     console.log("Connected successfully to server");
-    db = client.db(dbName);
-    // Create db.channels and db.messages collections in mongo
-    // https://mongodb.github.io/node-mongodb-native/api-articles/nodekoarticle1.html#mongo-db-and-collections
-    db.createCollection('channels', function (err, collection) {
-        channels = collection;
+    var db = client.db(dbName);
+    // db = client.db(dbName);
+    // check if any collection exists
+    db.collections()
+        .then(function (doc) {
+        console.log(doc);
+    }).catch(function (err) {
+        console.log(err);
     });
-    db.createCollection('messages', function (err, collection) {
-        messages = collection;
-    });
-    var general = new channel_1.Channel("general", "an open channel for all", false, [], "enter timestamp here", -1, "not yet edited");
-    // channel that we always want at startup
-    var result = mongo.insertNewChannel(channels, general);
-    if (result.errString.length > 0) {
-        console.log("failed to create general channel upon opening connection to DB");
-        // res.status(500);
-    }
     // Start the application after the database connection is ready
     app.listen(+port, "", function () {
         //callback is executed once server is listening
