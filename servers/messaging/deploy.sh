@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
-cd tsc/
-tsc --outDir ../
-cd -
+
 bash build.sh
 sudo docker push jtanderson7/messaging
 chmod g+x ./refresh.sh

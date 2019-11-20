@@ -1,6 +1,5 @@
 // "use strict";
 // version 0.1
-// to compile run tsc --outDir ../
 
 //require the express and morgan packages
 import express from "express";
@@ -39,7 +38,7 @@ var channels: Collection;
 // Create a new MongoClient
 const mc = new MongoClient(url, { useUnifiedTopology: true });
 
-const mongoClient = async (): Promise<MongoClient> => {
+const createConnection = async (): Promise<MongoClient> => {
     let client: MongoClient;
     try {
         client = await mc.connect();
@@ -51,12 +50,8 @@ const mongoClient = async (): Promise<MongoClient> => {
     return client!;
 }
 
-const checkConnection = async () => {
-    let client = await mongoClient();
-    return client
-}
 const main = async () => {
-    let client = await checkConnection();
+    let client = await createConnection();
     db = client.db(dbName);
     channels = db.collection("channels");
     messages = db.collection("messages");

@@ -1,7 +1,6 @@
 "use strict";
 // "use strict";
 // version 0.1
-// to compile run tsc --outDir ../
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -77,7 +76,7 @@ var channels;
 // https://bit.ly/342jCtj
 // Create a new MongoClient
 var mc = new mongodb_1.MongoClient(url, { useUnifiedTopology: true });
-var mongoClient = function () { return __awaiter(_this, void 0, void 0, function () {
+var createConnection = function () { return __awaiter(_this, void 0, void 0, function () {
     var client, e_1;
     return __generator(this, function (_a) {
         switch (_a.label) {
@@ -94,17 +93,6 @@ var mongoClient = function () { return __awaiter(_this, void 0, void 0, function
                 process.exit(1);
                 return [3 /*break*/, 3];
             case 3: return [2 /*return*/, client];
-        }
-    });
-}); };
-var checkConnection = function () { return __awaiter(_this, void 0, void 0, function () {
-    var client;
-    return __generator(this, function (_a) {
-        switch (_a.label) {
-            case 0: return [4 /*yield*/, mongoClient()];
-            case 1:
-                client = _a.sent();
-                return [2 /*return*/, client];
         }
     });
 }); };
@@ -141,7 +129,7 @@ var main = function () { return __awaiter(_this, void 0, void 0, function () {
     var client;
     return __generator(this, function (_a) {
         switch (_a.label) {
-            case 0: return [4 /*yield*/, checkConnection()];
+            case 0: return [4 /*yield*/, createConnection()];
             case 1:
                 client = _a.sent();
                 db = client.db(dbName);
