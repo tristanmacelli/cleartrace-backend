@@ -12,6 +12,6 @@ COPY . .
 EXPOSE 5001-5010
 # you have a provisioning script @ /p.sh
 COPY collectionCreation.js /collectionCreation.js
-CMD ["node" "collectionCreation.js"]
+CMD ["node", "collectionCreation.js"]
 # set the entrypoint command
-ENTRYPOINT ["node", "index.js"]
+ENTRYPOINT ["node", "/src/index.js"]
