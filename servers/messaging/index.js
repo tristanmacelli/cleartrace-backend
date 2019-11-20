@@ -164,7 +164,8 @@ var main = function () { return __awaiter(_this, void 0, void 0, function () {
                                 res.status(500);
                             }
                             // write those to the client, encoded in JSON
-                            res.json(allChannels);
+                            // We already did this in the helper function
+                            // res.json(allChannels);
                             break;
                         case 'POST':
                             console.log(req.body);
@@ -209,14 +210,14 @@ var main = function () { return __awaiter(_this, void 0, void 0, function () {
                             var returnedMessages = void 0;
                             // QUERY for last 100 messages here
                             if (req.params.before != null) {
-                                returnedMessages = mongo.last100SpecificMessages(messages, resultChannel._id, req.params.before);
+                                returnedMessages = mongo.last100SpecificMessages(messages, resultChannel._id, req.params.before, res);
                                 if (returnedMessages == null) {
                                     res.status(500);
                                     break;
                                 }
                             }
                             else {
-                                returnedMessages = mongo.last100Messages(messages, resultChannel._id);
+                                returnedMessages = mongo.last100Messages(messages, resultChannel._id, res);
                                 if (returnedMessages == null) {
                                     res.status(500);
                                     break;
@@ -224,7 +225,8 @@ var main = function () { return __awaiter(_this, void 0, void 0, function () {
                             }
                             res.set("Content-Type", "application/json");
                             // write last 100 messages to the client, encoded in JSON 
-                            res.json(returnedMessages);
+                            // We already did this in the helper function
+                            // res.json(returnedMessages);
                             break;
                         case 'POST':
                             if (!isChannelMember(resultChannel, req.Header.Xuser)) {
