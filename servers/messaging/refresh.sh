@@ -7,7 +7,7 @@ sudo docker rm -f messaging
 sudo docker rm -f messaging2
 sudo docker rm -f mongodb
 
-sudo docker pull jtanderson7/assignment2
+sudo docker pull jtanderson7/messaging
 
 sudo docker run -d \
 --network=messagingNetwork \
@@ -23,7 +23,7 @@ sudo docker run -d \
 -e TLSCERT=$TLSCERT \
 -e TLSKEY=$TLSKEY \
 -e ADDR=5001 \
-jtanderson7/assignment2
+jtanderson7/messaging
 
 sudo docker run -d \
 --restart=unless-stopped \
@@ -33,6 +33,6 @@ sudo docker run -d \
 -e TLSCERT=$TLSCERT \
 -e TLSKEY=$TLSKEY \
 -e ADDR=5002 \
-jtanderson7/assignment2
+jtanderson7/messaging
 
 docker ps

@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 
-sudo docker build -t jtanderson7/assignment2 .
+sudo docker build -t jtanderson7/messaging .
