@@ -9,7 +9,6 @@ export TLSKEY=/etc/letsencrypt/live/api.sauravkharb.me/privkey.pem
 
 sudo docker rm -f mongodb
 sudo docker run --network=messagingNetwork -d --name mongodb -v ~/data:/data/db mongo
-# mongo localhost:27017 collectionCreation.sh (This would create channels & messages)
 
 sudo docker run -d \
 --restart=unless-stopped \

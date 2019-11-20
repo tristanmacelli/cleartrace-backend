@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-cd tsc
+cd tsc/
 tsc --outDir ../
 cd -
 bash build.sh

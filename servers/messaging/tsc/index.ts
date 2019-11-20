@@ -37,15 +37,16 @@ var channels: Collection;
 // https://bit.ly/342jCtj
 
 // Create a new MongoClient
-const mc = new MongoClient(url);
+const mc = new MongoClient(url, { useUnifiedTopology: true });
 
 const mongoClient = async (): Promise<MongoClient> => {
     let client: MongoClient;
     try {
         client = await mc.connect();
     } catch (e) {
-        console.log("cannot connect to mongo:", e);
-        process.exit(1)
+        console.log("Cannot connect to mongo: MongoNetworkError: failed to connect to server");
+        console.log("Restarting Messaging server");
+        process.exit(1);
     }
     return client!;
 }

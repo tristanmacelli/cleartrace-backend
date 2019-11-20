@@ -8,7 +8,7 @@ var mongodb_1 = require("mongodb");
 var channel_1 = require("./channel");
 var message_1 = require("./message");
 // getAllChannels does something
-function getAllChannels(channels) {
+function getAllChannels(channels, res) {
     // if channels does not yet exist
     var cursor = channels.find();
     if (!cursor.hasNext()) {
@@ -17,7 +17,16 @@ function getAllChannels(channels) {
         return null;
     }
     // TODO: make sure the returned value is a shape that we can actually use
-    return cursor.forEach(function (m) { JSON.stringify(m); });
+    // return cursor.forEach(function (m: any) { JSON.stringify(m) });
+    return cursor.toArray(function (err, result) {
+        if (err) {
+            console.log("there's nothing fuckin in here");
+        }
+        else {
+            console.log("there's something fuckin in here");
+            res.send(JSON.stringify(result));
+        }
+    });
 }
 exports.getAllChannels = getAllChannels;
 // insertNewChannel takes in a new Channel and
