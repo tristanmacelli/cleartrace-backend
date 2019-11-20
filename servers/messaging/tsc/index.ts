@@ -57,9 +57,11 @@ const checkConnection = async () => {
 const main = async () => {
     let client = await checkConnection();
     db = client.db(dbName);
-    console.log("The db in index is ")
-    console.log(db.collection("channels"))
-    
+    channels = db.collection("channels");
+    messages = db.collection("messages");
+
+    // TODO: We should do a test of the mongo helper methods
+
     app.listen(+addr, "", () => {
         //callback is executed once server is listening
         console.log(`server is listening at http://:${addr}...`);
@@ -72,14 +74,14 @@ const main = async () => {
             case 'GET':
                 res.set("Content-Type", "application/json");
                 // QUERY for all channels here
-                let allChannels = mongo.getAllChannels(channels);
+                let allChannels = mongo.getAllChannels(channels, res);
                 if (allChannels == null) {
                     res.status(500);
                 }
                 // write those to the client, encoded in JSON
                 res.json(allChannels);
                 break;
-    
+
             case 'POST':
                 console.log(req.body);
                 if (req.body.channel.name == null) {
@@ -101,7 +103,7 @@ const main = async () => {
                 break;
         }
     });
-    
+
     // Specific channel handler
     app.use("/v1/channels/:channelID", (req: any, res: any) => {
         // QUERY for the channel based on req.params.channelID
@@ -140,7 +142,7 @@ const main = async () => {
                 // write last 100 messages to the client, encoded in JSON 
                 res.json(returnedMessages);
                 break;
-    
+
             case 'POST':
                 if (!isChannelMember(resultChannel, req.Header.Xuser)) {
                     res.status(403);
@@ -189,7 +191,7 @@ const main = async () => {
                 break;
         }
     });
-    
+
     // Adding and removing members from your channel
     app.use("/v1/channels/:channelID/members", (req: any, res: any) => {
         // QUERY for the channel based on req.params.channelID
@@ -236,7 +238,7 @@ const main = async () => {
                 break;
         }
     });
-    
+
     // Editing the body of or deleting a message
     app.use("/v1/messages/:messageID", (req: any, res: any) => {
         if (req.params.messageID == null) {
@@ -283,19 +285,19 @@ const main = async () => {
                 break;
         }
     });
-    
+
     function createChannel(req: any): Channel {
         let c = req.body.channel;
         return new Channel(c.name, c.description, c.private,
             c.members, c.createdAt, c.creator, c.editedAt);
     }
-    
+
     function createMessage(req: any): Message {
         let m = req.body.message;
         return new Message(req.params.ChannelID, m.createdAt, m.body,
             m.creator, m.editedAt);
     }
-    
+
     function isChannelMember(channel: Channel, user: any): boolean {
         let isMember = false;
         if (channel.private) {
@@ -310,15 +312,15 @@ const main = async () => {
         }
         return isMember;
     }
-    
+
     function isChannelCreator(channel: Channel, user: any): boolean {
         return channel.creator == user.id;
     }
-    
+
     function isMessageCreator(message: Message, user: any): boolean {
         return message.creator == user.id;
     }
-    
+
     // error handler that will be called if
     // any handler earlier in the chain throws
     // an exception or passes an error to next()
@@ -326,7 +328,7 @@ const main = async () => {
         //write a stack trace to standard out,
         //which writes to the server's log
         console.error(err.stack)
-    
+
         //but only report the error message
         //to the client, with a 500 status code
         res.set("Content-Type", "text/plain");
@@ -336,55 +338,3 @@ const main = async () => {
 }
 
 main();
-
-
-
-
-// MongoClient.connect(url, { useNewUrlParser: true }, function (err: any, client: MongoClient) {
-//     console.log("Before error");
-//     console.log("the error is: ", err);
-//     console.log("Connected successfully to server");
-//     // const database = client.db(dbName);
-//     const database = client.db(dbName).admin();
-//     // db = client.db(dbName);
-
-//     // check if any collection exists
-//     database.collections().then(doc => {
-//         console.log(doc);
-//     }).catch(err => {
-//         console.log(err);
-//     });
-
-//     // Start the application after the database connection is ready
-//     app.listen(+port, "", () => {
-//         //callback is executed once server is listening
-//         console.log(`server is listening at http://:${port}...`);
-//         console.log("port : " + port);
-//         console.log("host : " + host);
-//     });
-// });
-
-// // Create a new MongoClient
-// const client = new MongoClient(url);
-
-// client.connect(function (err: any) {
-//     console.log("Connected successfully to server");
-//     console.log("the error is ", err);
-//     const database = client.db(dbName);
-
-//     database.collections().then(doc => {
-//         console.log(doc);
-//     }).catch(() => {
-//         // console.log(err);
-//     });
-
-//     // Start the application after the database connection is ready
-//     app.listen(+port, "", () => {
-//         //callback is executed once server is listening
-//         console.log(`server is listening at http://:${port}...`);
-//         console.log("port : " + port);
-//         console.log("host : " + host);
-//     });
-// });
-
-// All channel handler

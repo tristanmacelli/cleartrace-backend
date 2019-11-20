@@ -7,7 +7,7 @@ import { Channel } from "./channel";
 import { Message } from "./message";
 
 // getAllChannels does something
-export function getAllChannels(channels: Collection) {
+export function getAllChannels(channels: Collection, res: any) {
     // if channels does not yet exist
     let cursor = channels.find();
     if (!cursor.hasNext()) {
@@ -16,7 +16,15 @@ export function getAllChannels(channels: Collection) {
         return null;
     }
     // TODO: make sure the returned value is a shape that we can actually use
-    return cursor.forEach(function (m: any) { JSON.stringify(m) });
+    // return cursor.forEach(function (m: any) { JSON.stringify(m) });
+    return cursor.toArray(function (err, result) {
+        if (err) {
+            console.log("there's nothing fuckin in here");
+        } else {
+            console.log("there's something fuckin in here")
+            res.send(JSON.stringify(result));
+        }
+    })
 }
 
 // insertNewChannel takes in a new Channel and
