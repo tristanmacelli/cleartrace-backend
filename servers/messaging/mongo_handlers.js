@@ -8,7 +8,6 @@ var mongodb_1 = require("mongodb");
 var channel_1 = require("./channel");
 var message_1 = require("./message");
 // getAllChannels does something
-// TODO: make sure the returned value is a shape that we can actually use
 function getAllChannels(channels) {
     // if channels does not yet exist
     var cursor = channels.find();
@@ -17,13 +16,14 @@ function getAllChannels(channels) {
         console.log("No channels collection found");
         return null;
     }
+    // TODO: make sure the returned value is a shape that we can actually use
     return cursor.forEach(function (m) { JSON.stringify(m); });
 }
 exports.getAllChannels = getAllChannels;
 // insertNewChannel takes in a new Channel and
 function insertNewChannel(channels, newChannel) {
     var errString = "";
-    var idWeWant;
+    var autoAssignedID;
     channels.save({
         name: newChannel.name, description: newChannel.description,
         private: newChannel.private, members: newChannel.members,
@@ -34,23 +34,19 @@ function insertNewChannel(channels, newChannel) {
     });
     channels.find({ name: newChannel.name, createdAt: newChannel.createdAt }).next()
         .then(function (doc) {
-        idWeWant = doc.id;
-    }).catch(function (err) {
-        idWeWant = "";
+        autoAssignedID = doc._id;
+    }).catch(function () {
+        autoAssignedID = "";
     });
-    newChannel._id = idWeWant;
+    newChannel._id = autoAssignedID;
     return { newChannel: newChannel, errString: errString };
 }
 exports.insertNewChannel = insertNewChannel;
 // insertNewMessage takes in a new Message and
 function insertNewMessage(messages, newMessage) {
     var errString = "";
-    var idWeWant;
-    if (newMessage.channelID == null) {
-        errString = "Could not find ID";
-        return { newMessage: newMessage, errString: errString };
-    }
-    var result = messages.save({
+    var autoAssignedID;
+    messages.save({
         channelID: newMessage.channelID, createdAt: newMessage.createdAt,
         body: newMessage.body, creator: newMessage.creator,
         editedAt: newMessage.editedAt
@@ -59,11 +55,11 @@ function insertNewMessage(messages, newMessage) {
     });
     messages.find({ body: newMessage.body, createdAt: newMessage.createdAt }).next()
         .then(function (doc) {
-        idWeWant = doc.id;
-    }).catch(function (err) {
-        idWeWant = "";
+        autoAssignedID = doc._id;
+    }).catch(function () {
+        autoAssignedID = "";
     });
-    newMessage._id = idWeWant;
+    newMessage._id = autoAssignedID;
     return { newMessage: newMessage, errString: errString };
 }
 exports.insertNewMessage = insertNewMessage;
@@ -76,7 +72,7 @@ function updateChannel(channels, existingChannel, req) {
         createdAt: existingChannel.createdAt, creator: existingChannel.creator,
         editedAt: existingChannel.editedAt
     }).catch(function () {
-        errString = "Error updating message";
+        errString = "Error updating channel";
     });
     existingChannel.name = req.body.name;
     existingChannel.description = req.body.description;
@@ -93,7 +89,7 @@ function addChannelMember(channels, existingChannel, req) {
         createdAt: existingChannel.createdAt, creator: existingChannel.creator,
         editedAt: existingChannel.editedAt
     }).catch(function () {
-        errString = "Error updating message";
+        errString = "Error adding new members to channel";
     });
     return errString;
 }
@@ -109,11 +105,12 @@ function removeChannelMember(channels, existingChannel, req) {
         createdAt: existingChannel.createdAt, creator: existingChannel.creator,
         editedAt: existingChannel.editedAt
     }).catch(function () {
-        errString = "Error updating message";
+        errString = "Error removing member from channel";
     });
     return errString;
 }
 exports.removeChannelMember = removeChannelMember;
+// updateMessage takes an existing Message and a request with updates to apply to the Message's body 
 function updateMessage(messages, existingMessage, req) {
     var errString = "";
     messages.save({
@@ -129,8 +126,8 @@ function updateMessage(messages, existingMessage, req) {
 exports.updateMessage = updateMessage;
 // deleteChannel does something
 function deleteChannel(channels, messages, existingChannel) {
-    // We are not allowed to delete the general channel
     var errString = "";
+    // We are not allowed to delete the general channel
     if (existingChannel.creator == -1) {
         return "Error deleting channel";
     }
@@ -138,7 +135,7 @@ function deleteChannel(channels, messages, existingChannel) {
         errString = "Error deleting channel";
     });
     messages.remove({ channelID: existingChannel._id }).catch(function () {
-        errString = "Error deleting channel";
+        errString = "Error deleting messages associated with the channel";
     });
     return errString;
 }
@@ -152,6 +149,7 @@ function deleteMessage(messages, existingMessage) {
     return errString;
 }
 exports.deleteMessage = deleteMessage;
+// getChannelByID does something
 function getChannelByID(channels, id) {
     // Since id's are auto-generated and unique we chose to use find instead of findOne() 
     var finalResponse;
@@ -159,9 +157,9 @@ function getChannelByID(channels, id) {
     channels.find({ _id: id }).next().then(function (doc) {
         finalResponse = doc;
         errString = "";
-    }).catch(function (err) {
+    }).catch(function () {
         finalResponse = null;
-        errString = err;
+        errString = "Error finding a channel by id";
     });
     var finalChannel;
     if (finalResponse == null) {
@@ -172,6 +170,7 @@ function getChannelByID(channels, id) {
     return { finalChannel: finalChannel, errString: errString };
 }
 exports.getChannelByID = getChannelByID;
+// getMessageByID does something
 function getMessageByID(messages, id) {
     // Since id's are auto-generated and unique we chose to use find instead of findOne() 
     var finalResponse;
@@ -179,9 +178,9 @@ function getMessageByID(messages, id) {
     messages.find({ _id: id }).next().then(function (doc) {
         finalResponse = doc;
         errString = "";
-    }).catch(function (err) {
+    }).catch(function () {
         finalResponse = null;
-        errString = err;
+        errString = "Error finding a message by id";
     });
     var finalMessage;
     if (finalResponse == null) {
@@ -192,6 +191,7 @@ function getMessageByID(messages, id) {
     return { finalMessage: finalMessage, errString: errString };
 }
 exports.getMessageByID = getMessageByID;
+// TODO: Reshape the return value of find to a JSON array of message model objects
 // last100Messages does something
 function last100Messages(messages, id) {
     if (id == null) {
@@ -201,6 +201,7 @@ function last100Messages(messages, id) {
     return messages.find({ channelID: id }).sort({ createdAt: -1 }).limit(100);
 }
 exports.last100Messages = last100Messages;
+// TODO: Reshape the return value of find to a JSON array of message model objects
 // last100Messages does something
 function last100SpecificMessages(messages, channelID, messageID) {
     if (channelID == null) {
