@@ -1,5 +1,5 @@
 // "use strict";
-
+// version 0.1
 // to compile run tsc --outDir ../
 
 //require the express and morgan packages
@@ -16,6 +16,7 @@ const app = express();
 const addr = process.env.ADDR || ":80";
 //split host and port using destructuring
 const [host, port] = addr.split(":");
+let portNum = parseInt(port);
 
 //add JSON request body parsing middleware
 app.use(express.json());
@@ -23,44 +24,92 @@ app.use(express.json());
 app.use(morgan("dev"));
 
 // Connection URL
-const url = 'mongo://mongodb:27017/mongodb';
+const url = 'mongodb://mongodb:27017/mongodb';
 
 // Database Name
 const dbName = 'mongodb';
 
 var messages: any;
 var channels: Collection;
-// Create a new MongoClient
-// const client = new MongoClient(url);
-// var db: Db;
-//new Server("mongo://mongodb", 27017)
-// var mc = new MongoClient("mongo://mongodb:27017", {native_parser:true})
-// mc.
+
 // Reasoning for refactor: 
 // https://bit.ly/342jCtj
-// Use connect method to connect to the mongo DB
-// client.connect(function (err: any) {
-MongoClient.connect(url, function (err: any, client: MongoClient) {
-    console.log("the error is: ", err);
-    console.log("Connected successfully to server");
-    const db = client.db(dbName);
-    // db = client.db(dbName);
+let client: MongoClient;
 
-    // check if any collection exists
-    db.collections().then(doc => {
-        console.log(doc);
-    }).catch(err => {
-        console.log(err);
-    });
+const mongoClient = async (): Promise<MongoClient> => {
+    let client: MongoClient;
+    try {
+        client = await MongoClient.connect(url);
+    } catch (e) {
+        console.log("cannot connect to mongo:", e);
+    }
+    return client!;
+}
 
-    // Start the application after the database connection is ready
-    app.listen(+port, "", () => {
-        //callback is executed once server is listening
-        console.log(`server is listening at http://:${port}...`);
-        console.log("port : " + port);
-        console.log("host : " + host);
-    });
+const checkConnection = async () => {
+    let client = await mongoClient();
+    console.log(client);
+}
+
+const main = async () => {
+    await checkConnection();
+}
+
+main();
+
+app.listen(+portNum, "", () => {
+    //callback is executed once server is listening
+    console.log(`server is listening at http://:${port}...`);
+    console.log("port : " + port);
+    console.log("host : " + host);
 });
+
+// MongoClient.connect(url, { useNewUrlParser: true }, function (err: any, client: MongoClient) {
+//     console.log("Before error");
+//     console.log("the error is: ", err);
+//     console.log("Connected successfully to server");
+//     // const database = client.db(dbName);
+//     const database = client.db(dbName).admin();
+//     // db = client.db(dbName);
+
+//     // check if any collection exists
+//     database.collections().then(doc => {
+//         console.log(doc);
+//     }).catch(err => {
+//         console.log(err);
+//     });
+
+//     // Start the application after the database connection is ready
+//     app.listen(+port, "", () => {
+//         //callback is executed once server is listening
+//         console.log(`server is listening at http://:${port}...`);
+//         console.log("port : " + port);
+//         console.log("host : " + host);
+//     });
+// });
+
+// // Create a new MongoClient
+// const client = new MongoClient(url);
+
+// client.connect(function (err: any) {
+//     console.log("Connected successfully to server");
+//     console.log("the error is ", err);
+//     const database = client.db(dbName);
+
+//     database.collections().then(doc => {
+//         console.log(doc);
+//     }).catch(() => {
+//         // console.log(err);
+//     });
+
+//     // Start the application after the database connection is ready
+//     app.listen(+port, "", () => {
+//         //callback is executed once server is listening
+//         console.log(`server is listening at http://:${port}...`);
+//         console.log("port : " + port);
+//         console.log("host : " + host);
+//     });
+// });
 
 // All channel handler
 app.use("/v1/channels", (req: any, res: any) => {
