@@ -4,6 +4,7 @@ import (
 	"assignments-Tristan6/servers/gateway/handlers"
 	"assignments-Tristan6/servers/gateway/models/users"
 	"assignments-Tristan6/servers/gateway/sessions"
+	"fmt"
 	"log"
 	"net/http"
 	"net/http/httputil"
@@ -19,7 +20,16 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Hello from API Gateway"))
 }
 
-// TODO: Check if its an authenticated user
+type Director func(r *http.Request)
+
+func CustomDirector(target *url.URL) Director {
+	return func(r *http.Request) {
+		r.Header.Add("X-User", r.Host)
+		r.Host = target.Host
+		r.URL.Host = target.Host
+		r.URL.Scheme = target.Scheme
+	}
+}
 
 //main is the main entry point for the server
 func main() {
@@ -54,9 +64,14 @@ func main() {
 
 	// If there are multiple addresses for either messages or summary then do the following
 	// TODO: random number generator to pick between the available addresses
+	u, err := url.Parse(messagesaddr1)
+	if err != nil {
+		fmt.Print(err)
+	}
+	messagesProxy := &httputil.ReverseProxy{Director: CustomDirector(u)}
 
 	// proxy
-	messagesProxy := httputil.NewSingleHostReverseProxy(&url.URL{Scheme: "http", Host: messagesaddr1})
+	// messagesProxy := httputil.NewSingleHostReverseProxy(&url.URL{Scheme: "http", Host: messagesaddr1})
 	summaryProxy := httputil.NewSingleHostReverseProxy(&url.URL{Scheme: "http", Host: summaryaddr})
 
 	ctx := handlers.NewHandlerContext(sessionkey, userStore, redisStore)

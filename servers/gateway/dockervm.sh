@@ -8,11 +8,15 @@ docker pull jtanderson7/assignment2
 export TLSCERT=/etc/letsencrypt/live/api.sauravkharb.me/fullchain.pem
 export TLSKEY=/etc/letsencrypt/live/api.sauravkharb.me/privkey.pem
 
-sudo docker run --name sqlUserStore -d mysql/mysql-server
-sudo docker run --name sessionRedisStore -d redis
+sudo docker run --network=messagingNetwork \
+--name sqlUserStore -d mysql/mysql-server
+
+sudo docker run --network=messagingNetwork \
+--name sessionRedisStore -d redis
 
 docker run -d \
 -p 443:443 \
+--network=messagingNetwork \
 --name gateway \
 -v /etc/letsencrypt:/etc/letsencrypt:ro \
 -e TLSCERT=$TLSCERT \
