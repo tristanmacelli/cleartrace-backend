@@ -2,10 +2,11 @@
 // "use strict";
 // version 0.1
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
@@ -16,8 +17,8 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     function step(op) {
         if (f) throw new TypeError("Generator is already executing.");
         while (_) try {
-            if (f = 1, y && (t = y[op[0] & 2 ? "return" : op[0] ? "throw" : "next"]) && !(t = t.call(y, op[1])).done) return t;
-            if (y = 0, t) op = [0, t.value];
+            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
+            if (y = 0, t) op = [op[0] & 2, t.value];
             switch (op[0]) {
                 case 0: case 1: t = op; break;
                 case 4: _.label++; return { value: op[1], done: false };
@@ -38,15 +39,14 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
-}
+};
 var __importStar = (this && this.__importStar) || function (mod) {
     if (mod && mod.__esModule) return mod;
     var result = {};
     if (mod != null) for (var k in mod) if (Object.hasOwnProperty.call(mod, k)) result[k] = mod[k];
     result["default"] = mod;
     return result;
-}
-var _this = this;
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 //require the express and morgan packages
 var express_1 = __importDefault(require("express"));
@@ -76,7 +76,7 @@ var channels;
 // https://bit.ly/342jCtj
 // Create a new MongoClient
 var mc = new mongodb_1.MongoClient(url, { useUnifiedTopology: true });
-var createConnection = function () { return __awaiter(_this, void 0, void 0, function () {
+var createConnection = function () { return __awaiter(void 0, void 0, void 0, function () {
     var client, e_1;
     return __generator(this, function (_a) {
         switch (_a.label) {
@@ -96,7 +96,7 @@ var createConnection = function () { return __awaiter(_this, void 0, void 0, fun
         }
     });
 }); };
-var main = function () { return __awaiter(_this, void 0, void 0, function () {
+var main = function () { return __awaiter(void 0, void 0, void 0, function () {
     function createChannel(req) {
         var c = req.body.channel;
         return new channel_1.Channel(c.name, c.description, c.private, c.members, c.createdAt, c.creator, c.editedAt);

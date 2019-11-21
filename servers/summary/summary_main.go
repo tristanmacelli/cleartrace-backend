@@ -11,7 +11,7 @@ func main() {
 	address := os.Getenv("ADDR")
 	// Default address the server should listen on
 	if len(address) == 0 {
-		address = ":80"
+		address = ":5050"
 	}
 
 	// starting a new mux session

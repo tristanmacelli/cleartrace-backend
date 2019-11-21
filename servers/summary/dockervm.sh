@@ -8,6 +8,7 @@ export TLSKEY=/etc/letsencrypt/live/api.sauravkharb.me/privkey.pem
 
 docker run -d \
 -p 5050:5050 \
+--network=messagingNetwork \
 --name summary \
 -v /etc/letsencrypt:/etc/letsencrypt:ro \
 -e TLSCERT=$TLSCERT \
