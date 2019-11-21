@@ -1,3 +1,6 @@
 #!/usr/bin/env bash
 
-sudo docker build -t jtanderson7/assignment2 .
+cd tsc/
+tsc --outDir ../
+cd -
+sudo docker build -t jtanderson7/messaging .

@@ -8,16 +8,28 @@ var mongodb_1 = require("mongodb");
 var channel_1 = require("./channel");
 var message_1 = require("./message");
 // getAllChannels does something
-function getAllChannels(channels) {
+// TODO: make sure the returned value is a shape that we can actually use
+function getAllChannels(channels, res) {
     // if channels does not yet exist
     var cursor = channels.find();
     if (!cursor.hasNext()) {
         // Throw error
-        console.log("No channels collection found");
+        console.log("No channels found");
         return null;
     }
     // TODO: make sure the returned value is a shape that we can actually use
-    return cursor.forEach(function (m) { JSON.stringify(m); });
+    cursor.toArray(function (err, result) {
+        if (err) {
+            console.log("Error getting channels");
+            return null;
+        }
+        else {
+            var successMessage = "Found channels";
+            console.log(successMessage);
+            res.send(JSON.stringify(result));
+            return successMessage;
+        }
+    });
 }
 exports.getAllChannels = getAllChannels;
 // insertNewChannel takes in a new Channel and
@@ -193,22 +205,48 @@ function getMessageByID(messages, id) {
 exports.getMessageByID = getMessageByID;
 // TODO: Reshape the return value of find to a JSON array of message model objects
 // last100Messages does something
-function last100Messages(messages, id) {
+function last100Messages(messages, id, res) {
     if (id == null) {
-        throw "No id value passed";
+        console.log("No id value passed");
+        return null;
     }
     id = id.toString();
-    return messages.find({ channelID: id }).sort({ createdAt: -1 }).limit(100);
+    var cursor = messages.find({ channelID: id }).sort({ createdAt: -1 }).limit(100);
+    // TODO: make sure the returned value is a shape that we can actually use
+    cursor.toArray(function (err, result) {
+        if (err) {
+            console.log("Error getting messages");
+            return null;
+        }
+        else {
+            var successMessage = "Found channels";
+            console.log(successMessage);
+            res.send(JSON.stringify(result));
+            return successMessage;
+        }
+    });
 }
 exports.last100Messages = last100Messages;
 // TODO: Reshape the return value of find to a JSON array of message model objects
 // last100Messages does something
-function last100SpecificMessages(messages, channelID, messageID) {
+function last100SpecificMessages(messages, channelID, messageID, res) {
     if (channelID == null) {
-        throw "No id value passed";
+        console.log("No id value passed");
     }
     channelID = channelID.toString();
-    return messages.find({ channelID: channelID, _id: { $lt: messageID } }).sort({ createdAt: -1 }).limit(100);
+    var cursor = messages.find({ channelID: channelID, _id: { $lt: messageID } }).sort({ createdAt: -1 }).limit(100);
+    // TODO: make sure the returned value is a shape that we can actually use
+    cursor.toArray(function (err, result) {
+        if (err) {
+            console.log("Error getting messages");
+        }
+        else {
+            var successMessage = "Found channels";
+            console.log(successMessage);
+            res.send(JSON.stringify(result));
+            return successMessage;
+        }
+    });
 }
 exports.last100SpecificMessages = last100SpecificMessages;
 __export(require("./mongo_handlers"));

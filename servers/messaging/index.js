@@ -1,13 +1,11 @@
 "use strict";
 // "use strict";
 // version 0.1
-// to compile run tsc --outDir ../
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
@@ -18,8 +16,8 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     function step(op) {
         if (f) throw new TypeError("Generator is already executing.");
         while (_) try {
-            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
-            if (y = 0, t) op = [op[0] & 2, t.value];
+            if (f = 1, y && (t = y[op[0] & 2 ? "return" : op[0] ? "throw" : "next"]) && !(t = t.call(y, op[1])).done) return t;
+            if (y = 0, t) op = [0, t.value];
             switch (op[0]) {
                 case 0: case 1: t = op; break;
                 case 4: _.label++; return { value: op[1], done: false };
@@ -40,14 +38,15 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
-};
+}
 var __importStar = (this && this.__importStar) || function (mod) {
     if (mod && mod.__esModule) return mod;
     var result = {};
     if (mod != null) for (var k in mod) if (Object.hasOwnProperty.call(mod, k)) result[k] = mod[k];
     result["default"] = mod;
     return result;
-};
+}
+var _this = this;
 Object.defineProperty(exports, "__esModule", { value: true });
 //require the express and morgan packages
 var express_1 = __importDefault(require("express"));
@@ -76,8 +75,8 @@ var channels;
 // Reasoning for refactor: 
 // https://bit.ly/342jCtj
 // Create a new MongoClient
-var mc = new mongodb_1.MongoClient(url);
-var mongoClient = function () { return __awaiter(void 0, void 0, void 0, function () {
+var mc = new mongodb_1.MongoClient(url, { useUnifiedTopology: true });
+var createConnection = function () { return __awaiter(_this, void 0, void 0, function () {
     var client, e_1;
     return __generator(this, function (_a) {
         switch (_a.label) {
@@ -89,25 +88,15 @@ var mongoClient = function () { return __awaiter(void 0, void 0, void 0, functio
                 return [3 /*break*/, 3];
             case 2:
                 e_1 = _a.sent();
-                console.log("cannot connect to mongo:", e_1);
+                console.log("Cannot connect to mongo: MongoNetworkError: failed to connect to server");
+                console.log("Restarting Messaging server");
                 process.exit(1);
                 return [3 /*break*/, 3];
             case 3: return [2 /*return*/, client];
         }
     });
 }); };
-var checkConnection = function () { return __awaiter(void 0, void 0, void 0, function () {
-    var client;
-    return __generator(this, function (_a) {
-        switch (_a.label) {
-            case 0: return [4 /*yield*/, mongoClient()];
-            case 1:
-                client = _a.sent();
-                return [2 /*return*/, client];
-        }
-    });
-}); };
-var main = function () { return __awaiter(void 0, void 0, void 0, function () {
+var main = function () { return __awaiter(_this, void 0, void 0, function () {
     function createChannel(req) {
         var c = req.body.channel;
         return new channel_1.Channel(c.name, c.description, c.private, c.members, c.createdAt, c.creator, c.editedAt);
@@ -140,12 +129,13 @@ var main = function () { return __awaiter(void 0, void 0, void 0, function () {
     var client;
     return __generator(this, function (_a) {
         switch (_a.label) {
-            case 0: return [4 /*yield*/, checkConnection()];
+            case 0: return [4 /*yield*/, createConnection()];
             case 1:
                 client = _a.sent();
                 db = client.db(dbName);
-                console.log("The db in index is ");
-                console.log(db.collection("channels"));
+                channels = db.collection("channels");
+                messages = db.collection("messages");
+                // TODO: We should do a test of the mongo helper methods
                 app.listen(+addr, "", function () {
                     //callback is executed once server is listening
                     console.log("server is listening at http://:" + addr + "...");
@@ -157,12 +147,13 @@ var main = function () { return __awaiter(void 0, void 0, void 0, function () {
                         case 'GET':
                             res.set("Content-Type", "application/json");
                             // QUERY for all channels here
-                            var allChannels = mongo.getAllChannels(channels);
+                            var allChannels = mongo.getAllChannels(channels, res);
                             if (allChannels == null) {
                                 res.status(500);
                             }
                             // write those to the client, encoded in JSON
-                            res.json(allChannels);
+                            // We already did this in the helper function
+                            // res.json(allChannels);
                             break;
                         case 'POST':
                             console.log(req.body);
@@ -207,14 +198,14 @@ var main = function () { return __awaiter(void 0, void 0, void 0, function () {
                             var returnedMessages = void 0;
                             // QUERY for last 100 messages here
                             if (req.params.before != null) {
-                                returnedMessages = mongo.last100SpecificMessages(messages, resultChannel._id, req.params.before);
+                                returnedMessages = mongo.last100SpecificMessages(messages, resultChannel._id, req.params.before, res);
                                 if (returnedMessages == null) {
                                     res.status(500);
                                     break;
                                 }
                             }
                             else {
-                                returnedMessages = mongo.last100Messages(messages, resultChannel._id);
+                                returnedMessages = mongo.last100Messages(messages, resultChannel._id, res);
                                 if (returnedMessages == null) {
                                     res.status(500);
                                     break;
@@ -222,7 +213,8 @@ var main = function () { return __awaiter(void 0, void 0, void 0, function () {
                             }
                             res.set("Content-Type", "application/json");
                             // write last 100 messages to the client, encoded in JSON 
-                            res.json(returnedMessages);
+                            // We already did this in the helper function
+                            // res.json(returnedMessages);
                             break;
                         case 'POST':
                             if (!isChannelMember(resultChannel, req.Header.Xuser)) {
@@ -381,44 +373,3 @@ var main = function () { return __awaiter(void 0, void 0, void 0, function () {
     });
 }); };
 main();
-// MongoClient.connect(url, { useNewUrlParser: true }, function (err: any, client: MongoClient) {
-//     console.log("Before error");
-//     console.log("the error is: ", err);
-//     console.log("Connected successfully to server");
-//     // const database = client.db(dbName);
-//     const database = client.db(dbName).admin();
-//     // db = client.db(dbName);
-//     // check if any collection exists
-//     database.collections().then(doc => {
-//         console.log(doc);
-//     }).catch(err => {
-//         console.log(err);
-//     });
-//     // Start the application after the database connection is ready
-//     app.listen(+port, "", () => {
-//         //callback is executed once server is listening
-//         console.log(`server is listening at http://:${port}...`);
-//         console.log("port : " + port);
-//         console.log("host : " + host);
-//     });
-// });
-// // Create a new MongoClient
-// const client = new MongoClient(url);
-// client.connect(function (err: any) {
-//     console.log("Connected successfully to server");
-//     console.log("the error is ", err);
-//     const database = client.db(dbName);
-//     database.collections().then(doc => {
-//         console.log(doc);
-//     }).catch(() => {
-//         // console.log(err);
-//     });
-//     // Start the application after the database connection is ready
-//     app.listen(+port, "", () => {
-//         //callback is executed once server is listening
-//         console.log(`server is listening at http://:${port}...`);
-//         console.log("port : " + port);
-//         console.log("host : " + host);
-//     });
-// });
-// All channel handler

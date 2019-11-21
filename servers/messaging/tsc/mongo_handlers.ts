@@ -7,16 +7,27 @@ import { Channel } from "./channel";
 import { Message } from "./message";
 
 // getAllChannels does something
-export function getAllChannels(channels: Collection) {
+// TODO: make sure the returned value is a shape that we can actually use
+export function getAllChannels(channels: Collection, res: any) {
     // if channels does not yet exist
     let cursor = channels.find();
     if (!cursor.hasNext()) {
         // Throw error
-        console.log("No channels collection found");
+        console.log("No channels found");
         return null;
     }
     // TODO: make sure the returned value is a shape that we can actually use
-    return cursor.forEach(function (m: any) { JSON.stringify(m) });
+    cursor.toArray(function (err, result) {
+        if (err) {
+            console.log("Error getting channels");
+            return null;
+        } else {
+            let successMessage = "Found channels";
+            console.log(successMessage);
+            res.send(JSON.stringify(result));
+            return successMessage;
+        }
+    })
 }
 
 // insertNewChannel takes in a new Channel and
@@ -197,22 +208,46 @@ export function getMessageByID(messages: Collection, id: string) {
 
 // TODO: Reshape the return value of find to a JSON array of message model objects
 // last100Messages does something
-export function last100Messages(messages: Collection, id: string) {
+export function last100Messages(messages: Collection, id: string, res: any) {
     if (id == null) {
-        throw "No id value passed";
+        console.log("No id value passed");
+        return null;
     }
     id = id.toString();
-    return messages.find({ channelID: id }).sort({ createdAt: -1 }).limit(100);
+    let cursor = messages.find({ channelID: id }).sort({ createdAt: -1 }).limit(100);
+    // TODO: make sure the returned value is a shape that we can actually use
+    cursor.toArray(function (err, result) {
+        if (err) {
+            console.log("Error getting messages");
+            return null;
+        } else {
+            let successMessage = "Found channels";
+            console.log(successMessage);
+            res.send(JSON.stringify(result));
+            return successMessage;
+        }
+    })
 }
 
 // TODO: Reshape the return value of find to a JSON array of message model objects
 // last100Messages does something
-export function last100SpecificMessages(messages: Collection, channelID: string, messageID: string) {
+export function last100SpecificMessages(messages: Collection, channelID: string, messageID: string, res: any) {
     if (channelID == null) {
-        throw "No id value passed";
+        console.log("No id value passed");
     }
     channelID = channelID.toString();
-    return messages.find({ channelID: channelID, _id: { $lt: messageID } }).sort({ createdAt: -1 }).limit(100);
+    let cursor = messages.find({ channelID: channelID, _id: { $lt: messageID } }).sort({ createdAt: -1 }).limit(100);
+    // TODO: make sure the returned value is a shape that we can actually use
+    cursor.toArray(function (err, result) {
+        if (err) {
+            console.log("Error getting messages");
+        } else {
+            let successMessage = "Found channels";
+            console.log(successMessage);
+            res.send(JSON.stringify(result));
+            return successMessage;
+        }
+    })
 }
 
 export * from "./mongo_handlers";

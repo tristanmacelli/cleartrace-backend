@@ -1,10 +1,9 @@
 "use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
@@ -15,8 +14,8 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     function step(op) {
         if (f) throw new TypeError("Generator is already executing.");
         while (_) try {
-            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
-            if (y = 0, t) op = [op[0] & 2, t.value];
+            if (f = 1, y && (t = y[op[0] & 2 ? "return" : op[0] ? "throw" : "next"]) && !(t = t.call(y, op[1])).done) return t;
+            if (y = 0, t) op = [0, t.value];
             switch (op[0]) {
                 case 0: case 1: t = op; break;
                 case 4: _.label++; return { value: op[1], done: false };
@@ -41,78 +40,45 @@ var __importStar = (this && this.__importStar) || function (mod) {
     if (mod != null) for (var k in mod) if (Object.hasOwnProperty.call(mod, k)) result[k] = mod[k];
     result["default"] = mod;
     return result;
-};
+}
 Object.defineProperty(exports, "__esModule", { value: true });
 // import the MongoClient and Db
 var mongodb_1 = require("mongodb");
-var channel_1 = require("./channel");
 var mongo = __importStar(require("./mongo_handlers"));
+var channel_1 = require("./channel");
 // Mongo Connection URL
-// const url = 'mongo://mongodb:27017';
 var url = 'mongodb://mongodb:27017/mongodb';
 // Database Name
 var dbName = 'mongodb';
-var channels;
 // Create a new MongoClient
 var client = new mongodb_1.MongoClient(url);
 client.connect(function (err) {
     return __awaiter(this, void 0, void 0, function () {
         var db;
         return __generator(this, function (_a) {
-            console.log("Connected successfully to Mongodb");
             if (err) {
-                console.log("the error is ", err);
+                console.log("Error connecting to Mongodb: ", err);
+            }
+            else {
+                console.log("Connected successfully to Mongodb");
             }
             db = client.db(dbName);
             // check if any collection exists
-            db.createCollection('channels', function (e, a) {
-                if (e) {
-                    console.log("error is ", e);
+            db.createCollection('channels', function (err, collection) {
+                if (err) {
+                    console.log("Error creating new collection: ", err);
                 }
-                channels = a;
-                // create general channel
+                // create general channel (we always want this at startup)
+                var channels = collection;
                 var general = new channel_1.Channel("general", "an open channel for all", false, [], "enter timestamp here", -1, "not yet edited");
-                // channel that we always want at startup
                 var result = mongo.insertNewChannel(channels, general);
-                // check for error while inserting
+                // check for insertion errors
                 if (result.errString.length > 0) {
-                    console.log("failed to create general channel upon opening connection to DB");
-                    // res.status(500);
+                    console.log("Failed to create new general channel upon opening connection to DB");
                 }
             });
             db.createCollection('messages');
-            client.close();
             return [2 /*return*/];
         });
     });
 });
-// Reasoning for refactor: 
-// https://bit.ly/342jCtj
-// Use connect method to connect to the mongo DB
-// MongoClient.connect(url, function (err: any, mc:MongoClient) {
-//     console.log("Connected successfully to server");
-//     console.log("there is an error:", err.err);
-//     if (err) throw err;
-//     // db = client.db(dbName);
-//     var db = mc.db(dbName);
-//     // Create channels and messages collections in mongo
-//     // https://bit.ly/2r57au6
-//     db.createCollection('channels');
-//     db.createCollection('messages');
-//     // var general = new Channel("general", "an open channel for all", false, [], "enter timestamp here", -1, "not yet edited");
-//     // channel that we always want at startup
-//     // let result  = mongo.insertNewChannel(channels, general);
-//     // db.channels.save({
-//     //     name: newChannel.name, description: newChannel.description,
-//     //     private: newChannel.private, members: newChannel.members,
-//     //     createdAt: newChannel.createdAt, creator: newChannel.creator,
-//     //     editedAt: newChannel.editedAt
-//     // }).catch(() => {
-//     //     errString = "Error inserting new channel";
-//     // });
-//     // if (result.errString.length > 0) {
-//     //     console.log("failed to create general channel upon opening connection to DB");
-//     //     // res.status(500);
-//     // }
-//     mc.close();
-// });

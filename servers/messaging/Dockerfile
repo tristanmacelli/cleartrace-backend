@@ -10,8 +10,8 @@ RUN npm install
 COPY . .
 # declare that your server will listen on ports 5001 through 5010
 EXPOSE 5001-5010
-# you have a provisioning script @ /p.sh
-COPY collectionCreation.js /collectionCreation.js
-CMD ["node", "collectionCreation.js"]
+# you have a provisioning script @ /startup.js
+COPY startup.js /startup.js
+CMD ["node", "startup.js"]
 # set the entrypoint command
 ENTRYPOINT ["node", "/src/index.js"]
