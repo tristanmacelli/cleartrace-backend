@@ -1,13 +1,17 @@
 package main
 
 import (
+	"assignments-Tristan6/servers/gateway/handlers"
+	"assignments-Tristan6/servers/gateway/models/users"
+	"assignments-Tristan6/servers/gateway/sessions"
 	"log"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
 	"os"
+	"strings"
 
-	"./handlers"
+	"github.com/go-redis/redis"
 )
 
 // IndexHandler does something
@@ -22,7 +26,7 @@ func main() {
 	address := os.Getenv("ADDR")
 	// Default address the server should listen on
 	if len(address) == 0 {
-		addr = ":4000"
+		address = ":443"
 	}
 	//get the TLS key and cert paths from environment variables
 	//this allows us to use a self-signed cert/key during development
@@ -35,32 +39,45 @@ func main() {
 	dsn := os.Getenv("DSN")
 
 	messagesaddr := os.Getenv("MESSAGESADDR")
+	messagesaddr1 := strings.Split(messagesaddr, ",")[0]
+	// messagesaddr2 := strings.Split(messagesaddr, ",")[1]
+
 	summaryaddr := os.Getenv("SUMMARYADDR")
+
+	// create redis client
+	redisClient := redis.NewClient(&redis.Options{
+		Addr: redisaddr, // use default Addr
+	})
+	redisStore := sessions.NewRedisStore(redisClient, 0)
+
+	userStore := users.NewMysqlStore(dsn)
 
 	// If there are multiple addresses for either messages or summary then do the following
 	// TODO: random number generator to pick between the available addresses
 
 	// proxy
-	messagesProxy := httputil.NewSingleHostReverseProxy(&url.URL{Scheme: "http", Host: messagesaddr})
+	messagesProxy := httputil.NewSingleHostReverseProxy(&url.URL{Scheme: "http", Host: messagesaddr1})
 	summaryProxy := httputil.NewSingleHostReverseProxy(&url.URL{Scheme: "http", Host: summaryaddr})
 
+	ctx := handlers.NewHandlerContext(sessionkey, userStore, redisStore)
 	// starting a new mux session
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", IndexHandler)
-	mux.HandleFunc("/v1/users", handlers.UserHandler)
-	mux.HandleFunc("/v1/users/", handlers.SpecificUserHandler)
-	mux.HandleFunc("/v1/sessions", handlers.SessionsHandler)
-	mux.HandleFunc("/v1/sessions/", handlers.SpecificUserHandler)
+
+	mux.HandleFunc("/v1/users", ctx.UsersHandler)
+	mux.HandleFunc("/v1/users/", ctx.SpecificUserHandler)
+	mux.HandleFunc("/v1/sessions", ctx.SessionsHandler)
+	mux.HandleFunc("/v1/sessions/", ctx.SpecificUserHandler)
 	mux.Handle("/v1/summary", summaryProxy)
 	mux.Handle("/v1/channels", messagesProxy)
 	mux.Handle("/v1/channels/{channelID}", messagesProxy)
 	mux.Handle("/v1/channels/{channelID}/members", messagesProxy)
 	mux.Handle("/v1/messages/{messageID}", messagesProxy)
-	wrappedMux := NewLogger(mux)
+	wrappedMux := handlers.NewLogger(mux)
 
 	// logging server location or errors
 	log.Printf("server is listening at %s...", address)
-	log.Fatal(http.ListenAndServeTLS(addr, tlsCertPath, tlsKeyPath, wrappedMux))
+	log.Fatal(http.ListenAndServeTLS(address, tlsCertPath, tlsKeyPath, wrappedMux))
 
 	/* To host server:
 	- change path until in folder with main.go in it
