@@ -8,7 +8,7 @@ docker pull jtanderson7/summary
 
 docker run -d \
 -p 5050:5050 \
---network=messagingNetwork \
+--network=infrastructure \
 --name summary \
 -v /etc/letsencrypt:/etc/letsencrypt:ro \
 -e TLSCERT=$TLSCERT \
