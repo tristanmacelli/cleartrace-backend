@@ -10,14 +10,14 @@ sudo docker rm -f mongodb
 sudo docker pull jtanderson7/messaging
 
 sudo docker run -d \
---network=messagingNetwork \
+--network=infrastructure \
 --name mongodb \
 -v ~/data:/data/db \
 mongo
 
 sudo docker run -d \
 --restart=unless-stopped \
---network=messagingNetwork \
+--network=infrastructure \
 --name messaging \
 -v /etc/letsencrypt:/etc/letsencrypt:ro \
 -e TLSCERT=$TLSCERT \
@@ -27,7 +27,7 @@ jtanderson7/messaging
 
 sudo docker run -d \
 --restart=unless-stopped \
---network=messagingNetwork \
+--network=infrastructure \
 --name messaging2 \
 -v /etc/letsencrypt:/etc/letsencrypt:ro \
 -e TLSCERT=$TLSCERT \
