@@ -12,7 +12,7 @@ const dbName = 'mongodb';
 // Create a new MongoClient
 const client = new MongoClient(url);
 
-client.connect(async function (err: any) {
+client.connect(function (err: any) {
     if (err) {
         console.log("Error connecting to Mongodb: ", err);
     } else {
