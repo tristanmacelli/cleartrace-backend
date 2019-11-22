@@ -221,7 +221,7 @@ export function last100Messages(messages: Collection, id: string, res: any) {
             console.log("Error getting messages");
             return null;
         } else {
-            let successMessage = "Found channels";
+            let successMessage = "Found messages";
             console.log(successMessage);
             res.send(JSON.stringify(result));
             return successMessage;
@@ -242,7 +242,7 @@ export function last100SpecificMessages(messages: Collection, channelID: string,
         if (err) {
             console.log("Error getting messages");
         } else {
-            let successMessage = "Found channels";
+            let successMessage = "Found specific messages";
             console.log(successMessage);
             res.send(JSON.stringify(result));
             return successMessage;
