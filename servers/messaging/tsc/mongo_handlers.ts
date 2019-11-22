@@ -251,3 +251,15 @@ export function last100SpecificMessages(messages: Collection, channelID: string,
 }
 
 export * from "./mongo_handlers";
+
+
+// save({
+//     "_id": "5dd720def3df9b13a39876e7",
+//     "name": "saurav",
+//     "description": "an open channel for all",
+//     "private": false,
+//     "members": [1],
+//     "createdAt": "enter timestamp here",
+//     "creator": -1,
+//     "editedAt": "not yet edited"
+// })

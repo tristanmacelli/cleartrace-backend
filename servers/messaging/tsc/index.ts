@@ -167,6 +167,7 @@ const main = async () => {
                 let updateResult = mongo.updateChannel(channels, resultChannel, req);
                 if (updateResult.errString.length > 0) {
                     res.status(500);
+                    break;
                 }
                 let updatedChannel = updateResult.existingChannel;
                 res.set("Content-Type", "application/json");
@@ -296,11 +297,11 @@ const main = async () => {
             m.creator, m.editedAt);
     }
 
-    function isChannelMember(channel: Channel, user: any): boolean {
+    function isChannelMember(channel: Channel, userID: any): boolean {
         let isMember = false;
         if (channel.private) {
             for (let i = 0; i < channel.members.length; i++) {
-                if (channel.members[i] == user.ID) {
+                if (channel.members[i] == userID) {
                     isMember = true;
                     break;
                 }
@@ -311,12 +312,12 @@ const main = async () => {
         return isMember;
     }
 
-    function isChannelCreator(channel: Channel, user: any): boolean {
-        return channel.creator == user.id;
+    function isChannelCreator(channel: Channel, userID: any): boolean {
+        return channel.creator == userID;
     }
 
-    function isMessageCreator(message: Message, user: any): boolean {
-        return message.creator == user.id;
+    function isMessageCreator(message: Message, userID: any): boolean {
+        return message.creator == userID;
     }
 
     // error handler that will be called if
