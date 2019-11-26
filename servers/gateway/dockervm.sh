@@ -11,10 +11,12 @@ export TLSCERT=/etc/letsencrypt/live/api.sauravkharb.me/fullchain.pem
 export TLSKEY=/etc/letsencrypt/live/api.sauravkharb.me/privkey.pem
 
 echo "starting gateway"
-docker run --network=infrastructure \
+docker run --restart=unless-stopped \
+--network=infrastructure \
 --name userStore -d mysql/mysql-server
 
-docker run --network=infrastructure \
+docker run --restart=unless-stopped \
+--network=infrastructure \
 --name sessionStore -d redis
 
 docker run -d \
