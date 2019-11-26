@@ -108,6 +108,8 @@ func main() {
 	mux.Handle("/v1/channels/{channelID}", messagesProxy)
 	mux.Handle("/v1/channels/{channelID}/members", messagesProxy)
 	mux.Handle("/v1/messages/{messageID}", messagesProxy)
+	mux.HandleFunc("/ws", ctx.WebSocketConnectionHandler)
+
 	wrappedMux := handlers.NewLogger(mux)
 
 	// logging server location or errors

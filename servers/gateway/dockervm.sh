@@ -3,23 +3,35 @@
 docker rm -f gateway
 # TODO: We should probably not be removing the redis & sql on every deploy
 docker rm -f userStore
-docker rm -f sessionStore
+# docker rm -f sessionStore
 echo "pulling newest version of gateway"
 docker pull jtanderson7/assignment2
+docker pull jtanderson7/db
 
 export TLSCERT=/etc/letsencrypt/live/api.sauravkharb.me/fullchain.pem
 export TLSKEY=/etc/letsencrypt/live/api.sauravkharb.me/privkey.pem
+export MYSQL_ROOT_PASSWORD=$(openssl rand -base64 18)
 
 echo "starting gateway"
 docker run --restart=unless-stopped \
 --network=infrastructure \
 -e MYSQL_DATABASE=users \
--e MYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASSWORD \
---name userStore -d mysql/mysql-server
+-e MYSQL_ROOT_PASSWORD=pass \
+-e MYSQL_ROOT_HOST=% \
+--name userStore -d mysql
 
-docker run --restart=unless-stopped \
---network=infrastructure \
---name sessionStore -d redis
+# Create schema for Userstore
+# docker run -it \
+# --rm \
+# -d mysql/mysql-server sh -c "mysql -h127.0.0.1 -uroot -p$MYSQL_ROOT_PASSWORD \
+#  schema.sql < /docker-entrypoint-initdb.d/schema.sql"
+# sudo docker exec userStore sh -c 'exec mysqldump --all-databases -uroot -p"$MYSQL_ROOT_PASSWORD"' > /docker-entrypoint-initdb.d/schema.sql
+
+
+
+# docker run --restart=unless-stopped \
+# --network=infrastructure \
+# --name sessionStore -d redis
 
 docker run -d \
 -p 443:443 \
