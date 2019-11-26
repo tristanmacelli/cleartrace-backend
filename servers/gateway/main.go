@@ -20,8 +20,10 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Hello from API Gateway"))
 }
 
+// Director is a function wrapper
 type Director func(r *http.Request)
 
+// CustomDirector does load balancing using the round-robin method
 func CustomDirector(targets []*url.URL) Director {
 	var counter int32
 	counter = 0
@@ -54,26 +56,29 @@ func main() {
 	dsn := os.Getenv("DSN")
 
 	messagesaddr := os.Getenv("MESSAGEADDR")
-	log.Println(messagesaddr)
 	messagesaddrSlice := strings.Split(messagesaddr, ",")
-	messagesaddr1 := messagesaddrSlice[0]
-	messagesaddr2 := messagesaddrSlice[1]
+	// messagesaddr1 := messagesaddrSlice[0]
+	// messagesaddr2 := messagesaddrSlice[1]
 
-	u1 := url.URL{
-		Scheme: "http",
-		Host:   messagesaddr1,
-	}
-	u2 := url.URL{
-		Scheme: "http",
-		Host:   messagesaddr2,
-	}
+	// u1 := url.URL{Scheme: "http", Host: messagesaddr1}
+	// u2 := url.URL{Scheme: "http", Host: messagesaddr2}
 
-	urlSlice := []*url.URL{
-		&u1,
-		&u2,
+	// urlSlice := []*url.URL{&u1, &u2}
+	var urlSlice []*url.URL
+	// var messagingUrls []*url.URL
+	for _, u := range messagesaddrSlice {
+		url := url.URL{Scheme: "http", Host: u}
+		urlSlice = append(urlSlice, &url)
 	}
 
 	summaryaddr := os.Getenv("SUMMARYADDR")
+	// summaryaddrSlice := strings.Split(summaryaddr, ",")
+
+	// var summaryUrls []*url.URL
+	// for _, u := range summaryaddrSlice {
+	// 	url := url.URL{Scheme: "http", Host: u}
+	// 	summaryUrls = append(urlSlice, &url)
+	// }
 
 	// create redis client
 	redisClient := redis.NewClient(&redis.Options{
@@ -82,10 +87,9 @@ func main() {
 	redisStore := sessions.NewRedisStore(redisClient, 0)
 	userStore := users.NewMysqlStore(dsn)
 
+	// proxies
 	messagesProxy := &httputil.ReverseProxy{Director: CustomDirector(urlSlice)}
-
-	// proxy
-	// messagesProxy := httputil.NewSingleHostReverseProxy(&url.URL{Scheme: "http", Host: messagesaddr1})
+	// summaryProxy := &httputil.ReverseProxy{Director: CustomDirector(summaryUrls)}
 	summaryProxy := httputil.NewSingleHostReverseProxy(&url.URL{Scheme: "http", Host: summaryaddr})
 
 	ctx := handlers.NewHandlerContext(sessionkey, userStore, redisStore)
