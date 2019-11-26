@@ -1,0 +1,8 @@
+# Files and directories for the messaging container to ignore
+tsc
+temp.js
+build.sh
+deploy.sh
+refresh.sh
+tsconfig.json
+README.md

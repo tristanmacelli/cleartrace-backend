@@ -1,7 +1,11 @@
 package sessions
 
 import (
+	"bytes"
+	"crypto/hmac"
+	"crypto/rand"
 	"crypto/sha256"
+	b64 "encoding/base64"
 	"errors"
 )
 
@@ -35,6 +39,9 @@ var ErrInvalidID = errors.New("Invalid Session ID")
 func NewSessionID(signingKey string) (SessionID, error) {
 	//TODO: if `signingKey` is zero-length, return InvalidSessionID
 	//and an error indicating that it may not be empty
+	if len(signingKey) == 0 {
+		return InvalidSessionID, errors.New("signingKey must not be empty")
+	}
 
 	//TODO: Generate a new digitally-signed SessionID by doing the following:
 	//- create a byte slice where the first `idLength` of bytes
@@ -44,9 +51,27 @@ func NewSessionID(signingKey string) (SessionID, error) {
 	//- encode that byte slice using base64 URL Encoding and return
 	//  the result as a SessionID type
 
-	//the following return statement is just a placeholder
-	//remove it when implementing the function
-	return InvalidSessionID, nil
+	sID := make([]byte, idLength)
+	_, err := rand.Read(sID)
+	if err != nil {
+		return InvalidSessionID, nil
+	}
+	// first half of id
+
+	key := []byte(signingKey)
+	//create a new HMAC hasher
+	h := hmac.New(sha256.New, key)
+	//write the message into it
+	h.Write(sID)
+	//calculate the HMAC signature
+	signature := h.Sum(nil)
+
+	// final session id in bytes
+	sID = append(sID, signature...)
+
+	// encode using Base64 URL encoding
+	sIDEncoded := b64.URLEncoding.EncodeToString([]byte(sID))
+	return SessionID(sIDEncoded), nil
 }
 
 //ValidateID validates the string in the `id` parameter
@@ -61,6 +86,31 @@ func ValidateID(id string, signingKey string) (SessionID, error) {
 	//return the entire `id` parameter as a SessionID type.
 	//If not, return InvalidSessionID and ErrInvalidID.
 
+	if len(signingKey) == 0 {
+		return InvalidSessionID, errors.New("signingKey must not be empty")
+	}
+
+	// check for URLEncoding and decode the id parameter
+	sIDDec, _ := b64.URLEncoding.DecodeString(id)
+
+	if len(sIDDec) != 64 {
+		return InvalidSessionID, ErrInvalidID
+	}
+
+	// get the first half of the slice
+	firstHalf := sIDDec[0:idLength]
+
+	// HMAC hash the first half
+	k := []byte(signingKey)
+	he := hmac.New(sha256.New, k)
+	he.Write(firstHalf)
+	signature := he.Sum(nil)
+	// compare this to the second half
+	res := bytes.Compare(signature, sIDDec[idLength:])
+
+	if res == 0 {
+		return SessionID(id), nil
+	}
 	return InvalidSessionID, ErrInvalidID
 }
 

@@ -1,11 +1,9 @@
 # add the necessary instructions
 # to create a Docker container image
-# for your Go API gateway server
-
+# for your Go summary server
 
 FROM alpine:3.7
 RUN apk add --no-cache ca-certificates
-COPY ./gateway /build
-EXPOSE 443
-ENTRYPOINT ["/build"]
-# ENTRYPOINT ["api.sauravkharb.me"]
+COPY ./summary /summarybuild
+EXPOSE 5050-5060
+ENTRYPOINT ["/summarybuild"]
