@@ -4,6 +4,7 @@ import (
 	"assignments-Tristan6/servers/gateway/handlers"
 	"assignments-Tristan6/servers/gateway/models/users"
 	"assignments-Tristan6/servers/gateway/sessions"
+	"fmt"
 	"log"
 	"net/http"
 	"net/http/httputil"
@@ -85,7 +86,7 @@ func main() {
 		Addr: redisaddr, // use default Addr
 	})
 	redisStore := sessions.NewRedisStore(redisClient, 0)
-	dsn = "(" + dsn + ")/users"
+	dsn = fmt.Sprintf("root:%s@tcp("+dsn+")/users", os.Getenv("MYSQL_ROOT_PASSWORD"))
 	userStore := users.NewMysqlStore(dsn)
 
 	// proxies

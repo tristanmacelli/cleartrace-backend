@@ -14,6 +14,7 @@ echo "starting gateway"
 docker run --restart=unless-stopped \
 --network=infrastructure \
 -e MYSQL_DATABASE=users \
+-e MYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASSWORD \
 --name userStore -d mysql/mysql-server
 
 docker run --restart=unless-stopped \
@@ -32,6 +33,7 @@ docker run -d \
 -e SESSIONKEY=sessionkeyrandom \
 -e DSN=userStore:3306 \
 -e REDISADDR=sessionStore:6379 \
+-e MYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASSWORD \
 jtanderson7/assignment2
 echo "service refresh completed!"
 
