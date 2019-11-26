@@ -58,13 +58,6 @@ func main() {
 
 	messagesaddr := os.Getenv("MESSAGEADDR")
 	messagesaddrSlice := strings.Split(messagesaddr, ",")
-	// messagesaddr1 := messagesaddrSlice[0]
-	// messagesaddr2 := messagesaddrSlice[1]
-
-	// u1 := url.URL{Scheme: "http", Host: messagesaddr1}
-	// u2 := url.URL{Scheme: "http", Host: messagesaddr2}
-
-	// urlSlice := []*url.URL{&u1, &u2}
 	var urlSlice []*url.URL
 	// var messagingUrls []*url.URL
 	for _, u := range messagesaddrSlice {
@@ -108,7 +101,7 @@ func main() {
 	mux.Handle("/v1/channels/{channelID}", messagesProxy)
 	mux.Handle("/v1/channels/{channelID}/members", messagesProxy)
 	mux.Handle("/v1/messages/{messageID}", messagesProxy)
-	mux.HandleFunc("/ws", ctx.WebSocketConnectionHandler)
+	mux.HandleFunc("/v1/ws", ctx.WebSocketConnectionHandler)
 
 	wrappedMux := handlers.NewLogger(mux)
 

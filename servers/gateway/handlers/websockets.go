@@ -1,10 +1,77 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
+	"sync"
 
 	"github.com/gorilla/websocket"
 )
+
+// A simple store to store all the connections
+type socketStore struct {
+	// Connections map[string]*websocket.Conn
+	Connections []*websocket.Conn
+	lock        sync.Mutex
+}
+
+// Control messages for websocket
+const (
+	// TextMessage denotes a text data message. The text message payload is
+	// interpreted as UTF-8 encoded text data.
+	TextMessage = 1
+
+	// BinaryMessage denotes a binary data message.
+	BinaryMessage = 2
+
+	// CloseMessage denotes a close control message. The optional message
+	// payload contains a numeric code and text. Use the FormatCloseMessage
+	// function to format a close message payload.
+	CloseMessage = 8
+
+	// PingMessage denotes a ping control message. The optional message payload
+	// is UTF-8 encoded text.
+	PingMessage = 9
+
+	// PongMessage denotes a pong control message. The optional message payload
+	// is UTF-8 encoded text.
+	PongMessage = 10
+)
+
+// Thread-safe method for inserting a connection
+func (s *socketStore) InsertConnection(conn *websocket.Conn) int {
+	s.lock.Lock()
+	connID := len(s.Connections)
+	// insert socket connection
+	s.Connections = append(s.Connections, conn)
+	s.lock.Unlock()
+	return connID
+}
+
+// Thread-safe method for inserting a connection
+func (s *socketStore) RemoveConnection(connID int) {
+	s.lock.Lock()
+	// insert socket connection
+	s.Connections = append(s.Connections[:connID], s.Connections[connID+1:]...)
+	s.lock.Unlock()
+}
+
+// Simple method for writing a message to all live connections.
+// In your homework, you will be writing a message to a subset of connections
+// (if the message is intended for a private channel), or to all of them (if the message
+// is posted on a public channel
+func (s *socketStore) WriteToAllConnections(messageType int, data []byte) error {
+	var writeError error
+
+	for _, conn := range s.Connections {
+		writeError = conn.WriteMessage(messageType, data)
+		if writeError != nil {
+			return writeError
+		}
+	}
+
+	return nil
+}
 
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
@@ -14,7 +81,7 @@ var upgrader = websocket.Upgrader{
 		// origin of the websockete handshake request is coming from unknown domains.
 		// This prevents some random domain from opening up a socket with your server.
 		// TODO: make sure you modify this for your HW to check if r.Origin is your host
-		return true
+		return r.Header.Get("Origin") == "https://a2.sauravkharb.me"
 	},
 }
 
@@ -24,11 +91,32 @@ var upgrader = websocket.Upgrader{
 //to this list, as handlers are called concurrently from multiple
 //goroutines.
 
-func (ctx *HandlerContext) WebSocketConnectionHandler(w http.ResponseWriter, r *http.Request) {
+// WebSocketConnectionHandler does something
+func (s *socketStore) WebSocketConnectionHandler(w http.ResponseWriter, r *http.Request) {
 	// problem getting Session State
-	if ctx.SessionStore == nil {
+	// TODO: how do we handle ctx && socketStore as receivers
+	if s.SessionStore == nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		w.Write([]byte("Status Code 403: Unauthorized"))
 		return
 	}
+	// handle the websocket handshake
+	if r.Header.Get("Origin") != "https://a2.sauravkharb.me" {
+		http.Error(w, "Websocket Connection Refused", 403)
+	} else {
+		conn, err := upgrader.Upgrade(w, r, nil)
+		if err != nil {
+			http.Error(w, "Failed to open websocket connection", 401)
+		}
+		connID := s.InsertConnection(conn)
+		// Invoke a goroutine for handling control messages from this connection
+		go (func(conn *websocket.Conn, connID int) {
+			defer conn.Close()
+			defer s.RemoveConnection(connID)
+			s.echo(conn)
+		})(conn, connID)
+	}
+
 }
 
 //TODO: start a goroutine that connects to the RabbitMQ server,
@@ -41,3 +129,40 @@ func (ctx *HandlerContext) WebSocketConnectionHandler(w http.ResponseWriter, r *
 //reads incoming control messages, as described in the
 //Gorilla WebSocket API documentation:
 //http://godoc.org/github.com/gorilla/websocket
+
+// echo does something
+func (s *socketStore) echo(conn *websocket.Conn) {
+	// for { // infinite loop
+	// 	messageType, p, err := conn.ReadMessage()
+	// 	if err != nil {
+	// 		log.Println("Error reading message.", err)
+	// 		conn.Close()
+	// 		return
+	// 	}
+	// 	// fmt.Printf("Got message: %#v\n", p)
+	// 	if err := conn.WriteMessage(messageType, p); err != nil {
+	// 		log.Println(err)
+	// 		return
+	// 	}
+	// }
+	for {
+		messageType, p, err := conn.ReadMessage()
+
+		if messageType == TextMessage || messageType == BinaryMessage {
+			fmt.Printf("Client says %v\n", p)
+			fmt.Printf("Writing %s to all sockets\n", string(p))
+			s.WriteToAllConnections(TextMessage, append([]byte("Got message: "), p...))
+		} else if messageType == CloseMessage {
+			fmt.Println("Close message received.")
+			break
+		} else if err != nil {
+			fmt.Println("Error reading message.")
+			break
+		}
+		// TA Question: Should we be ignoring ping and pong messages
+		// Potential TODO: Handling a ping message sent by client when the client wants to know the server is still alive, and sending a pong message back
+
+		// Potential TODO: Handling a pong message when the server sends the client a ping, and the client responds with a pong
+	}
+	// cleanup
+}
