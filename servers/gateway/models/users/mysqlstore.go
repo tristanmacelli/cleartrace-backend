@@ -77,7 +77,12 @@ func (ms *MysqlStore) GetByUserName(username string) (*User, error) {
 func (ms *MysqlStore) Insert(user *User) (*User, error) {
 	// This inserts a new row into the "users" table Using ? markers for the values will defeat SQL
 	// injection attacks
-
+	fmt.Println(user.Email)
+	fmt.Println(user.PassHash)
+	fmt.Println(user.UserName)
+	fmt.Println(user.FirstName)
+	fmt.Println(user.LastName)
+	fmt.Println(user.PhotoURL)
 	insq := "INSERT INTO users(email, passHash, username, firstname, lastname, photoURL) VALUES (?,?,?,?,?,?)"
 	res, err := ms.DB.Exec(insq, user.Email, user.PassHash, user.UserName,
 		user.FirstName, user.LastName, user.PhotoURL)
