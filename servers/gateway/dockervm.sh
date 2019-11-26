@@ -13,6 +13,7 @@ export TLSKEY=/etc/letsencrypt/live/api.sauravkharb.me/privkey.pem
 echo "starting gateway"
 docker run --restart=unless-stopped \
 --network=infrastructure \
+-e MYSQL_DATABASE=users \
 --name userStore -d mysql/mysql-server
 
 docker run --restart=unless-stopped \

@@ -85,6 +85,7 @@ func main() {
 		Addr: redisaddr, // use default Addr
 	})
 	redisStore := sessions.NewRedisStore(redisClient, 0)
+	dsn = "(" + dsn + ")/users"
 	userStore := users.NewMysqlStore(dsn)
 
 	// proxies
