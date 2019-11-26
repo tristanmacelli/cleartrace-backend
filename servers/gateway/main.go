@@ -58,11 +58,10 @@ func main() {
 
 	messagesaddr := os.Getenv("MESSAGEADDR")
 	messagesaddrSlice := strings.Split(messagesaddr, ",")
-	var urlSlice []*url.URL
-	// var messagingUrls []*url.URL
+	var messagingUrls []*url.URL
 	for _, u := range messagesaddrSlice {
 		url := url.URL{Scheme: "http", Host: u}
-		urlSlice = append(urlSlice, &url)
+		messagingUrls = append(messagingUrls, &url)
 	}
 
 	summaryaddr := os.Getenv("SUMMARYADDR")
@@ -83,7 +82,7 @@ func main() {
 	userStore := users.NewMysqlStore(dsn)
 
 	// proxies
-	messagesProxy := &httputil.ReverseProxy{Director: CustomDirector(urlSlice)}
+	messagesProxy := &httputil.ReverseProxy{Director: CustomDirector(messagingUrls)}
 	// summaryProxy := &httputil.ReverseProxy{Director: CustomDirector(summaryUrls)}
 	summaryProxy := httputil.NewSingleHostReverseProxy(&url.URL{Scheme: "http", Host: summaryaddr})
 
