@@ -2,7 +2,9 @@
 
 echo "build starting..."
 bash build.sh
-bash ../db/buildDb.sh
+cd ../db
+bash buildDb.sh
+cd -
 echo "build completed!"
 docker push jtanderson7/assignment2
 docker push jtanderson7/db

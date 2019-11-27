@@ -45,7 +45,7 @@ docker run -d \
 -e SESSIONKEY=sessionkeyrandom \
 -e DSN=userStore:3306 \
 -e REDISADDR=sessionStore:6379 \
--e MYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASSWORD \
+-e MYSQL_ROOT_PASSWORD=pass \
 jtanderson7/assignment2
 echo "service refresh completed!"
 
