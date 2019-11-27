@@ -9,6 +9,8 @@ import * as mongo from "./mongo_handlers";
 import { Message } from "./message";
 import { Channel } from "./channel";
 
+import * as Amqp from "amqp-ts"
+
 //create a new express application
 const app = express();
 
@@ -32,6 +34,23 @@ var db: Db;
 var messages: Collection;
 var channels: Collection;
 
+class RabbitObject {
+    type : string;
+    channel : Channel|any;
+    message : Message|any;
+    userIDs : string[]|any;
+    channelID : string|any;
+    messageID : string|any;
+    constructor(t:string, c:Channel|any, m:Message|any, ids:string[]|any, ci:string|any, mi:string|any) {
+        this.type = t;
+        this.channel = c;
+        this.message = m;
+        this.userIDs = ids;
+        this.channelID = ci;
+        this.messageID = mi
+    }
+}
+
 // Reasoning for refactor: 
 // https://bit.ly/342jCtj
 
@@ -50,11 +69,22 @@ const createConnection = async (): Promise<MongoClient> => {
     return client!;
 }
 
+function sendObjectToQueue(q: Amqp.Queue, ob: RabbitObject) {
+    let message = new Amqp.Message(ob)
+    q.send(message)
+    console.log("Sent out the message");
+}
+
+
 const main = async () => {
     let client = await createConnection();
     db = client.db(dbName);
     channels = db.collection("channels");
     messages = db.collection("messages");
+
+    let rabbitConn: Amqp.Connection;
+    rabbitConn = new Amqp.Connection("amqp://localhost");
+    let queue = rabbitConn.declareQueue("QueueName");
 
     // TODO: We should do a test of the mongo helper methods
 
@@ -64,6 +94,10 @@ const main = async () => {
         // console.log("port : " + port);
         // console.log("host : " + host);
     });
+
+
+
+
 
     app.use("/v1/channels", (req: any, res: any) => {
         switch (req.method) {
@@ -80,7 +114,6 @@ const main = async () => {
                 break;
 
             case 'POST':
-                console.log(req.body);
                 if (req.body.channel.name == null) {
                     res.status(500);
                     //do something about the name property being null
@@ -95,6 +128,10 @@ const main = async () => {
                 res.set("Content-Type", "application/json");
                 res.json(insertChannel);
                 res.status(201);  //probably cant do this >>> .send("success");
+
+                // add to rabbitMQ queue
+                let obj = new RabbitObject('channel-new',insertChannel, null, insertChannel.members, null, null )
+                sendObjectToQueue(queue, obj)
                 break;
             default:
                 break;
@@ -157,6 +194,11 @@ const main = async () => {
                 res.set("Content-Type", "application/json");
                 res.json(insertedMessage);
                 res.status(201);  // probably cant do this >>> .send("success");
+
+                // add to rabbitMQ queue
+                let PostObj = new RabbitObject('message-new', null, insertedMessage, resultChannel.members,null, null )
+                sendObjectToQueue(queue, PostObj)
+
                 break;
             case 'PATCH':
                 if (!isChannelCreator(resultChannel, req.Header.Xuser)) {
@@ -172,6 +214,11 @@ const main = async () => {
                 let updatedChannel = updateResult.existingChannel;
                 res.set("Content-Type", "application/json");
                 res.json(updatedChannel);
+
+                // add to rabbitMQ queue
+                let PatchObj = new RabbitObject('channel-update',updatedChannel, null, updatedChannel.members, null, null )
+                sendObjectToQueue(queue, PatchObj)
+
                 break;
             case 'DELETE':
                 if (!isChannelCreator(resultChannel, req.Header.Xuser)) {
@@ -185,6 +232,11 @@ const main = async () => {
                 }
                 res.set("Content-Type", "text/plain");
                 res.send("Channel was successfully deleted");
+
+                // add to rabbitMQ queue
+                let obj = new RabbitObject('channel-delete', null, null, resultChannel.members, resultChannel._id, null )
+                sendObjectToQueue(queue, obj)
+                
                 break;
             default:
                 break;
@@ -265,6 +317,12 @@ const main = async () => {
                 let updatedMessage = updatedResult.existingMessage;
                 res.set("Content-Type", "application/json");
                 res.json(updatedMessage);
+
+                let resultChannel = mongo.getChannelByID(channels, updatedMessage.channelID)
+                // add to rabbitMQ queue
+                let pobj = new RabbitObject('message-update', null, updatedMessage, resultChannel.finalChannel,null, null )
+                sendObjectToQueue(queue, pobj)
+
                 break;
             case 'DELETE':
                 if (!isMessageCreator(resultMessage, req.Header.Xuser)) {
@@ -279,6 +337,13 @@ const main = async () => {
                 }
                 res.set("Content-Type", "text/plain");
                 res.send("Message deleted");
+
+                let deleteMessageChannel = mongo.getChannelByID(channels, resultMessage.channelID)
+                
+                // add to rabbitMQ queue
+                let PostObj = new RabbitObject('message-delete',null, null, deleteMessageChannel.finalChannel.members, null,   resultMessage._id )
+                sendObjectToQueue(queue, PostObj)
+
                 break;
             default:
                 break;
