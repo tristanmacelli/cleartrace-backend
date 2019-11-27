@@ -80,12 +80,13 @@ func (ctx *HandlerContext) WriteToAllConnections(messageType int, data []byte) e
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
-	CheckOrigin: func(r *http.Request) bool {
-		// This function's purpose is to reject websocket upgrade requests if the
-		// origin of the websockete handshake request is coming from unknown domains.
-		// This prevents some random domain from opening up a socket with your server.
-		return r.Header.Get("Origin") == "https://a2.sauravkharb.me"
-	},
+	//TODO : DO WE REALLY NEED THIS???
+	// CheckOrigin: func(r *http.Request) bool {
+	// 	// This function's purpose is to reject websocket upgrade requests if the
+	// 	// origin of the websockete handshake request is coming from unknown domains.
+	// 	// This prevents some random domain from opening up a socket with your server.
+	// 	return r.Header.Get("Origin") == "https://a2.sauravkharb.me"
+	// },
 }
 
 //TODO: add a handler that upgrades clients to a WebSocket connection
@@ -106,23 +107,24 @@ func (ctx *HandlerContext) WebSocketConnectionHandler(w http.ResponseWriter, r *
 	}
 	// handle the websocket handshake
 
-	//TODO : How to ensure if session state exists for the
 	if r.Header.Get("Origin") != "https://a2.sauravkharb.me" {
 		http.Error(w, "Websocket Connection Refused", 403)
-	} else {
-		conn, err := upgrader.Upgrade(w, r, w.Header())
-		if err != nil {
-			http.Error(w, "Failed to open websocket connection", 401)
-		}
-
-		connID := ctx.InsertConnection(conn)
-		// Invoke a goroutine for handling control messages from this connection
-		go (func(conn *websocket.Conn, connID int) {
-			defer conn.Close()
-			defer ctx.RemoveConnection(connID)
-			ctx.echo(conn)
-		})(conn, connID)
+		return
 	}
+
+	conn, err := upgrader.Upgrade(w, r, w.Header())
+	if err != nil {
+		http.Error(w, "Failed to open websocket connection", 401)
+		return
+	}
+
+	connID := ctx.InsertConnection(conn)
+	// Invoke a goroutine for handling control messages from this connection
+	go (func(conn *websocket.Conn, connID int) {
+		defer conn.Close()
+		defer ctx.RemoveConnection(connID)
+		ctx.echo(conn)
+	})(conn, connID)
 
 }
 
@@ -160,6 +162,9 @@ func (ctx *HandlerContext) echo(conn *websocket.Conn) {
 		if messageType == TextMessage || messageType == BinaryMessage {
 			fmt.Printf("Client says %v\n", p)
 			fmt.Printf("Writing %s to all sockets\n", string(p))
+
+			// TODO : Make sure you are writing messages to only memebers of the private channel
+
 			ctx.WriteToAllConnections(TextMessage, append([]byte("Got message: "), p...))
 		} else if messageType == CloseMessage {
 			fmt.Println("Close message received.")
