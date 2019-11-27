@@ -35,19 +35,21 @@ var messages: Collection;
 var channels: Collection;
 
 class RabbitObject {
-    type : string;
-    channel : Channel|any;
-    message : Message|any;
-    userIDs : string[]|any;
-    channelID : string|any;
-    messageID : string|any;
-    constructor(t:string, c:Channel|any, m:Message|any, ids:string[]|any, ci:string|any, mi:string|any) {
+    type: string;
+    channel: Channel | any;
+    message: Message | any;
+    userIDs: string[] | any;
+    channelID: string | any;
+    messageID: string | any;
+    constructor(t: string, c: Channel | any, m: Message | any, ids: string[] | any,
+        cid: string | any, mid: string | any) {
+
         this.type = t;
         this.channel = c;
         this.message = m;
         this.userIDs = ids;
-        this.channelID = ci;
-        this.messageID = mi
+        this.channelID = cid;
+        this.messageID = mid
     }
 }
 
@@ -130,7 +132,8 @@ const main = async () => {
                 res.status(201);  //probably cant do this >>> .send("success");
 
                 // add to rabbitMQ queue
-                let obj = new RabbitObject('channel-new',insertChannel, null, insertChannel.members, null, null )
+                let obj = new RabbitObject('channel-new', insertChannel, null,
+                    insertChannel.members, null, null)
                 sendObjectToQueue(queue, obj)
                 break;
             default:
@@ -196,7 +199,8 @@ const main = async () => {
                 res.status(201);  // probably cant do this >>> .send("success");
 
                 // add to rabbitMQ queue
-                let PostObj = new RabbitObject('message-new', null, insertedMessage, resultChannel.members,null, null )
+                let PostObj = new RabbitObject('message-new', null, insertedMessage,
+                    resultChannel.members, null, null)
                 sendObjectToQueue(queue, PostObj)
 
                 break;
@@ -216,7 +220,8 @@ const main = async () => {
                 res.json(updatedChannel);
 
                 // add to rabbitMQ queue
-                let PatchObj = new RabbitObject('channel-update',updatedChannel, null, updatedChannel.members, null, null )
+                let PatchObj = new RabbitObject('channel-update', updatedChannel, null,
+                    updatedChannel.members, null, null)
                 sendObjectToQueue(queue, PatchObj)
 
                 break;
@@ -234,9 +239,9 @@ const main = async () => {
                 res.send("Channel was successfully deleted");
 
                 // add to rabbitMQ queue
-                let obj = new RabbitObject('channel-delete', null, null, resultChannel.members, resultChannel._id, null )
+                let obj = new RabbitObject('channel-delete', null, null, resultChannel.members,
+                    resultChannel._id, null)
                 sendObjectToQueue(queue, obj)
-                
                 break;
             default:
                 break;
@@ -320,7 +325,8 @@ const main = async () => {
 
                 let resultChannel = mongo.getChannelByID(channels, updatedMessage.channelID)
                 // add to rabbitMQ queue
-                let pobj = new RabbitObject('message-update', null, updatedMessage, resultChannel.finalChannel,null, null )
+                let pobj = new RabbitObject('message-update', null, updatedMessage,
+                    resultChannel.finalChannel, null, null)
                 sendObjectToQueue(queue, pobj)
 
                 break;
@@ -339,9 +345,10 @@ const main = async () => {
                 res.send("Message deleted");
 
                 let deleteMessageChannel = mongo.getChannelByID(channels, resultMessage.channelID)
-                
+
                 // add to rabbitMQ queue
-                let PostObj = new RabbitObject('message-delete',null, null, deleteMessageChannel.finalChannel.members, null,   resultMessage._id )
+                let PostObj = new RabbitObject('message-delete', null, null,
+                    deleteMessageChannel.finalChannel.members, null, resultMessage._id)
                 sendObjectToQueue(queue, PostObj)
 
                 break;
