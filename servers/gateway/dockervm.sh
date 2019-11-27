@@ -18,12 +18,12 @@ docker run --restart=unless-stopped \
 -e MYSQL_DATABASE=users \
 -e MYSQL_ROOT_PASSWORD=pass \
 -e MYSQL_ROOT_HOST=% \
---name userStore -d mysql
+--name userStore -d jtanderson7/db # This was previously mysql (which isn't the container we are creating)
 
 # Create schema for Userstore
 # docker run -it \
 # --rm \
-# -d mysql/mysql-server sh -c "mysql -h127.0.0.1 -uroot -p$MYSQL_ROOT_PASSWORD \
+# -d jtanderson7/db sh -c "mysql -h127.0.0.1 -uroot -p$MYSQL_ROOT_PASSWORD \
 #  schema.sql < /docker-entrypoint-initdb.d/schema.sql"
 # sudo docker exec userStore sh -c 'exec mysqldump --all-databases -uroot -p"$MYSQL_ROOT_PASSWORD"' > /docker-entrypoint-initdb.d/schema.sql
 
