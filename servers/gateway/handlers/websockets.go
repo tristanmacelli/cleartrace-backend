@@ -8,11 +8,16 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-// A simple store to store all the connections
+// Notify A simple store to store all the connections
 type Notify struct {
 	// Connections map[string]*websocket.Conn
 	Connections []*websocket.Conn
 	lock        sync.Mutex
+}
+
+// NewNotify does something
+func NewNotify(connections []*websocket.Conn, lock sync.Mutex) *Notify {
+	return &Notify{connections, lock}
 }
 
 // Control messages for websocket
