@@ -100,7 +100,7 @@ func main() {
 	mux.Handle("/v1/channels/{channelID}", messagesProxy)
 	mux.Handle("/v1/channels/{channelID}/members", messagesProxy)
 	mux.Handle("/v1/messages/{messageID}", messagesProxy)
-	mux.HandleFunc("/v1/ws", ctx.WebSocketConnectionHandler)
+	// mux.HandleFunc("/v1/ws", ctx.WebSocketConnectionHandler)
 
 	wrappedMux := handlers.NewLogger(mux)
 

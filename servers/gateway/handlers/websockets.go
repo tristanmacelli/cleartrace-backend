@@ -95,16 +95,16 @@ var upgrader = websocket.Upgrader{
 func (s *socketStore) WebSocketConnectionHandler(w http.ResponseWriter, r *http.Request) {
 	// problem getting Session State
 	// TODO: how do we handle ctx && socketStore as receivers
-	if s.SessionStore == nil {
-		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte("Status Code 403: Unauthorized"))
-		return
-	}
+	// if s.SessionStore == nil {
+	// 	w.WriteHeader(http.StatusUnauthorized)
+	// 	w.Write([]byte("Status Code 403: Unauthorized"))
+	// 	return
+	// }
 	// handle the websocket handshake
 	if r.Header.Get("Origin") != "https://a2.sauravkharb.me" {
 		http.Error(w, "Websocket Connection Refused", 403)
 	} else {
-		conn, err := upgrader.Upgrade(w, r, nil)
+		conn, err := upgrader.Upgrade(w, r, w.Header())
 		if err != nil {
 			http.Error(w, "Failed to open websocket connection", 401)
 		}
@@ -155,6 +155,10 @@ func (s *socketStore) echo(conn *websocket.Conn) {
 		} else if messageType == CloseMessage {
 			fmt.Println("Close message received.")
 			break
+			// } else if messageType == PingMessage {
+			// pingHandler := conn.PingHandler()
+			// } else if messageType == PongMessage {
+			// pongHandler := conn.PongHandler()
 		} else if err != nil {
 			fmt.Println("Error reading message.")
 			break
@@ -164,5 +168,17 @@ func (s *socketStore) echo(conn *websocket.Conn) {
 
 		// Potential TODO: Handling a pong message when the server sends the client a ping, and the client responds with a pong
 	}
+	// What should we be doing as a part of this cleanup
 	// cleanup
 }
+
+// func main() {
+// 	mux := http.NewServeMux()
+
+// 	ctx := socketStore{
+// 		Connections: []*websocket.Conn{},
+// 	}
+
+// 	mux.HandleFunc("/ws", ctx.webSocketConnectionHandler)
+// 	log.Fatal(http.ListenAndServe(":4001", mux))
+// }
