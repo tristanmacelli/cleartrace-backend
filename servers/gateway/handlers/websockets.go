@@ -9,7 +9,7 @@ import (
 )
 
 // A simple store to store all the connections
-type socketStore struct {
+type Notify struct {
 	// Connections map[string]*websocket.Conn
 	Connections []*websocket.Conn
 	lock        sync.Mutex
@@ -39,7 +39,8 @@ const (
 )
 
 // Thread-safe method for inserting a connection
-func (s *socketStore) InsertConnection(conn *websocket.Conn) int {
+func (ctx *HandlerContext) InsertConnection(conn *websocket.Conn) int {
+	s := ctx.SocketStore
 	s.lock.Lock()
 	connID := len(s.Connections)
 	// insert socket connection
@@ -49,7 +50,8 @@ func (s *socketStore) InsertConnection(conn *websocket.Conn) int {
 }
 
 // Thread-safe method for inserting a connection
-func (s *socketStore) RemoveConnection(connID int) {
+func (ctx *HandlerContext) RemoveConnection(connID int) {
+	s := ctx.SocketStore
 	s.lock.Lock()
 	// insert socket connection
 	s.Connections = append(s.Connections[:connID], s.Connections[connID+1:]...)
@@ -60,7 +62,9 @@ func (s *socketStore) RemoveConnection(connID int) {
 // In your homework, you will be writing a message to a subset of connections
 // (if the message is intended for a private channel), or to all of them (if the message
 // is posted on a public channel
-func (s *socketStore) WriteToAllConnections(messageType int, data []byte) error {
+func (ctx *HandlerContext) WriteToAllConnections(messageType int, data []byte) error {
+	s := ctx.SocketStore
+
 	var writeError error
 
 	for _, conn := range s.Connections {
@@ -80,7 +84,6 @@ var upgrader = websocket.Upgrader{
 		// This function's purpose is to reject websocket upgrade requests if the
 		// origin of the websockete handshake request is coming from unknown domains.
 		// This prevents some random domain from opening up a socket with your server.
-		// TODO: make sure you modify this for your HW to check if r.Origin is your host
 		return r.Header.Get("Origin") == "https://a2.sauravkharb.me"
 	},
 }
@@ -92,15 +95,18 @@ var upgrader = websocket.Upgrader{
 //goroutines.
 
 // WebSocketConnectionHandler does something
-func (s *socketStore) WebSocketConnectionHandler(w http.ResponseWriter, r *http.Request) {
+func (ctx *HandlerContext) WebSocketConnectionHandler(w http.ResponseWriter, r *http.Request) {
 	// problem getting Session State
 	// TODO: how do we handle ctx && socketStore as receivers
-	// if s.SessionStore == nil {
-	// 	w.WriteHeader(http.StatusUnauthorized)
-	// 	w.Write([]byte("Status Code 403: Unauthorized"))
-	// 	return
-	// }
+
+	if ctx.SessionStore == nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		w.Write([]byte("Status Code 403: Unauthorized"))
+		return
+	}
 	// handle the websocket handshake
+
+	//TODO : How to ensure if session state exists for the
 	if r.Header.Get("Origin") != "https://a2.sauravkharb.me" {
 		http.Error(w, "Websocket Connection Refused", 403)
 	} else {
@@ -108,12 +114,13 @@ func (s *socketStore) WebSocketConnectionHandler(w http.ResponseWriter, r *http.
 		if err != nil {
 			http.Error(w, "Failed to open websocket connection", 401)
 		}
-		connID := s.InsertConnection(conn)
+
+		connID := ctx.InsertConnection(conn)
 		// Invoke a goroutine for handling control messages from this connection
 		go (func(conn *websocket.Conn, connID int) {
 			defer conn.Close()
-			defer s.RemoveConnection(connID)
-			s.echo(conn)
+			defer ctx.RemoveConnection(connID)
+			ctx.echo(conn)
 		})(conn, connID)
 	}
 
@@ -131,7 +138,7 @@ func (s *socketStore) WebSocketConnectionHandler(w http.ResponseWriter, r *http.
 //http://godoc.org/github.com/gorilla/websocket
 
 // echo does something
-func (s *socketStore) echo(conn *websocket.Conn) {
+func (ctx *HandlerContext) echo(conn *websocket.Conn) {
 	// for { // infinite loop
 	// 	messageType, p, err := conn.ReadMessage()
 	// 	if err != nil {
@@ -145,13 +152,15 @@ func (s *socketStore) echo(conn *websocket.Conn) {
 	// 		return
 	// 	}
 	// }
+	// s := ctx.SocketStore
+
 	for {
 		messageType, p, err := conn.ReadMessage()
 
 		if messageType == TextMessage || messageType == BinaryMessage {
 			fmt.Printf("Client says %v\n", p)
 			fmt.Printf("Writing %s to all sockets\n", string(p))
-			s.WriteToAllConnections(TextMessage, append([]byte("Got message: "), p...))
+			ctx.WriteToAllConnections(TextMessage, append([]byte("Got message: "), p...))
 		} else if messageType == CloseMessage {
 			fmt.Println("Close message received.")
 			break

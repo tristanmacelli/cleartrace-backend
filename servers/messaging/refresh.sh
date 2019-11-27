@@ -7,6 +7,10 @@ sudo docker rm -f messaging
 sudo docker rm -f messaging2
 sudo docker rm -f mongodb
 
+# clean up
+docker image prune
+docker volume prune
+
 sudo docker pull jtanderson7/messaging
 
 sudo docker run -d \

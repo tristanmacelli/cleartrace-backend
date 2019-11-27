@@ -15,10 +15,11 @@ type HandlerContext struct {
 	Key          string
 	UserStore    users.Store
 	SessionStore sessions.Store
+	SocketStore  Notify
 }
 
 // NewHandlerContext does something
-func NewHandlerContext(key string, userStore users.Store, sessionStore sessions.Store) *HandlerContext {
+func NewHandlerContext(key string, userStore users.Store, sessionStore sessions.Store, socketStore Notify) *HandlerContext {
 	if len(key) == 0 {
 		panic("No User key")
 	} else if userStore == nil {
@@ -26,5 +27,5 @@ func NewHandlerContext(key string, userStore users.Store, sessionStore sessions.
 	} else if sessionStore == nil {
 		panic("No Session")
 	}
-	return &HandlerContext{key, userStore, sessionStore}
+	return &HandlerContext{key, userStore, sessionStore, socketStore}
 }

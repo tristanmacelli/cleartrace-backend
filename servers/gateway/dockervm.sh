@@ -4,6 +4,11 @@ docker rm -f gateway
 # TODO: We should probably not be removing the redis & sql on every deploy
 docker rm -f userStore
 # docker rm -f sessionStore
+
+# clean up
+docker image prune
+docker volume prune
+
 echo "pulling newest version of gateway"
 docker pull jtanderson7/assignment2
 docker pull jtanderson7/db
