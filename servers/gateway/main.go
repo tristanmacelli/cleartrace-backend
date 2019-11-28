@@ -11,9 +11,11 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"sync"
 	"sync/atomic"
 
 	"github.com/go-redis/redis"
+	"github.com/gorilla/websocket"
 )
 
 // IndexHandler does something
@@ -39,6 +41,16 @@ func CustomDirector(targets []*url.URL) Director {
 	}
 }
 
+func getAllUrls(addresses string) []*url.URL {
+	urlSlice := strings.Split(addresses, ",")
+	var urls []*url.URL
+	for _, u := range urlSlice {
+		url := url.URL{Scheme: "http", Host: u}
+		urls = append(urls, &url)
+	}
+	return urls
+}
+
 //main is the main entry point for the server
 func main() {
 	address := os.Getenv("ADDR")
@@ -56,23 +68,6 @@ func main() {
 	redisaddr := os.Getenv("REDISADDR")
 	dsn := os.Getenv("DSN")
 
-	messagesaddr := os.Getenv("MESSAGEADDR")
-	messagesaddrSlice := strings.Split(messagesaddr, ",")
-	var messagingUrls []*url.URL
-	for _, u := range messagesaddrSlice {
-		url := url.URL{Scheme: "http", Host: u}
-		messagingUrls = append(messagingUrls, &url)
-	}
-
-	summaryaddr := os.Getenv("SUMMARYADDR")
-	// summaryaddrSlice := strings.Split(summaryaddr, ",")
-
-	// var summaryUrls []*url.URL
-	// for _, u := range summaryaddrSlice {
-	// 	url := url.URL{Scheme: "http", Host: u}
-	// 	summaryUrls = append(urlSlice, &url)
-	// }
-
 	// create redis client
 	redisClient := redis.NewClient(&redis.Options{
 		Addr: redisaddr, // use default Addr
@@ -81,12 +76,19 @@ func main() {
 	dsn = fmt.Sprintf("root:%s@tcp("+dsn+")/users", os.Getenv("MYSQL_ROOT_PASSWORD"))
 	userStore := users.NewMysqlStore(dsn)
 
+	messagesaddr := os.Getenv("MESSAGEADDR")
+	summaryaddr := os.Getenv("SUMMARYADDR")
+	messagingUrls := getAllUrls(messagesaddr)
+	// summaryUrls := getAllUrls(summaryaddr)
+
 	// proxies
 	messagesProxy := &httputil.ReverseProxy{Director: CustomDirector(messagingUrls)}
 	// summaryProxy := &httputil.ReverseProxy{Director: CustomDirector(summaryUrls)}
 	summaryProxy := httputil.NewSingleHostReverseProxy(&url.URL{Scheme: "http", Host: summaryaddr})
 
-	ctx := handlers.NewHandlerContext(sessionkey, userStore, redisStore, socketStore)
+	var conns []*websocket.Conn
+	socketStore := handlers.NewNotify(conns, &sync.Mutex{})
+	ctx := handlers.NewHandlerContext(sessionkey, userStore, redisStore, *socketStore)
 	// starting a new mux session
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", IndexHandler)
