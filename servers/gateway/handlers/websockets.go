@@ -3,48 +3,58 @@ package handlers
 import (
 	"assignments-Tristan6/servers/gateway/models/users"
 	"assignments-Tristan6/servers/gateway/sessions"
+	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/streadway/amqp"
 )
 
 // Notify A simple store to store all the connections
 type Notify struct {
-	// Connections map[string]*websocket.Conn
 	Connections map[int64]*websocket.Conn
 	lock        *sync.Mutex
+}
+
+type mqMessage struct {
+	MessageType string  `json:"type"`
+	Channel     Channel `json:"channel"`
+	Message     Message `json:"message"`
+	UserIDs     []int64 `json:"userIDs"`
+	ChannelID   string  `json:"channelID"`
+	MessageID   string  `json:"messageID"`
+}
+
+// Channel is from our messaging service
+type Channel struct {
+	ID          string   `json:"_id"`
+	Name        string   `json:"name"`
+	Description string   `json:"description"`
+	Private     bool     `json:"private"`
+	Members     []string `json:"members"`
+	CreatedAt   string   `json:"createdat"`
+	Creator     string   `json:"creator"`
+	EditedAt    string   `json:"editedat"`
+}
+
+// Message is from our messaging service
+type Message struct {
+	ID        string `json:"_id"`
+	ChannelID string `json:"channelid"`
+	CreatedAt string `json:"createdat"`
+	Body      string `json:"body"`
+	Creator   string `json:"creator"`
+	EditedAt  string `json:"editedat"`
 }
 
 // NewNotify does something
 func NewNotify(connections map[int64]*websocket.Conn, lock *sync.Mutex) *Notify {
 	return &Notify{connections, lock}
 }
-
-// Control messages for websocket
-const (
-	// TextMessage denotes a text data message. The text message payload is
-	// interpreted as UTF-8 encoded text data.
-	TextMessage = 1
-
-	// BinaryMessage denotes a binary data message.
-	BinaryMessage = 2
-
-	// CloseMessage denotes a close control message. The optional message
-	// payload contains a numeric code and text. Use the FormatCloseMessage
-	// function to format a close message payload.
-	CloseMessage = 8
-
-	// PingMessage denotes a ping control message. The optional message payload
-	// is UTF-8 encoded text.
-	PingMessage = 9
-
-	// PongMessage denotes a pong control message. The optional message payload
-	// is UTF-8 encoded text.
-	PongMessage = 10
-)
 
 // InsertConnection is a thread-safe method for inserting a connection
 func (ctx *HandlerContext) InsertConnection(conn *websocket.Conn, userID int64) int {
@@ -170,61 +180,78 @@ func (ctx *HandlerContext) WebSocketConnectionHandler(w http.ResponseWriter, r *
 
 // echo does something
 func (ctx *HandlerContext) echo(conn *websocket.Conn) {
-	// for { // infinite loop
-	// 	messageType, p, err := conn.ReadMessage()
-	// 	if err != nil {
-	// 		log.Println("Error reading message.", err)
-	// 		conn.Close()
-	// 		return
-	// 	}
-	// 	// fmt.Printf("Got message: %#v\n", p)
-	// 	if err := conn.WriteMessage(messageType, p); err != nil {
-	// 		log.Println(err)
-	// 		return
-	// 	}
-	// }
-	// s := ctx.SocketStore
+	connMQ, err := amqp.Dial("amqp://guest:guest@messagequeue:5672/")
+	failOnError("Failed to open connection to RabbitMQ", err)
+	defer connMQ.Close()
 
-	for {
-		messageType, p, err := conn.ReadMessage()
+	ch, err := connMQ.Channel()
+	failOnError("Failed to Open Channel", err)
+	defer ch.Close()
 
-		if messageType == TextMessage || messageType == BinaryMessage {
-			fmt.Printf("Client says %v\n", p)
-			fmt.Printf("Writing %s to all sockets\n", string(p))
+	q, err := ch.QueueDeclare(
+		"helloQueue", // name
+		false,        // durable (do my messages last until I delete my connection)
+		false,        // delete when unused
+		false,        // exclusive
+		false,        // no-wait
+		nil,          // additional arguments
+	)
+	failOnError("Failed to declare queue", err)
 
-			// TODO : Make sure you are writing messages to only memebers of the private channel
+	msgs, err := ch.Consume(
+		q.Name, // queue
+		"",     // consumer
+		true,   // auto-ack
+		false,  // exclusive
+		false,  // no-local
+		false,  // no-wait
+		nil,    // args
+	)
+	failOnError("Failed to register a consumer", err)
 
-			if true { // TODO: check if a userIDs property is set to an array of numbers
+	forever := make(chan bool)
+
+	go func() {
+		for d := range msgs {
+			log.Printf("Received a message: %s", d.Body)
+
+			message := &mqMessage{}
+
+			err := json.Unmarshal(d.Body, message)
+			if err != nil {
+				log.Printf("Error decoding message JSON: %s", err)
+				break
+			}
+			userIDs := message.UserIDs
+
+			if userIDs == nil { // TODO: check if a userIDs property is set to an array of numbers
 				// Broadcast to all assuming we dont have userIDs
-				ctx.WriteToAllConnections(TextMessage, append([]byte("Got message: "), p...))
+				ctx.WriteToAllConnections(1, append([]byte("Got message: ")))
 			} else {
 				// Broadcast to specific list assuming we have userIDs
 				// write to specific connections
+				ctx.WriteToSpecificConnections(1, append([]byte("Got message: ")), userIDs)
 			}
 
-		} else if messageType == CloseMessage {
-			fmt.Println("Close message received.")
-			break
-		} else if err != nil {
-			fmt.Println("Error reading message.")
-			break
+			// TODO: Handle closure
+			// } else if messageType == CloseMessage {
+			// 	fmt.Println("Close message received.")
+			// 	break
+			// } else if err != nil {
+			// 	fmt.Println("Error reading message.")
+			// 	break
+			// }
 		}
-		// TA Question: Should we be ignoring ping and pong messages
-		// Potential TODO: Handling a ping message sent by client when the client wants to know the server is still alive, and sending a pong message back
+	}()
 
-		// Potential TODO: Handling a pong message when the server sends the client a ping, and the client responds with a pong
-	}
+	log.Printf(" [*] Waiting for messages. To exit press CTRL+C")
+	<-forever
 	// What should we be doing as a part of this cleanup
 	// cleanup
 }
 
-// func main() {
-// 	mux := http.NewServeMux()
-
-// 	ctx := socketStore{
-// 		Connections: []*websocket.Conn{},
-// 	}
-
-// 	mux.HandleFunc("/ws", ctx.webSocketConnectionHandler)
-// 	log.Fatal(http.ListenAndServe(":4001", mux))
-// }
+func failOnError(msg string, err error) {
+	if err != nil {
+		fmt.Printf("%s: %s", msg, err)
+	}
+}
