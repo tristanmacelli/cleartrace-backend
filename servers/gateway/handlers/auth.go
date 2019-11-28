@@ -176,7 +176,7 @@ func correctHeader(w http.ResponseWriter, r *http.Request) bool {
 func encodeUser(user *users.User) []byte {
 	userJSON, err := json.Marshal(user)
 	if err != nil {
-		fmt.Errorf("Could not marshal user")
+		fmt.Errorf("Could not marshal user: %s", err)
 	}
 	return userJSON
 }

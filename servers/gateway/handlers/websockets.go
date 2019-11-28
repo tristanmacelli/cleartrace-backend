@@ -93,7 +93,7 @@ func (ctx *HandlerContext) WriteToSpecificConnections(messageType int, data []by
 
 	for _, id := range ids {
 		conn := s.Connections[id]
-		if conn == nil {
+		if conn != nil {
 			writeError = conn.WriteMessage(messageType, data)
 			if writeError != nil {
 				return writeError

@@ -2,34 +2,39 @@
 
 docker rm -f gateway
 # TODO: We should probably not be removing the redis & sql on every deploy
-docker rm -f userStore
+# docker rm -f userStore
 # docker rm -f sessionStore
+# docker rm -f rabbitMQ
 
 # clean up
-docker image prune
-docker volume prune
+echo "cleaning up unused docker artifacts"
+docker image prune -f
+docker volume prune -f
 
 echo "pulling newest version of gateway"
 docker pull jtanderson7/assignment2
-docker pull jtanderson7/db
+# docker pull jtanderson7/db
 
 export TLSCERT=/etc/letsencrypt/live/api.sauravkharb.me/fullchain.pem
 export TLSKEY=/etc/letsencrypt/live/api.sauravkharb.me/privkey.pem
 export MYSQL_ROOT_PASSWORD=$(openssl rand -base64 18)
 
 echo "starting gateway"
-docker run --restart=unless-stopped \
---network=infrastructure \
--e MYSQL_DATABASE=users \
--e MYSQL_ROOT_PASSWORD=pass \
--e MYSQL_ROOT_HOST=% \
---name userStore -d jtanderson7/db 
+# docker run --restart=unless-stopped \
+# --network=infrastructure \
+# -e MYSQL_DATABASE=users \
+# -e MYSQL_ROOT_PASSWORD=pass \
+# -e MYSQL_ROOT_HOST=% \
+# --name userStore -d jtanderson7/db 
 
 # docker run --restart=unless-stopped \
 # --network=infrastructure \
 # --name sessionStore -d redis
 
-docker run -d \
+# docker run -d --network=infrastructure \
+# --hostname messagequeue --name rabbitMQ rabbitmq:3
+
+sudo docker run -d \
 -p 443:443 \
 --network=infrastructure \
 --name gateway \
