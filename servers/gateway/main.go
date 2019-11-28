@@ -79,14 +79,11 @@ func main() {
 	messagesaddr := os.Getenv("MESSAGEADDR")
 	summaryaddr := os.Getenv("SUMMARYADDR")
 	messagingUrls := getAllUrls(messagesaddr)
-	// summaryUrls := getAllUrls(summaryaddr)
 
 	// proxies
 	messagesProxy := &httputil.ReverseProxy{Director: CustomDirector(messagingUrls)}
-	// summaryProxy := &httputil.ReverseProxy{Director: CustomDirector(summaryUrls)}
 	summaryProxy := httputil.NewSingleHostReverseProxy(&url.URL{Scheme: "http", Host: summaryaddr})
 
-	// TODO: change this initialization
 	conns := make(map[int64]*websocket.Conn)
 	socketStore := handlers.NewNotify(conns, &sync.Mutex{})
 	ctx := handlers.NewHandlerContext(sessionkey, userStore, redisStore, *socketStore)
