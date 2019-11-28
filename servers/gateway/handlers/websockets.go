@@ -167,16 +167,12 @@ func (ctx *HandlerContext) WebSocketConnectionHandler(w http.ResponseWriter, r *
 
 }
 
-//TODO: start a goroutine that connects to the RabbitMQ server,
-//reads events off the queue, and broadcasts them to all of
-//the existing WebSocket connections that should hear about
-//that event. If you get an error writing to the WebSocket,
-//just close it and remove it from the list
-//(client went away without closing from
-//their end). Also make sure you start a read pump that
-//reads incoming control messages, as described in the
-//Gorilla WebSocket API documentation:
-//http://godoc.org/github.com/gorilla/websocket
+// echo starts a goroutine that connects to the RabbitMQ server, reads events off the queue,
+// and broadcasts them to all of the existing WebSocket connections that should hear about
+// that event. If you get an error writing to the WebSocket, just close it and remove it from
+// the list (client went away without closing from their end). Also make sure you start a read
+// pump that reads incoming control messages, as described in the Gorilla WebSocket API
+// documentation: http://godoc.org/github.com/gorilla/websocket
 
 // echo does something
 func (ctx *HandlerContext) echo(conn *websocket.Conn) {
@@ -215,24 +211,14 @@ func (ctx *HandlerContext) echo(conn *websocket.Conn) {
 		for d := range msgs {
 			log.Printf("Received a message: %s", d.Body)
 
-			message := &mqMessage{}
-
-			err := json.Unmarshal(d.Body, message)
-			if err != nil {
-				log.Printf("Error decoding message JSON: %s", err)
-				break
-			}
-			userIDs := message.UserIDs
-
-			if userIDs == nil { // TODO: check if a userIDs property is set to an array of numbers
-				// Broadcast to all assuming we dont have userIDs
-				ctx.WriteToAllConnections(1, append([]byte("Got message: ")))
+			if d.ContentType == "application/json" {
+				err := ctx.handleClientBoundMessages(d)
+				if err != nil {
+					break
+				}
 			} else {
-				// Broadcast to specific list assuming we have userIDs
-				// write to specific connections
-				ctx.WriteToSpecificConnections(1, append([]byte("Got message: ")), userIDs)
+				// Close connection ?
 			}
-
 			// TODO: Handle closure
 			// } else if messageType == CloseMessage {
 			// 	fmt.Println("Close message received.")
@@ -248,6 +234,34 @@ func (ctx *HandlerContext) echo(conn *websocket.Conn) {
 	<-forever
 	// What should we be doing as a part of this cleanup
 	// cleanup
+}
+
+// handleClientBoundMessages sends messages to
+func (ctx *HandlerContext) handleClientBoundMessages(d amqp.Delivery) error {
+	message := &mqMessage{}
+	err := json.Unmarshal(d.Body, message)
+	if err != nil {
+		log.Printf("Error decoding message JSON: %s", err)
+		return err
+	}
+	userIDs := message.UserIDs
+
+	// Broadcast to all clients assuming we dont have userIDs
+	if userIDs == nil {
+		err = ctx.WriteToAllConnections(1, append([]byte("Got message: ")))
+		if err != nil {
+			log.Printf("Error decoding message JSON: %s", err)
+			return err
+		}
+		// Broadcast to specific list assuming we have userIDs
+	} else {
+		err = ctx.WriteToSpecificConnections(1, append([]byte("Got message: ")), userIDs)
+		if err != nil {
+			log.Printf("Error decoding message JSON: %s", err)
+			return err
+		}
+	}
+	return nil
 }
 
 func failOnError(msg string, err error) {
