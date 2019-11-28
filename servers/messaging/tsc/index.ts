@@ -10,6 +10,8 @@ import { Message } from "./message";
 import { Channel } from "./channel";
 
 import * as Amqp from "amqp-ts"
+// import * as amqp from "amqplib";
+// import Bluebird from "bluebird";
 
 //create a new express application
 const app = express();
@@ -71,8 +73,31 @@ const createConnection = async (): Promise<MongoClient> => {
     return client!;
 }
 
+// const createMQConnection = async (): Bluebird<amqp.Connection> => {
+//     let client: amqp.Connection;
+//     try {
+//         client = await amqp.connect("amqp://localhost");;
+//     } catch (e) {
+//         console.log("Cannot connect to RabbitMQ: failed to connect to server ", e);
+//         process.exit(1);
+//     }
+//     return client!;
+// }
+
+// const createMQChannel = async (conn: amqp.Connection): Bluebird<amqp.Channel> => {
+//     let channel: amqp.Channel;
+//     try {
+//         channel = await conn.createChannel();
+//     } catch (e) {
+//         console.log("Cannot create channel on RabbitMQ ", e);
+//         process.exit(1);
+//     }
+//     return channel!;
+// }
+
 function sendObjectToQueue(q: Amqp.Queue, ob: RabbitObject) {
     let message = new Amqp.Message(ob)
+    // let json = JSON.stringify(message)
     q.send(message)
     console.log("Sent out the message");
 }
@@ -88,6 +113,32 @@ const main = async () => {
     rabbitConn = new Amqp.Connection("amqp://localhost");
     let queue = rabbitConn.declareQueue("QueueName");
 
+    // let mqClient = await createMQConnection();
+    // let mqChannel = await createMQChannel(mqClient);
+
+    // mqClient.then(function (conn) {
+    //     return conn.createChannel();
+    // }).then(function (ch) {
+    //     return ch.assertQueue(q).then(function (ok) {
+    //         return ch.sendToQueue(q, Buffer.from('something to do'));
+    //     });
+    // })
+
+    // mqClient.createChannel(function (error1: any, channel: any) {
+    //     if (error1) {
+    //         throw error1;
+    //     }
+    //     var queue = 'hello';
+    //     var msg = 'Hello world';
+
+    //     channel.assertQueue(queue, {
+    //         durable: false
+    //     });
+
+    //     channel.sendToQueue(queue, Buffer.from(msg));
+    //     console.log(" [x] Sent %s", msg);
+    // });
+
     // TODO: We should do a test of the mongo helper methods
 
     app.listen(+addr, "", () => {
@@ -102,6 +153,11 @@ const main = async () => {
 
 
     app.use("/v1/channels", (req: any, res: any) => {
+        // Check that the user is authenticated
+        if (req.headers['X-User'] == null) {
+            res.status(401);
+            return;
+        }
         switch (req.method) {
             case 'GET':
                 res.set("Content-Type", "application/json");
@@ -143,6 +199,11 @@ const main = async () => {
 
     // Specific channel handler
     app.use("/v1/channels/:channelID", (req: any, res: any) => {
+        // Check that the user is authenticated
+        if (req.headers['X-User'] == null) {
+            res.status(401);
+            return;
+        }
         // QUERY for the channel based on req.params.channelID
         if (req.params.channelID == null) {
             res.status(404);
@@ -250,6 +311,11 @@ const main = async () => {
 
     // Adding and removing members from your channel
     app.use("/v1/channels/:channelID/members", (req: any, res: any) => {
+        // Check that the user is authenticated
+        if (req.headers['X-User'] == null) {
+            res.status(401);
+            return;
+        }
         // QUERY for the channel based on req.params.channelID
         if (req.params.channelID == null) {
             res.status(404);
@@ -297,6 +363,11 @@ const main = async () => {
 
     // Editing the body of or deleting a message
     app.use("/v1/messages/:messageID", (req: any, res: any) => {
+        // Check that the user is authenticated
+        if (req.headers['X-User'] == null) {
+            res.status(401);
+            return;
+        }
         if (req.params.messageID == null) {
             res.status(404);
             return;
