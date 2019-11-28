@@ -1,9 +1,12 @@
 package handlers
 
 import (
+	"assignments-Tristan6/servers/gateway/models/users"
+	"assignments-Tristan6/servers/gateway/sessions"
 	"fmt"
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/gorilla/websocket"
 )
@@ -11,12 +14,12 @@ import (
 // Notify A simple store to store all the connections
 type Notify struct {
 	// Connections map[string]*websocket.Conn
-	Connections []*websocket.Conn
+	Connections map[int64]*websocket.Conn
 	lock        *sync.Mutex
 }
 
 // NewNotify does something
-func NewNotify(connections []*websocket.Conn, lock *sync.Mutex) *Notify {
+func NewNotify(connections map[int64]*websocket.Conn, lock *sync.Mutex) *Notify {
 	return &Notify{connections, lock}
 }
 
@@ -43,33 +46,33 @@ const (
 	PongMessage = 10
 )
 
-// Thread-safe method for inserting a connection
-func (ctx *HandlerContext) InsertConnection(conn *websocket.Conn) int {
+// InsertConnection is a thread-safe method for inserting a connection
+func (ctx *HandlerContext) InsertConnection(conn *websocket.Conn, userID int64) int {
 	s := ctx.SocketStore
 	s.lock.Lock()
 	connID := len(s.Connections)
 	// insert socket connection
-	s.Connections = append(s.Connections, conn)
+	// TODO: map userID to the associated web socket connection
+	s.Connections[userID] = conn
 	s.lock.Unlock()
 	return connID
 }
 
-// Thread-safe method for inserting a connection
-func (ctx *HandlerContext) RemoveConnection(connID int) {
+// RemoveConnection is a thread-safe method for inserting a connection
+func (ctx *HandlerContext) RemoveConnection(connID int, userID int64) {
 	s := ctx.SocketStore
 	s.lock.Lock()
 	// insert socket connection
-	s.Connections = append(s.Connections[:connID], s.Connections[connID+1:]...)
+	delete(s.Connections, userID)
 	s.lock.Unlock()
 }
 
-// Simple method for writing a message to all live connections.
+// WriteToAllConnections is a simple method for writing a message to all live connections.
 // In your homework, you will be writing a message to a subset of connections
 // (if the message is intended for a private channel), or to all of them (if the message
 // is posted on a public channel
 func (ctx *HandlerContext) WriteToAllConnections(messageType int, data []byte) error {
 	s := ctx.SocketStore
-
 	var writeError error
 
 	for _, conn := range s.Connections {
@@ -82,16 +85,28 @@ func (ctx *HandlerContext) WriteToAllConnections(messageType int, data []byte) e
 	return nil
 }
 
+// WriteToSpecificConnections writes to specific connections denoted by the userIDs attached to the
+// message being returned from the message queue
+func (ctx *HandlerContext) WriteToSpecificConnections(messageType int, data []byte, ids []int64) error {
+	s := ctx.SocketStore
+	var writeError error
+
+	for _, id := range ids {
+		conn := s.Connections[id]
+		if conn == nil {
+			writeError = conn.WriteMessage(messageType, data)
+			if writeError != nil {
+				return writeError
+			}
+		}
+	}
+
+	return nil
+}
+
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
-	//TODO : DO WE REALLY NEED THIS???
-	// CheckOrigin: func(r *http.Request) bool {
-	// 	// This function's purpose is to reject websocket upgrade requests if the
-	// 	// origin of the websockete handshake request is coming from unknown domains.
-	// 	// This prevents some random domain from opening up a socket with your server.
-	// 	return r.Header.Get("Origin") == "https://a2.sauravkharb.me"
-	// },
 }
 
 //TODO: add a handler that upgrades clients to a WebSocket connection
@@ -123,11 +138,20 @@ func (ctx *HandlerContext) WebSocketConnectionHandler(w http.ResponseWriter, r *
 		return
 	}
 
-	connID := ctx.InsertConnection(conn)
+	sessionID := r.Header.Get("auth")
+	// TODO: check that this works?
+	var user *users.User
+	var sessionState SessionState
+	sessionState.User = user
+	sessionState.BeginTime = time.Now()
+	sessions.GetState(r, sessionID, ctx.SessionStore, sessionState) // pass in sessionState struct
+
+	// TODO: access to set with the specific connection and pass it to this function
+	connID := ctx.InsertConnection(conn, sessionState.User.ID) // pass in the id that is contained within the sessionState struct
 	// Invoke a goroutine for handling control messages from this connection
 	go (func(conn *websocket.Conn, connID int) {
 		defer conn.Close()
-		defer ctx.RemoveConnection(connID)
+		defer ctx.RemoveConnection(connID, sessionState.User.ID)
 		ctx.echo(conn)
 	})(conn, connID)
 
@@ -170,14 +194,17 @@ func (ctx *HandlerContext) echo(conn *websocket.Conn) {
 
 			// TODO : Make sure you are writing messages to only memebers of the private channel
 
-			ctx.WriteToAllConnections(TextMessage, append([]byte("Got message: "), p...))
+			if true { // TODO: check if a userIDs property is set to an array of numbers
+				// Broadcast to all assuming we dont have userIDs
+				ctx.WriteToAllConnections(TextMessage, append([]byte("Got message: "), p...))
+			} else {
+				// Broadcast to specific list assuming we have userIDs
+				// write to specific connections
+			}
+
 		} else if messageType == CloseMessage {
 			fmt.Println("Close message received.")
 			break
-			// } else if messageType == PingMessage {
-			// pingHandler := conn.PingHandler()
-			// } else if messageType == PongMessage {
-			// pongHandler := conn.PongHandler()
 		} else if err != nil {
 			fmt.Println("Error reading message.")
 			break

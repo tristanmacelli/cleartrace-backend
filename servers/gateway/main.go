@@ -86,6 +86,7 @@ func main() {
 	// summaryProxy := &httputil.ReverseProxy{Director: CustomDirector(summaryUrls)}
 	summaryProxy := httputil.NewSingleHostReverseProxy(&url.URL{Scheme: "http", Host: summaryaddr})
 
+	// TODO: change this initialization
 	var conns []*websocket.Conn
 	socketStore := handlers.NewNotify(conns, &sync.Mutex{})
 	ctx := handlers.NewHandlerContext(sessionkey, userStore, redisStore, *socketStore)
@@ -98,11 +99,11 @@ func main() {
 	mux.HandleFunc("/v1/sessions", ctx.SessionsHandler)
 	mux.HandleFunc("/v1/sessions/", ctx.SpecificUserHandler)
 	mux.Handle("/v1/summary", summaryProxy)
+	mux.HandleFunc("/v1/ws", ctx.WebSocketConnectionHandler)
 	mux.Handle("/v1/channels", messagesProxy)
 	mux.Handle("/v1/channels/{channelID}", messagesProxy)
 	mux.Handle("/v1/channels/{channelID}/members", messagesProxy)
 	mux.Handle("/v1/messages/{messageID}", messagesProxy)
-	mux.HandleFunc("/v1/ws", ctx.WebSocketConnectionHandler)
 
 	wrappedMux := handlers.NewLogger(mux)
 

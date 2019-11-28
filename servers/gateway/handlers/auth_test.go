@@ -8,8 +8,11 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"testing"
 	"time"
+
+	"github.com/gorilla/websocket"
 )
 
 var correctNewUser = map[string]string{
@@ -110,7 +113,11 @@ func buildCtxUser(t *testing.T, method string, contentType string,
 	users.SetInsertNextReturn(user)
 	users.SetGetByIDNextReturn(user)
 
-	ctx := NewHandlerContext("This should be a valid key", userStore, sessionStore)
+	var conns map[int64]*websocket.Conn
+	socketStore := NewNotify(conns, &sync.Mutex{})
+
+	ctx := NewHandlerContext("1234", userStore, sessionStore, *socketStore)
+
 	rr := httptest.NewRecorder()
 	handler := http.HandlerFunc(ctx.UsersHandler)
 	handler.ServeHTTP(rr, req)
@@ -146,7 +153,10 @@ func buildCtxSpecificUser(t *testing.T, method string, contentType string,
 	sid, _ := sessions.NewSessionID(sessionID)
 	sessionStore.Save(sid, sessionState)
 
-	ctx := NewHandlerContext("1234", userStore, sessionStore)
+	var conns map[int64]*websocket.Conn
+	socketStore := NewNotify(conns, &sync.Mutex{})
+
+	ctx := NewHandlerContext("1234", userStore, sessionStore, *socketStore)
 	rr := httptest.NewRecorder()
 	sessions.BeginSession("1234", sessionStore, sessionState, rr)
 	handler := http.HandlerFunc(ctx.SpecificUserHandler)
@@ -170,8 +180,10 @@ func buildCtxSession(t *testing.T, method string, contentType string,
 		users.SetErr(nil)
 	}
 
-	// func NewHandlerContext(key string, user *users.Store, session *sessions.Store) *HandlerContext {
-	ctx := NewHandlerContext("anything", userStore, sessionStore)
+	var conns map[int64]*websocket.Conn
+	socketStore := NewNotify(conns, &sync.Mutex{})
+
+	ctx := NewHandlerContext("anything", userStore, sessionStore, *socketStore)
 	rr := httptest.NewRecorder()
 	handler := http.HandlerFunc(ctx.SessionsHandler)
 	handler.ServeHTTP(rr, req)
@@ -191,8 +203,10 @@ func buildCtxSpecificSession(t *testing.T, method string, contentType string,
 	sessionState.User = user
 	sessionState.BeginTime = time.Now()
 
-	// func NewHandlerContext(key string, user *users.Store, session *sessions.Store) *HandlerContext {
-	ctx := NewHandlerContext("anything", userStore, sessionStore)
+	var conns map[int64]*websocket.Conn
+	socketStore := NewNotify(conns, &sync.Mutex{})
+
+	ctx := NewHandlerContext("anything", userStore, sessionStore, *socketStore)
 	rr := httptest.NewRecorder()
 	_, _ = sessions.BeginSession("anything", sessionStore, sessionState, rr)
 	handler := http.HandlerFunc(ctx.SpecificSessionsHandler)
