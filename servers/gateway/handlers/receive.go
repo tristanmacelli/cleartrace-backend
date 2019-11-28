@@ -32,16 +32,26 @@ func getMessages() {
 	)
 	failOnError("Failed to declare queue", err)
 
-	body := "Hello World"
-	err = ch.Publish(
-		"", //exchange
-		q.Name,
-		false,
-		false,
-		amqp.Publishing{
-			ContentType: "text/plain",
-			Body:        []byte(body),
-		},
+	msgs, err := ch.Consume(
+		q.Name, // queue
+		"",     // consumer
+		true,   // auto-ack
+		false,  // exclusive
+		false,  // no-local
+		false,  // no-wait
+		nil,    // args
 	)
-	failOnError("Failed to publish message", err)
+	failOnError(err, "Failed to register a consumer")
+
+	forever := make(chan bool)
+
+	go func() {
+		for d := range msgs {
+			log.Printf("Received a message: %s", d.Body)
+		}
+	}()
+
+	log.Printf(" [*] Waiting for messages. To exit press CTRL+C")
+	<-forever
+
 }
