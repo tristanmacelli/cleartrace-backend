@@ -227,6 +227,12 @@ func (ctx *HandlerContext) echo(conn *websocket.Conn) {
 			// 	fmt.Println("Error reading message.")
 			// 	break
 			// }
+			if err := d.Ack(false); err != nil {
+				log.Printf("Error acknowledging message : %s", err)
+			} else {
+				log.Printf("Acknowledged message")
+				// TODO: respond to rabbitMQ that we have received the message(s) it sent us.
+			}
 		}
 	}()
 

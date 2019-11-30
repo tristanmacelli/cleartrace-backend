@@ -176,7 +176,8 @@ func correctHeader(w http.ResponseWriter, r *http.Request) bool {
 func encodeUser(user *users.User) []byte {
 	userJSON, err := json.Marshal(user)
 	if err != nil {
-		fmt.Errorf("Could not marshal user: %s", err)
+		fmt.Printf("Could not marshal user: %s", err)
+		panic("Could not encode user data")
 	}
 	return userJSON
 }
@@ -189,7 +190,8 @@ func (ctx *HandlerContext) beginSession(user *users.User, w http.ResponseWriter)
 
 	_, err := sessions.BeginSession(ctx.Key, ctx.SessionStore, sessionState, w)
 	if err != nil {
-		fmt.Errorf("Could not begin session")
+		fmt.Printf("Could not begin session")
+		panic("Could not begin session")
 	}
 }
 
