@@ -110,8 +110,8 @@ const main = async () => {
     messages = db.collection("messages");
 
     let rabbitConn: Amqp.Connection;
-    rabbitConn = new Amqp.Connection("amqp://localhost");
-    let queue = rabbitConn.declareQueue("QueueName");
+    rabbitConn = new Amqp.Connection("amqp://rabbitMQ");
+    let queue = rabbitConn.declareQueue("helloQueue");
 
     // let mqClient = await createMQConnection();
     // let mqChannel = await createMQChannel(mqClient);
@@ -243,7 +243,7 @@ const main = async () => {
                 break;
 
             case 'POST':
-                if (!isChannelMember(resultChannel, req.Header.Xuser)) {
+                if (resultChannel.private && !isChannelMember(resultChannel, req.Header.Xuser)) {
                     res.status(403);
                     break;
                 }
