@@ -1,14 +1,12 @@
 package handlers
 
 import (
-	"assignments-Tristan6/servers/gateway/models/users"
 	"assignments-Tristan6/servers/gateway/sessions"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"sync"
-	"time"
 
 	"github.com/gorilla/websocket"
 	"github.com/streadway/amqp"
@@ -16,17 +14,17 @@ import (
 
 // Notify A simple store to store all the connections
 type Notify struct {
-	Connections map[int64]*websocket.Conn
+	Connections map[string]*websocket.Conn
 	lock        *sync.Mutex
 }
 
 type mqMessage struct {
-	MessageType string  `json:"type"`
-	Channel     Channel `json:"channel"`
-	Message     Message `json:"message"`
-	UserIDs     []int64 `json:"userIDs"`
-	ChannelID   string  `json:"channelID"`
-	MessageID   string  `json:"messageID"`
+	MessageType string   `json:"type"`
+	Channel     Channel  `json:"channel"`
+	Message     Message  `json:"message"`
+	UserIDs     []string `json:"userIDs"`
+	ChannelID   string   `json:"channelID"`
+	MessageID   string   `json:"messageID"`
 }
 
 // Channel is from our messaging service
@@ -52,12 +50,12 @@ type Message struct {
 }
 
 // NewNotify does something
-func NewNotify(connections map[int64]*websocket.Conn, lock *sync.Mutex) *Notify {
+func NewNotify(connections map[string]*websocket.Conn, lock *sync.Mutex) *Notify {
 	return &Notify{connections, lock}
 }
 
 // InsertConnection is a thread-safe method for inserting a connection
-func (ctx *HandlerContext) InsertConnection(conn *websocket.Conn, userID int64) int {
+func (ctx *HandlerContext) InsertConnection(conn *websocket.Conn, userID string) int {
 	s := ctx.SocketStore
 	s.lock.Lock()
 	connID := len(s.Connections)
@@ -69,7 +67,7 @@ func (ctx *HandlerContext) InsertConnection(conn *websocket.Conn, userID int64) 
 }
 
 // RemoveConnection is a thread-safe method for inserting a connection
-func (ctx *HandlerContext) RemoveConnection(connID int, userID int64) {
+func (ctx *HandlerContext) RemoveConnection(connID int, userID string) {
 	s := ctx.SocketStore
 	s.lock.Lock()
 	// insert socket connection
@@ -97,7 +95,7 @@ func (ctx *HandlerContext) WriteToAllConnections(messageType int, data []byte) e
 
 // WriteToSpecificConnections writes to specific connections denoted by the userIDs attached to the
 // message being returned from the message queue
-func (ctx *HandlerContext) WriteToSpecificConnections(messageType int, data []byte, ids []int64) error {
+func (ctx *HandlerContext) WriteToSpecificConnections(messageType int, data []byte, ids []string) error {
 	s := ctx.SocketStore
 	var writeError error
 
@@ -117,6 +115,9 @@ func (ctx *HandlerContext) WriteToSpecificConnections(messageType int, data []by
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
+	CheckOrigin: func(r *http.Request) bool {
+		return true
+	},
 }
 
 //TODO: add a handler that upgrades clients to a WebSocket connection
@@ -142,26 +143,20 @@ func (ctx *HandlerContext) WebSocketConnectionHandler(w http.ResponseWriter, r *
 		return
 	}
 
-	conn, err := upgrader.Upgrade(w, r, w.Header())
+	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		http.Error(w, "Failed to open websocket connection", 401)
 		return
 	}
 
-	sessionID := r.Header.Get("auth")
-	// TODO: check that this works?
-	var user *users.User
-	var sessionState SessionState
-	sessionState.User = user
-	sessionState.BeginTime = time.Now()
-	sessions.GetState(r, sessionID, ctx.SessionStore, sessionState) // pass in sessionState struct
+	sessionID, err := sessions.GetSessionID(r, ctx.Key)
 
 	// TODO: access to set with the specific connection and pass it to this function
-	connID := ctx.InsertConnection(conn, sessionState.User.ID) // pass in the id that is contained within the sessionState struct
+	connID := ctx.InsertConnection(conn, sessionID.String()) // pass in the id that is contained within the sessionState struct
 	// Invoke a goroutine for handling control messages from this connection
 	go (func(conn *websocket.Conn, connID int) {
 		defer conn.Close()
-		defer ctx.RemoveConnection(connID, sessionState.User.ID)
+		defer ctx.RemoveConnection(connID, sessionID.String())
 		ctx.echo(conn)
 	})(conn, connID)
 
@@ -176,7 +171,7 @@ func (ctx *HandlerContext) WebSocketConnectionHandler(w http.ResponseWriter, r *
 
 // echo does something
 func (ctx *HandlerContext) echo(conn *websocket.Conn) {
-	connMQ, err := amqp.Dial("amqp://guest:guest@messagequeue:5672/")
+	connMQ, err := amqp.Dial("amqp://guest:guest@127.0.0.1:5672/")
 	failOnError("Failed to open connection to RabbitMQ", err)
 	defer connMQ.Close()
 
