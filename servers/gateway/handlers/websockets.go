@@ -14,17 +14,17 @@ import (
 
 // Notify A simple store to store all the connections
 type Notify struct {
-	Connections map[string]*websocket.Conn
+	Connections map[int64]*websocket.Conn
 	lock        *sync.Mutex
 }
 
 type mqMessage struct {
-	MessageType string   `json:"type"`
-	Channel     Channel  `json:"channel"`
-	Message     Message  `json:"message"`
-	UserIDs     []string `json:"userIDs"`
-	ChannelID   string   `json:"channelID"`
-	MessageID   string   `json:"messageID"`
+	MessageType string  `json:"type"`
+	Channel     Channel `json:"channel"`
+	Message     Message `json:"message"`
+	UserIDs     []int64 `json:"userIDs"`
+	ChannelID   string  `json:"channelID"`
+	MessageID   string  `json:"messageID"`
 }
 
 // Channel is from our messaging service
@@ -50,12 +50,12 @@ type Message struct {
 }
 
 // NewNotify does something
-func NewNotify(connections map[string]*websocket.Conn, lock *sync.Mutex) *Notify {
+func NewNotify(connections map[int64]*websocket.Conn, lock *sync.Mutex) *Notify {
 	return &Notify{connections, lock}
 }
 
 // InsertConnection is a thread-safe method for inserting a connection
-func (ctx *HandlerContext) InsertConnection(conn *websocket.Conn, userID string) int {
+func (ctx *HandlerContext) InsertConnection(conn *websocket.Conn, userID int64) int {
 	s := ctx.SocketStore
 	s.lock.Lock()
 	connID := len(s.Connections)
@@ -67,7 +67,7 @@ func (ctx *HandlerContext) InsertConnection(conn *websocket.Conn, userID string)
 }
 
 // RemoveConnection is a thread-safe method for inserting a connection
-func (ctx *HandlerContext) RemoveConnection(connID int, userID string) {
+func (ctx *HandlerContext) RemoveConnection(connID int, userID int64) {
 	s := ctx.SocketStore
 	s.lock.Lock()
 	// insert socket connection
@@ -95,7 +95,7 @@ func (ctx *HandlerContext) WriteToAllConnections(messageType int, data []byte) e
 
 // WriteToSpecificConnections writes to specific connections denoted by the userIDs attached to the
 // message being returned from the message queue
-func (ctx *HandlerContext) WriteToSpecificConnections(messageType int, data []byte, ids []string) error {
+func (ctx *HandlerContext) WriteToSpecificConnections(messageType int, data []byte, ids []int64) error {
 	s := ctx.SocketStore
 	var writeError error
 
@@ -148,15 +148,17 @@ func (ctx *HandlerContext) WebSocketConnectionHandler(w http.ResponseWriter, r *
 		http.Error(w, "Failed to open websocket connection", 401)
 		return
 	}
+	var sessionState SessionState
+	// Should we be using the sessionID or the userID when mapping connections?
+	sessions.GetState(r, ctx.Key, ctx.SessionStore, sessionState)
+	// sessionID, err := sessions.GetSessionID(r, ctx.Key)
 
-	sessionID, err := sessions.GetSessionID(r, ctx.Key)
-
-	// TODO: access to set with the specific connection and pass it to this function
-	connID := ctx.InsertConnection(conn, sessionID.String()) // pass in the id that is contained within the sessionState struct
+	// Access to set with the specific connection and pass it to this function
+	connID := ctx.InsertConnection(conn, sessionState.User.ID) // pass in the id that is contained within the sessionState struct
 	// Invoke a goroutine for handling control messages from this connection
 	go (func(conn *websocket.Conn, connID int) {
 		defer conn.Close()
-		defer ctx.RemoveConnection(connID, sessionID.String())
+		defer ctx.RemoveConnection(connID, sessionState.User.ID)
 		ctx.echo(conn)
 	})(conn, connID)
 
