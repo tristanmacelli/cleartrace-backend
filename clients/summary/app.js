@@ -20,6 +20,35 @@ $("#myform").submit(function (e) {
     });
 });
 
+$('#creds').submit(function (e) {
+    e.preventDefault();
+
+    var form = $(this);
+    var url = form.attr('action');
+    var param = form.serialize()
+
+    var b = {
+        "Email":        $('#email').val(),
+        "Password":     $('#pass').val(),
+        "PasswordConf": $('#pass').val(),
+        "UserName":     "user",
+        "FirstName":    "First",
+        "LastName":     "Name"
+    }
+
+    console.log(b)
+
+    // send a get request with the above data
+    $.ajax({
+        type: "POST",
+        url: url,
+        body: b,
+        contentType:"application/json",
+        dataType:"jsonp",
+        crossDomain: true,
+    });
+})
+
 function display_results(result) {
     json_obj = JSON.parse(result)
     var final_html = "<h2> Summary of " + json_obj.url + "</h2>"

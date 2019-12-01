@@ -56,6 +56,7 @@ func (ctx *HandlerContext) SpecificUserHandler(w http.ResponseWriter, r *http.Re
 		http.Error(w, "Incorrect HTTP Method", http.StatusMethodNotAllowed)
 		return
 	}
+
 	//Authentication process
 	// Check the values in the authentication handler passed to the responsewriter
 
@@ -65,6 +66,12 @@ func (ctx *HandlerContext) SpecificUserHandler(w http.ResponseWriter, r *http.Re
 		http.Error(w, "You are not authenticated", http.StatusUnauthorized)
 		return
 	}
+	// authValue := r.Header.Get("Authorization")
+	// sessionID, err := sessions.GetSessionID(r, authValue)
+	// if err != nil {
+	// 	http.Error(w, "You are not authenticated", http.StatusUnauthorized)
+	// 	return
+	// }
 	var user = sessionState.User
 	var userID = user.ID
 	var queryID []string = strings.Split(r.URL.String(), "users/")
