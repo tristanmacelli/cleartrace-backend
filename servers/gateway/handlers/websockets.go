@@ -151,7 +151,6 @@ func (ctx *HandlerContext) WebSocketConnectionHandler(w http.ResponseWriter, r *
 	var sessionState SessionState
 	// Should we be using the sessionID or the userID when mapping connections?
 	sessions.GetState(r, ctx.Key, ctx.SessionStore, sessionState)
-	// sessionID, err := sessions.GetSessionID(r, ctx.Key)
 
 	// Access to set with the specific connection and pass it to this function
 	connID := ctx.InsertConnection(conn, sessionState.User.ID) // pass in the id that is contained within the sessionState struct
