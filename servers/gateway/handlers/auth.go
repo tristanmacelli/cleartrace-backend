@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-// UsersHandler does something
+// UsersHandler creates a new user, enters them into the users database and begins a session for them
 func (ctx *HandlerContext) UsersHandler(w http.ResponseWriter, r *http.Request) {
 	// check for POST
 	if r.Method != http.MethodPost {
@@ -50,7 +50,8 @@ func (ctx *HandlerContext) UsersHandler(w http.ResponseWriter, r *http.Request) 
 	formatResponse(w, http.StatusCreated, userJSON)
 }
 
-// SpecificUserHandler does something
+// SpecificUserHandler either returns all the user information or updates the users
+// first and last names on a specific user
 func (ctx *HandlerContext) SpecificUserHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet && r.Method != http.MethodPatch {
 		http.Error(w, "Incorrect HTTP Method", http.StatusMethodNotAllowed)
@@ -104,7 +105,7 @@ func (ctx *HandlerContext) SpecificUserHandler(w http.ResponseWriter, r *http.Re
 	formatResponse(w, http.StatusOK, userJSON)
 }
 
-// SessionsHandler does something
+// SessionsHandler this logs a user in to our application (authentication)
 func (ctx *HandlerContext) SessionsHandler(w http.ResponseWriter, r *http.Request) {
 	// check for POST
 	if r.Method != http.MethodPost {
@@ -142,7 +143,7 @@ func (ctx *HandlerContext) SessionsHandler(w http.ResponseWriter, r *http.Reques
 	formatResponse(w, http.StatusCreated, userJSON)
 }
 
-// SpecificSessionsHandler does something
+// SpecificSessionsHandler logs a user out of our application
 func (ctx *HandlerContext) SpecificSessionsHandler(w http.ResponseWriter, r *http.Request) {
 	// check for POST
 	if r.Method != http.MethodDelete {
