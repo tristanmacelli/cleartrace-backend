@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"time"
 )
 
 // UsersHandler creates a new user, enters them into the users database and begins a session for them
@@ -60,18 +59,22 @@ func (ctx *HandlerContext) SpecificUserHandler(w http.ResponseWriter, r *http.Re
 	//Authentication process
 	// Check the values in the authentication handler passed to the responsewriter
 
-	authValue := r.Header.Get("Authorization")
-	sessionID, err := sessions.GetSessionID(r, authValue)
+	var sessionState SessionState
+	_, err := sessions.GetState(r, ctx.Key, ctx.SessionStore, sessionState)
 	if err != nil {
 		http.Error(w, "You are not authenticated", http.StatusUnauthorized)
 		return
 	}
-	var userID []string = strings.Split(r.URL.String(), "users/")
+	var user = sessionState.User
+	var userID = user.ID
+	var queryID []string = strings.Split(r.URL.String(), "users/")
 
 	if r.Method == http.MethodGet {
-		id, _ := strconv.ParseInt(userID[1], 10, 64)
-		user, err := ctx.UserStore.GetByID(id)
-
+		user, err := ctx.UserStore.GetByID(userID)
+		if err != nil {
+			http.Error(w, "Error getting user with the corresponding ID", http.StatusInternalServerError)
+			return
+		}
 		// We are checking for a nil value since our GetBy method will not return an
 		// error if there were no matches (since this is not necessarily a failure)
 		// We are also checking for an unpopulated user field because in the case that nobody
@@ -86,7 +89,8 @@ func (ctx *HandlerContext) SpecificUserHandler(w http.ResponseWriter, r *http.Re
 		return
 		// Patch
 	}
-	if userID[1] != "me" && userID[1] != sessionID.String() {
+	id, _ := strconv.ParseInt(queryID[1], 10, 64)
+	if queryID[1] != "me" && id != userID {
 		http.Error(w, "You are unauthorized to perform this action", http.StatusForbidden)
 		return
 	}
@@ -100,7 +104,7 @@ func (ctx *HandlerContext) SpecificUserHandler(w http.ResponseWriter, r *http.Re
 	if err != nil {
 		panic(err)
 	}
-	user, err := ctx.UserStore.Update(1, &up)
+	user, err = ctx.UserStore.Update(userID, &up)
 	userJSON := encodeUser(user)
 	formatResponse(w, http.StatusOK, userJSON)
 }
@@ -186,9 +190,6 @@ func encodeUser(user *users.User) []byte {
 func (ctx *HandlerContext) beginSession(user *users.User, w http.ResponseWriter) {
 	// create a new session
 	var sessionState SessionState
-	sessionState.User = user
-	sessionState.BeginTime = time.Now()
-
 	_, err := sessions.BeginSession(ctx.Key, ctx.SessionStore, sessionState, w)
 	if err != nil {
 		fmt.Printf("Could not begin session")
