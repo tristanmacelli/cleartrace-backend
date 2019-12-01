@@ -173,7 +173,7 @@ func (ctx *HandlerContext) WebSocketConnectionHandler(w http.ResponseWriter, r *
 
 // echo does something
 func (ctx *HandlerContext) echo(conn *websocket.Conn) {
-	connMQ, err := amqp.Dial("amqp://guest:guest@127.0.0.1:5672/")
+	connMQ, err := amqp.Dial("amqp://rabbitMQ")
 	failOnError("Failed to open connection to RabbitMQ", err)
 	defer connMQ.Close()
 
@@ -205,6 +205,7 @@ func (ctx *HandlerContext) echo(conn *websocket.Conn) {
 	forever := make(chan bool)
 
 	go func() {
+		fmt.Println("Now actively listening for messages!!")
 		for d := range msgs {
 			log.Printf("Received a message: %s", d.Body)
 
