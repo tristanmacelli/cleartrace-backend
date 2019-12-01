@@ -113,7 +113,7 @@ func buildCtxUser(t *testing.T, method string, contentType string,
 	users.SetInsertNextReturn(user)
 	users.SetGetByIDNextReturn(user)
 
-	var conns map[int64]*websocket.Conn
+	var conns map[string]*websocket.Conn
 	socketStore := NewNotify(conns, &sync.Mutex{})
 
 	ctx := NewHandlerContext("1234", userStore, sessionStore, *socketStore)
@@ -153,7 +153,7 @@ func buildCtxSpecificUser(t *testing.T, method string, contentType string,
 	sid, _ := sessions.NewSessionID(sessionID)
 	sessionStore.Save(sid, sessionState)
 
-	var conns map[int64]*websocket.Conn
+	var conns map[string]*websocket.Conn
 	socketStore := NewNotify(conns, &sync.Mutex{})
 
 	ctx := NewHandlerContext("1234", userStore, sessionStore, *socketStore)
@@ -180,7 +180,7 @@ func buildCtxSession(t *testing.T, method string, contentType string,
 		users.SetErr(nil)
 	}
 
-	var conns map[int64]*websocket.Conn
+	var conns map[string]*websocket.Conn
 	socketStore := NewNotify(conns, &sync.Mutex{})
 
 	ctx := NewHandlerContext("anything", userStore, sessionStore, *socketStore)
@@ -203,7 +203,7 @@ func buildCtxSpecificSession(t *testing.T, method string, contentType string,
 	sessionState.User = user
 	sessionState.BeginTime = time.Now()
 
-	var conns map[int64]*websocket.Conn
+	var conns map[string]*websocket.Conn
 	socketStore := NewNotify(conns, &sync.Mutex{})
 
 	ctx := NewHandlerContext("anything", userStore, sessionStore, *socketStore)
