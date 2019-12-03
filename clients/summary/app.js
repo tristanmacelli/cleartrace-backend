@@ -28,12 +28,12 @@ $('#creds').submit(function (e) {
     var param = form.serialize()
 
     var b = {
-        "Email":        $('#email').val(),
-        "Password":     $('#pass').val(),
+        "Email": $('#email').val(),
+        "Password": $('#pass').val(),
         "PasswordConf": $('#pass').val(),
-        "UserName":     "user",
-        "FirstName":    "First",
-        "LastName":     "Name"
+        "UserName": "user",
+        "FirstName": "First",
+        "LastName": "Name"
     }
 
     console.log(b)
@@ -43,8 +43,8 @@ $('#creds').submit(function (e) {
         type: "POST",
         url: url,
         body: b,
-        contentType:"application/json",
-        dataType:"jsonp",
+        contentType: "application/json",
+        dataType: "json",
         crossDomain: true,
     });
 })
@@ -55,7 +55,7 @@ function display_results(result) {
     final_html += "<h4> Title : " + json_obj.title + " </h4>"
     final_html += "<h4> Description : " + json_obj.description + " </h4>"
     image_div = "<div>"
-  
+
     for (i = 0; i < json_obj.images.length; i++) {
         image_div += "<img src=\"" + json_obj.images[i].url + "\">"
     }
