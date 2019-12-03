@@ -42,10 +42,8 @@ $('#creds').submit(function (e) {
     $.ajax({
         type: "POST",
         url: url,
-        body: b,
-        contentType:"application/json",
-        dataType:"jsonp",
-        crossDomain: true,
+        body: JSON.stringify(b),
+        contentType:"application/json"
     });
 })
 
@@ -62,6 +60,5 @@ function display_results(result) {
     image_div += "</div>"
     final_html += image_div
     $("#result").html(final_html)
-
 }
 

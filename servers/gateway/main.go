@@ -85,7 +85,7 @@ func main() {
 	messagesProxy := &httputil.ReverseProxy{Director: CustomDirector(messagingUrls)}
 	summaryProxy := httputil.NewSingleHostReverseProxy(&url.URL{Scheme: "http", Host: summaryaddr})
 
-	conns := make(map[string]*websocket.Conn)
+	conns := make(map[int64]*websocket.Conn)
 	socketStore := handlers.NewNotify(conns, &sync.Mutex{})
 	ctx := handlers.NewHandlerContext(sessionkey, userStore, redisStore, *socketStore)
 	// starting a new mux session
