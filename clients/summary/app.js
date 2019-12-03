@@ -36,16 +36,97 @@ $('#creds').submit(function (e) {
         "LastName":     "Name"
     }
 
-    console.log(b)
+    //console.log(b)
 
     // send a get request with the above data
     $.ajax({
         type: "POST",
         url: url,
-        body: JSON.stringify(b),
-        contentType:"application/json"
+        data: JSON.stringify(b),
+        contentType:"application/json",
+        success: function (result) {
+            console.log(result)
+            // $("#result").html("<strong>" + result + "</strong>")
+        }
     });
 })
+
+$('#credsSess').submit(function (e) {
+    e.preventDefault();
+
+    var form = $(this);
+    var url = form.attr('action');
+    var param = form.serialize()
+
+    var b = {
+        "Email":        $('#emailSess').val(),
+        "Password":     $('#passSess').val(),
+    }
+
+    //console.log(b)
+
+    // send a get request with the above data
+    $.ajax({
+        type: "POST",
+        url: url,
+        data: JSON.stringify(b),
+        contentType:"application/json"
+        // success: function (result) {
+        //     console.log(result)
+        //     console.log(result.getResponseHeader("authorization"))
+        //     // $("#result").html("<strong>" + result + "</strong>")
+        // }
+    }).done(function (data, textStatus, xhr) { 
+        console.log(data)
+        console.log(xhr.getResponseHeader('authorization')); 
+    });
+})
+
+$('#signOut').submit(function (e) {
+    e.preventDefault();
+
+    var form = $(this);
+    var url = form.attr('action');
+    var param = form.serialize()
+
+    //console.log(b)
+
+    // send a get request with the above data
+    $.ajax({
+        type: "DELETE",
+        url: url,
+        success: function (result) {
+            console.log(result)
+            // $("#result").html("<strong>" + result + "</strong>")
+        }
+    });
+})
+
+// $('#credsId').submit(function (e) {
+//     e.preventDefault();
+
+//     var form = $(this);
+//     var url = form.attr('action') + $('#userId').val();
+//     var param = form.serialize()
+
+//     // var b = {
+//     //     "Email":        $('#emailSess').val(),
+//     //     "Password":     $('#passSess').val(),
+//     // }
+
+//     //console.log(b)
+
+//     // send a get request with the above data
+//     $.ajax({
+//         type: "GET",
+//         url: url,
+//         contentType:"application/json",
+//         success: function (result) {
+//             console.log(result)
+//             // $("#result").html("<strong>" + result + "</strong>")
+//         }
+//     });
+// })
 
 function display_results(result) {
     json_obj = JSON.parse(result)
