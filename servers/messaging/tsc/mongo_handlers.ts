@@ -157,7 +157,7 @@ export async function updateMessage(messages: Collection, existingMessage: Messa
 export function deleteChannel(channels: Collection, messages: Collection, existingChannel: Channel): string {
     let errString: string = "";
     // We are not allowed to delete the general channel
-    if (existingChannel.creator.ID == -1) {
+    if (existingChannel.creator.id == -1) {
         return "Error deleting channel";
     }
     channels.remove({ _id: new ObjectID(existingChannel._id) }).catch(() => {

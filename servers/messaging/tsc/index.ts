@@ -10,6 +10,7 @@ import { Message } from "./message";
 import { Channel } from "./channel";
 
 import * as Amqp from "amqp-ts"
+import { User } from "./user";
 // import * as amqp from "amqplib";
 // import Bluebird from "bluebird";
 
@@ -185,7 +186,14 @@ const main = async () => {
                     //do something about the name property being null
                 }
                 // Call database to INSERT this new channel
-                let newChannel = createChannel(req);
+                console.log("BODY")
+                console.log(req.body)
+                let newUser: User = new User(-2, "email", new Uint8Array(100), "username", "first", "last", "url")
+                if (req.body.creator != null) {
+                    let user = req.body.creator
+                    newUser = new User(user.id, user.email, user.passHash, user.userName, user.firstName, user.lastName, user.photoURL)
+                }
+                let newChannel = createChannel(req, newUser);
 
                 mongo.insertNewChannel(channels, newChannel).then(insertResult => {
                     if (insertResult.errString == "duplicate") {
@@ -199,6 +207,8 @@ const main = async () => {
                         return
                     }
                     let insertChannel = insertResult.newChannel;
+                    console.log("RESULT")
+                    console.log(insertChannel)
                     res.status(201)
                     res.set("Content-Type", "application/json");
                     res.json(insertChannel);
@@ -277,7 +287,9 @@ const main = async () => {
                 }
                 // Create a new message
                 // Call database to INSERT a new message to the channel
-                let newMessage = createMessage(req);
+                let user = req.body.creator
+                let newUser = new User(user.id, user.email, user.passHash, user.userName, user.firstName, user.lastName, user.photoURL)
+                let newMessage = createMessage(req, newUser);
                 let insertedResult = mongo.insertNewMessage(messages, newMessage);
                 if (insertedResult.errString.length > 0) {
                     res.status(500);
@@ -495,16 +507,16 @@ const main = async () => {
         }
     });
 
-    function createChannel(req: any): Channel {
+    function createChannel(req: any, creator: User): Channel {
         let c = req.body;
         return new Channel(c.name, c.description, c.private,
-            c.members, c.createdAt, c.creator, c.editedAt);
+            c.members, c.createdAt, creator, c.editedAt);
     }
 
-    function createMessage(req: any): Message {
+    function createMessage(req: any, creator: User): Message {
         let m = req.body;
         return new Message(req.params.ChannelID, m.createdAt, m.body,
-            m.creator, m.editedAt);
+            creator, m.editedAt);
     }
 
     function isChannelMember(channel: Channel, userID: any): boolean {
@@ -523,11 +535,11 @@ const main = async () => {
     }
 
     function isChannelCreator(channel: Channel, userID: any): boolean {
-        return channel.creator.ID == userID;
+        return channel.creator.id == userID;
     }
 
     function isMessageCreator(message: Message, userID: any): boolean {
-        return message.creator.ID == userID;
+        return message.creator.id == userID;
     }
 
     // error handler that will be called if

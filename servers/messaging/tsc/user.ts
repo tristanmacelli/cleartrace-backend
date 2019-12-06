@@ -1,21 +1,21 @@
 "use strict";
 
 export class User {
-    ID: number;
-    Email: string;
-    PassHash: Uint8Array;
-    UserName: string;
-    FirstName: string;
-    LastName: string;
-    PhotoURL: string;
+    id: number;
+    email: string;
+    passHash: Uint8Array;
+    userName: string;
+    firstName: string;
+    lastName: string;
+    photoURL: string;
 
-    constructor(ID: number, Email: string, PassHash: Uint8Array, UserName: string, FirstName: string, LastName: string, PhotoURL: string) {
-        this.ID = ID;
-        this.Email = Email;
-        this.PassHash = PassHash;
-        this.UserName = UserName;
-        this.FirstName = FirstName;
-        this.LastName = LastName;
-        this.PhotoURL = PhotoURL;
+    constructor(id: number, email: string, passHash: Uint8Array, userName: string, firstName: string, lastName: string, photoURL: string) {
+        this.id = id;
+        this.email = email;
+        this.passHash = passHash;
+        this.userName = userName;
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.photoURL = photoURL;
     }
 }
