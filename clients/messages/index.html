@@ -9,7 +9,21 @@
 </head>
 
 <body>
+    <h2>First Endpoint</h2>
+    <h3>Get Channels</h3>
+    <form id="getChannels" action="https://api.sauravkharb.me/v1/channels" method="GET" accept-charset="UTF-8">
+        <input type="submit" id="getChanBtn" value="submit" />
+    </form>
 
+    <h3>Create a Channel</h3>
+    <form id="createChannel" action="https://api.sauravkharb.me/v1/channels" method="POST" accept-charset="UTF-8">
+        <input type="text" id="name" name="utf8" value="name">
+        <input type="text" id="description" name="utf8" value="description">
+        <input type="text" id="private" name="utf8" value="private">
+        <input type="submit" id="createChanBtn" value="submit" />
+    </form>
+
+    <h2>Second Endpoint</h2>
 </body>
 <script type="text/javascript" src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
 <script type="text/javascript" src="app.js"></script>

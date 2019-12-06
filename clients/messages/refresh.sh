@@ -4,8 +4,8 @@
 docker rm -f messagingClient
 
 # Clean up
-docker volume prune
-docker image prune
+docker volume prune -f
+docker image prune -f
 
 docker pull jtanderson7/messagingClient
 
