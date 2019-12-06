@@ -163,8 +163,7 @@ const main = async () => {
             res.send()
             return;
         }
-        console.log("Passes x user ")
-        console.log(req.body)
+
         switch (req.method) {
             case 'GET':
                 // QUERY for all channels here
@@ -185,14 +184,8 @@ const main = async () => {
                     res.send()
                     //do something about the name property being null
                 }
-                // Call database to INSERT this new channel
-                console.log("BODY")
-                console.log(req.body)
-                let newUser: User = new User(-2, "email", new Uint8Array(100), "username", "first", "last", "url")
-                if (req.body.creator != null) {
-                    let user = req.body.creator
-                    newUser = new User(user.id, user.email, user.passHash, user.userName, user.firstName, user.lastName, user.photoURL)
-                }
+                let newUser = req.headers['x-user']
+                
                 let newChannel = createChannel(req, newUser);
 
                 mongo.insertNewChannel(channels, newChannel).then(insertResult => {

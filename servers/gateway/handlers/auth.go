@@ -193,6 +193,7 @@ func encodeUser(user *users.User) []byte {
 func (ctx *HandlerContext) beginSession(user *users.User, w http.ResponseWriter) {
 	// create a new session
 	var sessionState SessionState
+	sessionState.User = user
 	_, err := sessions.BeginSession(ctx.Key, ctx.SessionStore, sessionState, w)
 	if err != nil {
 		fmt.Printf("Could not begin session")

@@ -44,18 +44,20 @@ const createChannel = async (channels: Collection, newChannel: Channel, errStrin
                 errString = ""
                 console.log("NOT a duplicate channel")
                 errString
-                channels.save({
+                await channels.save({
                     name: newChannel.name, description: newChannel.description,
                     private: newChannel.private, members: newChannel.members,
                     createdAt: newChannel.createdAt, creator: newChannel.creator,
                     editedAt: newChannel.editedAt
-                }).catch(() => {
-                    errString = "Error inserting new channel";
-                });
-                await channels.find({ name: newChannel.name, createdAt: newChannel.createdAt }).next()
+                }).then(async () => {
+                    await channels.find({ name: newChannel.name, createdAt: newChannel.createdAt }).next()
                     .then(doc => {
                         newChannel._id = doc._id
                     })
+                }).catch(() => {
+                    errString = "Error inserting new channel";
+                });
+                
             }
         })
     } catch(e) {

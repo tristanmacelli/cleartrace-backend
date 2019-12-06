@@ -33,9 +33,14 @@ func CustomDirector(targets []*url.URL, ctx *handlers.HandlerContext) Director {
 	counter = 0
 
 	return func(r *http.Request) {
-		var sessionState handlers.SessionState
-		sessions.GetState(r, r.Header.Get("Authorization"), ctx.SessionStore, sessionState)
-		userJSON, _ := json.Marshal(sessionState.User)
+		state := &handlers.SessionState{}
+		_, err := sessions.GetState(r, ctx.Key, ctx.SessionStore, state)
+		if err != nil {
+			log.Println("Error getting User from GetState")
+			log.Println(err)
+		}
+
+		userJSON, _ := json.Marshal(state.User)
 		userString := string(userJSON)
 
 		targ := targets[counter%int32(len(targets))]
