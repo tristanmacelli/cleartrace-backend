@@ -4,6 +4,7 @@ import (
 	"assignments-Tristan6/servers/gateway/handlers"
 	"assignments-Tristan6/servers/gateway/models/users"
 	"assignments-Tristan6/servers/gateway/sessions"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -24,17 +25,23 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // Director is a function wrapper
-type Director func(r *http.Request)
+type Director func(r *http.Request, ctx *handlers.HandlerContext)
 
 // CustomDirector does load balancing using the round-robin method
 func CustomDirector(targets []*url.URL) Director {
 	var counter int32
 	counter = 0
 
-	return func(r *http.Request) {
+	return func(r *http.Request, ctx *handlers.HandlerContext) {
+		var sessionState handlers.SessionState
+		sessions.GetState(r, r.Header.Get("Authorization"), ctx.SessionStore, sessionState)
+		userJSON, err := json.Marshal(sessionState.User)
+		userString := string(userJSON)
+		log.Println(userString)
+
 		targ := targets[counter%int32(len(targets))]
 		atomic.AddInt32(&counter, 1)
-		r.Header.Add("X-User", r.Host)
+		r.Header.Add("x-user", userString)
 		r.Host = targ.Host
 		r.URL.Host = targ.Host
 		r.URL.Scheme = targ.Scheme
@@ -82,13 +89,13 @@ func main() {
 	summaryaddr := os.Getenv("SUMMARYADDR")
 	messagingUrls := getAllUrls(messagesaddr)
 
-	// proxies
-	messagesProxy := &httputil.ReverseProxy{Director: CustomDirector(messagingUrls)}
-	summaryProxy := httputil.NewSingleHostReverseProxy(&url.URL{Scheme: "http", Host: summaryaddr})
-
 	conns := make(map[int64]*websocket.Conn)
 	socketStore := handlers.NewNotify(conns, &sync.Mutex{})
 	ctx := handlers.NewHandlerContext(sessionkey, userStore, redisStore, *socketStore)
+
+	// proxies
+	messagesProxy := &httputil.ReverseProxy{Director: CustomDirector(messagingUrls, ctx)}
+	summaryProxy := httputil.NewSingleHostReverseProxy(&url.URL{Scheme: "http", Host: summaryaddr})
 	// starting a new mux session
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", IndexHandler)

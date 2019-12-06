@@ -41,7 +41,7 @@ sudo docker run -d \
 -v /etc/letsencrypt:/etc/letsencrypt:ro \
 -e TLSCERT=$TLSCERT \
 -e TLSKEY=$TLSKEY \
--e MESSAGEADDR=messaging:5001,messaging2:5002 \
+-e MESSAGEADDR=messaging:5001 \
 -e SUMMARYADDR=summary:5050 \
 -e SESSIONKEY=sessionkeyrandom \
 -e DSN=userStore:3306 \
