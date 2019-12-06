@@ -1,6 +1,6 @@
 
 // when the form is submitted
-$("#myform").submit(function getSummary(e) {
+$("#summary").submit(function getSummary(e) {
 
     e.preventDefault();
 
@@ -20,7 +20,7 @@ $("#myform").submit(function getSummary(e) {
 });
 
 // Creating a new user based on the form values
-$('#creds').submit(function createNewUser(e) {
+$('#createUser').submit(function createNewUser(e) {
     e.preventDefault();
 
     var form = $(this);
@@ -95,7 +95,7 @@ $('#signOut').submit(function signOut(e) {
     });
 })
 
-// $('#credsId').submit(function (e) {
+// $('#getUser').submit(function (e) {
 //     e.preventDefault();
 
 //     var form = $(this);

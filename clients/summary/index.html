@@ -11,7 +11,7 @@
 <body>
 
     <h3>Create context using credentials testtt</h3>
-    <form id="creds" action="https://api.sauravkharb.me/v1/users" method="POST" accept-charset="UTF-8">
+    <form id="createUser" action="https://api.sauravkharb.me/v1/users" method="POST" accept-charset="UTF-8">
         <input type="text" id="email" name="utf8" value="">
         <input type="password" id="pass" name="utf8" value="">
         <input type="submit" id="userBtn" value="submit" />
@@ -25,7 +25,7 @@
     </form>
 
     <h3>Request User By ID</h3>
-    <form id="credsId" action="https://api.sauravkharb.me/v1/users/" method="GET" accept-charset="UTF-8">
+    <form id="getUser" action="https://api.sauravkharb.me/v1/users/" method="GET" accept-charset="UTF-8">
         <input type="text" id="userId" name="utf8" value="">
         <input type="submit" id="specUserBtn" value="submit" />
     </form>
@@ -36,7 +36,7 @@
     </form>
 
     <h3>Please enter a url below</h3>
-    <form id="myform" action="http://localhost:4000/v1/summary" method="POST" accept-charset="UTF-8">
+    <form id="summary" action="http://localhost:4000/v1/summary" method="POST" accept-charset="UTF-8">
         <input type="text" id="url" name="utf8" value="">
         <input type="submit" id="sumBtn" value="submit" />
     </form>
