@@ -48,7 +48,7 @@ $('#creds').submit(function createNewUser(e) {
 })
 
 // Creating a new session based on the form values
-$('#credsSess').submit(function signIn(e) {
+$('#signIn').submit(function signIn(e) {
     e.preventDefault();
 
     var form = $(this);
