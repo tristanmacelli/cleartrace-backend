@@ -166,17 +166,16 @@ const main = async () => {
         console.log(req.body)
         switch (req.method) {
             case 'GET':
-                res.set("Content-Type", "application/json");
                 // QUERY for all channels here
-                let allChannels = mongo.getAllChannels(channels, res);
-                if (allChannels == null) {
+                let result = mongo.getAllChannels(channels, res);
+                if (result.successMessage == "") {
                     res.status(500);
                     res.send()
-
+                    break;
                 }
-                // write those to the client, encoded in JSON
-                // We already did this in the helper function
-                // res.json(allChannels);
+                res.set("Content-Type", "application/json");
+                res.json(result.resultJSON);
+                res.send();
                 break;
 
             case 'POST':
@@ -212,8 +211,9 @@ const main = async () => {
                 // let obj = new RabbitObject('channel-new', insertChannel, null,
                 //     insertChannel.members, null, null)
                 // sendObjectToQueue(queue, obj)
-                break;
             default:
+                res.status(405);
+                res.send()
                 break;
         }
     });
@@ -341,6 +341,8 @@ const main = async () => {
                 res.send("Channel was successfully deleted");
                 break;
             default:
+                res.status(405);
+                res.send()
                 break;
         }
     });
@@ -392,17 +394,20 @@ const main = async () => {
                     break;
                 }
                 // database to UPDATE the current channel members
-                let errResult = mongo.removeChannelMember(channels, resultChannel, req);
-                if (errResult.length > 0) {
-                    res.status(500);
-                    res.send()
-
-                    break;
-                }
-                res.set("Content-Type", "text/plain");
-                res.status(201).send(req.user.ID + " was removed from your channel");
+                mongo.removeChannelMember(channels, resultChannel, req).then(errResult => {
+                    if (errResult.length > 0) {
+                        res.status(500);
+                        res.send()
+                        return;
+                    }
+                    res.set("Content-Type", "text/plain");
+                    res.status(201).send(req.user.ID + " was removed from your channel");
+                    return;
+                })
                 break;
             default:
+                res.status(405);
+                res.send()
                 break;
         }
     });
@@ -439,53 +444,53 @@ const main = async () => {
                     break;
                 }
                 // TODO: Call the database to UPDATE the message in the database using the messageID
-                let updatedResult = mongo.updateMessage(messages, resultMessage, req);
-                if (updatedResult.errString.length > 0) {
-                    res.status(500);
-                    res.send()
-
-                    break;
-                }
-                let updatedMessage = updatedResult.existingMessage;
-                res.set("Content-Type", "application/json");
-                res.json(updatedMessage);
-
-                let resultChannel = mongo.getChannelByID(channels, updatedMessage.channelID)
-                // add to rabbitMQ queue
-                // let pobj = new RabbitObject('message-update', null, updatedMessage,
-                //     resultChannel.finalChannel, null, null)
-                // sendObjectToQueue(queue, pobj)
-
+                mongo.updateMessage(messages, resultMessage, req).then(updatedResult => {
+                    if (updatedResult.errString.length > 0) {
+                        res.status(500);
+                        res.send()
+                        return;
+                    }
+                    let updatedMessage = updatedResult.existingMessage;
+                    res.set("Content-Type", "application/json");
+                    res.json(updatedMessage);
+    
+                    let resultChannel = mongo.getChannelByID(channels, updatedMessage.channelID)
+                    // add to rabbitMQ queue
+                    // let pobj = new RabbitObject('message-update', null, updatedMessage,
+                    //     resultChannel.finalChannel, null, null)
+                    // sendObjectToQueue(queue, pobj)
+                    return;
+                })
                 break;
             case 'DELETE':
                 if (!isMessageCreator(resultMessage, req.Header.Xuser)) {
                     res.status(403)
                     res.send()
-
                     break;
                 }
                 // Call database to DELETE the specified message using the messageID
                 // Call database to DELETE this channel
-                let result = mongo.deleteMessage(messages, resultMessage);
-                if (result.length > 0) {
-                    res.status(500);
-                    res.send()
+                mongo.deleteMessage(messages, resultMessage).then(result => {
+                    if (result.length > 0) {
+                        res.status(500);
+                        res.send()
+    
+                    }
+                    // add to rabbitMQ queue
+                    // let PostObj = new RabbitObject('message-delete', null, null,
+                    //     deleteMessageChannel.finalChannel.members, null, resultMessage._id)
+                    // sendObjectToQueue(queue, PostObj)
 
-                }
-                
+                    res.set("Content-Type", "text/plain");
+                    res.send("Message deleted");
 
-                // add to rabbitMQ queue
-                // let PostObj = new RabbitObject('message-delete', null, null,
-                //     deleteMessageChannel.finalChannel.members, null, resultMessage._id)
-                // sendObjectToQueue(queue, PostObj)
-
-                res.set("Content-Type", "text/plain");
-                res.send("Message deleted");
-
-                let deleteMessageChannel = mongo.getChannelByID(channels, resultMessage.channelID)
-
+                    mongo.getChannelByID(channels, resultMessage.channelID)
+                    return
+                });
                 break;
             default:
+                res.status(405);
+                res.send()
                 break;
         }
     });
@@ -518,11 +523,11 @@ const main = async () => {
     }
 
     function isChannelCreator(channel: Channel, userID: any): boolean {
-        return channel.creator == userID;
+        return channel.creator.ID == userID;
     }
 
     function isMessageCreator(message: Message, userID: any): boolean {
-        return message.creator == userID;
+        return message.creator.ID == userID;
     }
 
     // error handler that will be called if
