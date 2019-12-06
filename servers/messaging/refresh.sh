@@ -8,8 +8,8 @@ sudo docker rm -f messaging2
 sudo docker rm -f mongodb
 
 # clean up
-docker image prune
-docker volume prune
+docker image prune -f
+docker volume prune -f
 
 sudo docker pull jtanderson7/messaging
 
@@ -29,14 +29,14 @@ sudo docker run -d \
 -e ADDR=5001 \
 jtanderson7/messaging
 
-sudo docker run -d \
---restart=unless-stopped \
---network=infrastructure \
---name messaging2 \
--v /etc/letsencrypt:/etc/letsencrypt:ro \
--e TLSCERT=$TLSCERT \
--e TLSKEY=$TLSKEY \
--e ADDR=5002 \
-jtanderson7/messaging
+# sudo docker run -d \
+# --restart=unless-stopped \
+# --network=infrastructure \
+# --name messaging2 \
+# -v /etc/letsencrypt:/etc/letsencrypt:ro \
+# -e TLSCERT=$TLSCERT \
+# -e TLSKEY=$TLSKEY \
+# -e ADDR=5002 \
+# jtanderson7/messaging
 
 docker ps

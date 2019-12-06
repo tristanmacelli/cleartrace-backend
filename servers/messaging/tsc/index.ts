@@ -187,19 +187,25 @@ const main = async () => {
                 }
                 // Call database to INSERT this new channel
                 let newChannel = createChannel(req);
-                let insertResult = mongo.insertNewChannel(channels, newChannel);
 
-                if (insertResult.errString.length > 0) {
-                    res.status(500);
-                    res.send()
-                }
-                let insertChannel = insertResult.newChannel;
-                res.set("Content-Type", "application/json");
-                res.json(insertChannel);
-                res.status(201)
-                console.log(res)
-                console.log(res.status)
-                res.send();
+                mongo.insertNewChannel(channels, newChannel).then(insertResult => {
+                    if (insertResult.errString == "duplicate") {
+                        res.status(400).send()
+                        return;
+                    }
+
+                    if (insertResult.errString == "Error inserting new channel") {
+                        res.status(500);
+                        res.send()
+                        return
+                    }
+                    let insertChannel = insertResult.newChannel;
+                    res.status(201)
+                    res.set("Content-Type", "application/json");
+                    res.json(insertChannel);
+                    res.send();
+                })
+                break;
                 //probably cant do this >>> .send("success");
 
                 // // add to rabbitMQ queue
@@ -260,7 +266,7 @@ const main = async () => {
                 res.set("Content-Type", "application/json");
                 // write last 100 messages to the client, encoded in JSON 
                 // We already did this in the helper function
-                // res.json(returnedMessages);
+                res.json(returnedMessages);
                 break;
 
             case 'POST':

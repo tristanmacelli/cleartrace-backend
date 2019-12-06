@@ -5,6 +5,7 @@
 import { ObjectID, Collection } from "mongodb";
 import { Channel } from "./channel";
 import { Message } from "./message";
+import { is } from "bluebird";
 
 // getAllChannels does something
 // TODO: make sure the returned value is a shape that we can actually use
@@ -30,26 +31,39 @@ export function getAllChannels(channels: Collection, res: any) {
     })
 }
 
-// insertNewChannel takes in a new Channel and
-export function insertNewChannel(channels: Collection, newChannel: Channel) {
-    let errString: string = "";
-    let autoAssignedID: any;
-    channels.save({
-        name: newChannel.name, description: newChannel.description,
-        private: newChannel.private, members: newChannel.members,
-        createdAt: newChannel.createdAt, creator: newChannel.creator,
-        editedAt: newChannel.editedAt
-    }).catch(() => {
-        errString = "Error inserting new channel";
-    });
-    channels.find({ name: newChannel.name, createdAt: newChannel.createdAt }).next()
+const createChannel = async (channels: Collection, newChannel: Channel, errString: string) => { 
+    try {
+        await channels.find({ name: newChannel.name, createdAt: newChannel.createdAt }).next()
         .then(doc => {
-            autoAssignedID = doc._id
-        }).catch(() => {
-            autoAssignedID = ""
-        });
-    newChannel._id = autoAssignedID;
+            if (doc == null) {
+                errString = ""
+                console.log("NOT a duplicate channel")
+                errString
+                channels.save({
+                    name: newChannel.name, description: newChannel.description,
+                    private: newChannel.private, members: newChannel.members,
+                    createdAt: newChannel.createdAt, creator: newChannel.creator,
+                    editedAt: newChannel.editedAt
+                }).catch(() => {
+                    errString = "Error inserting new channel";
+                });
+                channels.find({ name: newChannel.name, createdAt: newChannel.createdAt }).next()
+                    .then(doc => {
+                        newChannel._id = doc._id
+                    })
+            }
+        })
+    } catch (e) {
+        console.log("Error creating channel");
+    }
     return { newChannel, errString };
+}
+
+// insertNewChannel takes in a new Channel and
+export const insertNewChannel = async (channels: Collection, newChannel: Channel) =>{
+    let errString: string = "duplicate";
+    let result = await createChannel(channels, newChannel, errString)
+    return result;
 }
 
 // insertNewMessage takes in a new Message and
