@@ -23,7 +23,46 @@
         <input type="submit" id="createChanBtn" value="submit" />
     </form>
 
+
+
+
     <h2>Second Endpoint</h2>
+
+
+
+
+    <h2>Third Endpoint</h2>
+    <h3>Add Channel Member</h3>
+    <form id="addMember" action="https://api.sauravkharb.me/v1/channels/:channelID/members" method="POST"
+        accept-charset="UTF-8">
+        <input type="text" id="channel" name="utf8" value="Enter channelID here">
+        <input type="text" id="member" name="utf8" value="Enter a new member here">
+        <input type="submit" id="addMemberBtn" value="submit" />
+    </form>
+
+    <h3>Remove Channel Member</h3>
+    <form id="deleteMember" action="https://api.sauravkharb.me/v1/channels/:channelID/members" method="DELETE"
+        accept-charset="UTF-8">
+        <input type="text" id="channel" name="utf8" value="Enter channelID here">
+        <input type="text" id="member" name="utf8" value="Enter an existing member here">
+        <input type="submit" id="deleteMemberBtn" value="submit" />
+    </form>
+
+
+
+    <h2>Fourth Endpoint</h2>
+    <h3>Edit Message</h3>
+    <form id="editMessage" action="https://api.sauravkharb.me/v1/messages/" method="UPDATE" accept-charset="UTF-8">
+        <input type="text" id="messageID" name="utf8" value="Enter messageID here">
+        <input type="text" id="newBody" name="utf8" value="Enter new message here">
+        <input type="submit" id="editMessageBtn" value="submit" />
+    </form>
+
+    <h3>Delete Message</h3>
+    <form id="deleteMessage" action="https://api.sauravkharb.me/v1/messages/" method="DELETE" accept-charset="UTF-8">
+        <input type="text" id="messageID" name="utf8" value="Enter messageID here">
+        <input type="submit" id="deleteMessageBtn" value="submit" />
+    </form>
 </body>
 <script type="text/javascript" src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
 <script type="text/javascript" src="app.js"></script>

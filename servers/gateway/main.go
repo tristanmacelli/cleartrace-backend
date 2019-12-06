@@ -25,23 +25,22 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // Director is a function wrapper
-type Director func(r *http.Request, ctx *handlers.HandlerContext)
+type Director func(r *http.Request)
 
 // CustomDirector does load balancing using the round-robin method
-func CustomDirector(targets []*url.URL) Director {
+func CustomDirector(targets []*url.URL, ctx *handlers.HandlerContext) Director {
 	var counter int32
 	counter = 0
 
-	return func(r *http.Request, ctx *handlers.HandlerContext) {
+	return func(r *http.Request) {
 		var sessionState handlers.SessionState
 		sessions.GetState(r, r.Header.Get("Authorization"), ctx.SessionStore, sessionState)
-		userJSON, err := json.Marshal(sessionState.User)
+		userJSON, _ := json.Marshal(sessionState.User)
 		userString := string(userJSON)
-		log.Println(userString)
 
 		targ := targets[counter%int32(len(targets))]
 		atomic.AddInt32(&counter, 1)
-		r.Header.Add("x-user", userString)
+		r.Header.Add("X-User", userString)
 		r.Host = targ.Host
 		r.URL.Host = targ.Host
 		r.URL.Scheme = targ.Scheme
