@@ -5,51 +5,70 @@
 import { ObjectID, Collection } from "mongodb";
 import { Channel } from "./channel";
 import { Message } from "./message";
+import { is } from "bluebird";
+import { User } from "./user";
 
 // getAllChannels does something
 // TODO: make sure the returned value is a shape that we can actually use
 export function getAllChannels(channels: Collection, res: any) {
+    let resultJSON: string = ""
+    let successMessage: string = ""
     // if channels does not yet exist
     let cursor = channels.find();
     if (!cursor.hasNext()) {
         // Throw error
         console.log("No channels found");
-        return null;
+        return {resultJSON, successMessage};
     }
+    
     // TODO: make sure the returned value is a shape that we can actually use
     cursor.toArray(function (err, result) {
         if (err) {
             console.log("Error getting channels");
-            return null;
+            return {resultJSON, successMessage};
         } else {
-            let successMessage = "Found channels";
+            successMessage = "Found channels";
             console.log(successMessage);
-            res.send(JSON.stringify(result));
-            return successMessage;
+            resultJSON = JSON.stringify(result)
+            
         }
     })
+    return {resultJSON, successMessage};
+}
+
+const createChannel = async (channels: Collection, newChannel: Channel, errString: string) => {
+    try {
+        await channels.find({ name: newChannel.name, createdAt: newChannel.createdAt }).next()
+        .then(async (doc) => {
+            if (doc == null) {
+                errString = ""
+                console.log("NOT a duplicate channel")
+                errString
+                channels.save({
+                    name: newChannel.name, description: newChannel.description,
+                    private: newChannel.private, members: newChannel.members,
+                    createdAt: newChannel.createdAt, creator: newChannel.creator,
+                    editedAt: newChannel.editedAt
+                }).catch(() => {
+                    errString = "Error inserting new channel";
+                });
+                await channels.find({ name: newChannel.name, createdAt: newChannel.createdAt }).next()
+                    .then(doc => {
+                        newChannel._id = doc._id
+                    })
+            }
+        })
+    } catch(e) {
+        console.log(e)
+    }
+    return {newChannel, errString}
 }
 
 // insertNewChannel takes in a new Channel and
-export function insertNewChannel(channels: Collection, newChannel: Channel) {
-    let errString: string = "";
-    let autoAssignedID: any;
-    channels.save({
-        name: newChannel.name, description: newChannel.description,
-        private: newChannel.private, members: newChannel.members,
-        createdAt: newChannel.createdAt, creator: newChannel.creator,
-        editedAt: newChannel.editedAt
-    }).catch(() => {
-        errString = "Error inserting new channel";
-    });
-    channels.find({ name: newChannel.name, createdAt: newChannel.createdAt }).next()
-        .then(doc => {
-            autoAssignedID = doc._id
-        }).catch(() => {
-            autoAssignedID = ""
-        });
-    newChannel._id = autoAssignedID;
-    return { newChannel, errString };
+export const insertNewChannel = async (channels: Collection, newChannel: Channel) =>{
+    let errString: string = "duplicate";
+
+    return await createChannel(channels,newChannel,errString)
 }
 
 // insertNewMessage takes in a new Message and
@@ -105,11 +124,11 @@ export function addChannelMember(channels: Collection, existingChannel: Channel,
 }
 
 // removeChannelMember takes an existing Channel and removes members using a req (request) object
-export function removeChannelMember(channels: Collection, existingChannel: Channel, req: any): string {
+export async function removeChannelMember(channels: Collection, existingChannel: Channel, req: any): Promise<string> {
     // Remove the specified member from this channel's list of members
     let errString: string = "";
     existingChannel.members.splice(req.body.message.id, 1);
-    channels.save({
+    await channels.save({
         name: existingChannel.name, description: existingChannel.description,
         private: existingChannel.private, members: existingChannel.members,
         createdAt: existingChannel.createdAt, creator: existingChannel.creator,
@@ -121,9 +140,9 @@ export function removeChannelMember(channels: Collection, existingChannel: Chann
 }
 
 // updateMessage takes an existing Message and a request with updates to apply to the Message's body 
-export function updateMessage(messages: Collection, existingMessage: Message, req: any) {
+export async function updateMessage(messages: Collection, existingMessage: Message, req: any) {
     let errString: string = "";
-    messages.save({
+    await messages.save({
         body: req.body, creator: existingMessage.creator,
         createdAt: existingMessage.createdAt, channelID: existingMessage.channelID,
         editedAt: existingMessage.editedAt
@@ -138,7 +157,7 @@ export function updateMessage(messages: Collection, existingMessage: Message, re
 export function deleteChannel(channels: Collection, messages: Collection, existingChannel: Channel): string {
     let errString: string = "";
     // We are not allowed to delete the general channel
-    if (existingChannel.creator == -1) {
+    if (existingChannel.creator.id == -1) {
         return "Error deleting channel";
     }
     channels.remove({ _id: new ObjectID(existingChannel._id) }).catch(() => {
@@ -151,9 +170,9 @@ export function deleteChannel(channels: Collection, messages: Collection, existi
 }
 
 // deleteMessage does something
-export function deleteMessage(messages: Collection, existingMessage: Message): string {
+export async function deleteMessage(messages: Collection, existingMessage: Message): Promise<string> {
     let errString: string = "";
-    messages.remove({ messageID: existingMessage._id }).catch(() => {
+    await messages.remove({ messageID: existingMessage._id }).catch(() => {
         errString = "Error deleting message";
     });
     return errString;
@@ -174,7 +193,8 @@ export function getChannelByID(channels: Collection, id: string) {
     });
     let finalChannel: Channel;
     if (finalResponse == null) {
-        finalChannel = new Channel("", "", false, [], "", -1, "");
+        let emptyUser = new User(-1, "", new Uint8Array(100), "", "", "", "")
+        finalChannel = new Channel("", "", false, [], "", emptyUser, "");
         return { finalChannel, errString };
     }
     finalChannel = new Channel(finalResponse.name, finalResponse.description, finalResponse.private,
@@ -198,7 +218,8 @@ export function getMessageByID(messages: Collection, id: string) {
 
     let finalMessage: Message;
     if (finalResponse == null) {
-        finalMessage = new Message("", "", "", "", "");
+        let emptyUser = new User(-1, "", new Uint8Array(100), "", "", "", "")
+        finalMessage = new Message("", "", "", emptyUser, "");
         return { finalMessage, errString };
     }
     finalMessage = new Message(finalResponse.channelID, finalResponse.createdAt, finalResponse.body,

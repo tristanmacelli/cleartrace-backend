@@ -2,6 +2,7 @@
 import { MongoClient, Db, Collection, MongoError } from "mongodb";
 import * as mongo from "./mongo_handlers";
 import { Channel } from "./channel";
+import { User } from "./user";
 
 // Mongo Connection URL
 const url = 'mongodb://mongodb:27017/mongodb';
@@ -21,18 +22,21 @@ client.connect(function (err: any) {
     var db: Db = client.db(dbName);
 
     // check if any collection exists
-    db.createCollection('channels', function (err: MongoError, collection: Collection<any>) {
+    db.createCollection('channels', async function (err: MongoError, collection: Collection<any>) {
         if (err) {
             console.log("Error creating new collection: ", err);
         }
         // create general channel (we always want this at startup)
         let channels: Collection = collection;
-        let general = new Channel("general", "an open channel for all", false, [], "enter timestamp here", -1, "not yet edited");
-        let result = mongo.insertNewChannel(channels, general);
-        // check for insertion errors
-        if (result.errString.length > 0) {
-            console.log("Failed to create new general channel upon opening connection to DB");
-        }
+        let emptyUser = new User(-1, "", new Uint8Array(100), "", "", "", "")
+        let general = new Channel("general", "an open channel for all", false, [], "enter timestamp here", emptyUser, "not yet edited");
+        await mongo.insertNewChannel(channels, general).then(result => {
+            // check for insertion errors
+            if (result.errString.length > 0) {
+                console.log("Failed to create new general channel upon opening connection to DB");
+            }
+        })
+        
     });
 
     db.createCollection('messages');

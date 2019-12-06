@@ -42,13 +42,14 @@ func CustomDirector(targets []*url.URL) Director {
 }
 
 func getAllUrls(addresses string) []*url.URL {
+
 	urlSlice := strings.Split(addresses, ",")
 	var urls []*url.URL
 	for _, u := range urlSlice {
 		url := url.URL{Scheme: "http", Host: u}
 		urls = append(urls, &url)
 	}
-	fmt.Println("These are a list of urls: ", urls)
+	log.Println("These are a list of urls: ", urls)
 	return urls
 }
 
