@@ -15,11 +15,11 @@ $("#myform").submit(function getSummary(e) {
 
         success: function (result) {
             display_results(result)
-            // $("#result").html("<strong>" + result + "</strong>")
         }
     });
 });
 
+// Creating a new user based on the form values
 $('#creds').submit(function createNewUser(e) {
     e.preventDefault();
 
@@ -36,8 +36,6 @@ $('#creds').submit(function createNewUser(e) {
         "LastName": "Name"
     }
 
-    //console.log(b)
-
     // send a get request with the above data
     $.ajax({
         type: "POST",
@@ -49,6 +47,7 @@ $('#creds').submit(function createNewUser(e) {
     });
 })
 
+// Creating a new session based on the form values
 $('#credsSess').submit(function signIn(e) {
     e.preventDefault();
 
@@ -60,8 +59,6 @@ $('#credsSess').submit(function signIn(e) {
         "Email": $('#emailSess').val(),
         "Password": $('#passSess').val(),
     }
-
-    //console.log(b)
 
     // send a get request with the above data
     $.ajax({
@@ -80,6 +77,7 @@ $('#credsSess').submit(function signIn(e) {
     });
 })
 
+// Removing a session based on the form values
 $('#signOut').submit(function signOut(e) {
     e.preventDefault();
 
@@ -87,15 +85,12 @@ $('#signOut').submit(function signOut(e) {
     var url = form.attr('action');
     var param = form.serialize()
 
-    //console.log(b)
-
     // send a get request with the above data
     $.ajax({
         type: "DELETE",
         url: url,
         success: function (result) {
             console.log(result)
-            // $("#result").html("<strong>" + result + "</strong>")
         }
     });
 })

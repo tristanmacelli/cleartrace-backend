@@ -17,13 +17,3 @@ docker run -d \
 jtanderson7/assignment2client
 
 docker ps
-# docker run -d \
-# -p 443:443 \
-# -v /etc/letsencrypt/live/api.sauravkharb.me/:/build:ro \
-# -e TLSKEY=privkey.pem -e TLSCERT=cert.pem \
-# jtanderson7/assignment2;
-
-
-# etc/letsencrypt/live/api.sauravkharb.me/
-
-# https://api.sauravkharb.me/v1/summary?url=http://ogp.me
