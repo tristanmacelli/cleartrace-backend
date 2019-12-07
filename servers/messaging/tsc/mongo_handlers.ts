@@ -5,25 +5,23 @@
 import { ObjectID, Collection } from "mongodb";
 import { Channel } from "./channel";
 import { Message } from "./message";
-import { is } from "bluebird";
 import { User } from "./user";
 
 // getAllChannels does something
 // TODO: make sure the returned value is a shape that we can actually use
 export async function getAllChannels(channels: Collection, res: any) {
-    let resultJSON: string = "bbb"
+    let resultJSON: string = ""
     let successMessage: string = ""
     // if channels does not yet exist
     let cursor = channels.find();
     await cursor.hasNext().then(async () => {
-        await cursor.toArray().then(async (result) => {
+        await cursor.toArray().then((result) => {
             successMessage = "Found channels";
             console.log(successMessage);
 
             let channelsArray:string[] = []
             for (let i = 0 ; i < result.length; i++) {
                 channelsArray.push(JSON.stringify(result[i]))
-                // channelsString += ","
             }
             resultJSON = JSON.stringify(channelsArray)
         })         
@@ -33,16 +31,12 @@ export async function getAllChannels(channels: Collection, res: any) {
 
 const createChannel = async (channels: Collection, newChannel: Channel, errString: string) => {
     let rightNow = new Date()
-    console.log("the date we are trying to specify is")
-    console.log(rightNow)
     try {
         await channels.find({ name: newChannel.name}).next()
         .then(async (doc) => {
             if (doc == null) {
                 newChannel.createdAt = rightNow
                 errString = ""
-                console.log("NOT a duplicate channel")
-                errString
                 await channels.save({
                     name: newChannel.name, description: newChannel.description,
                     private: newChannel.private, members: newChannel.members,
@@ -51,8 +45,6 @@ const createChannel = async (channels: Collection, newChannel: Channel, errStrin
                 }).then(async () => {
                     await channels.find({ name: newChannel.name, createdAt: newChannel.createdAt }).next()
                     .then(doc => {
-                        console.log("THe doc in the second find is")
-                        console.log(doc)
                         newChannel.id = doc._id
                     })
                 }).catch(() => {
@@ -64,8 +56,6 @@ const createChannel = async (channels: Collection, newChannel: Channel, errStrin
     } catch(e) {
         console.log(e)
     }
-    console.log("The new Channel that we send is")
-    console.log(newChannel)
     return {newChannel, errString}
 }
 
@@ -184,12 +174,12 @@ export async function deleteMessage(messages: Collection, existingMessage: Messa
 }
 
 // getChannelByID does something
-export function getChannelByID(channels: Collection, id: string) {
+export async function getChannelByID(channels: Collection, id: string) {
     // Since id's are auto-generated and unique we chose to use find instead of findOne() 
     let finalResponse: any;
     let errString: any;
 
-    channels.find({ id: id }).next().then(doc => {
+    await channels.find({ id: id }).next().then(doc => {
         finalResponse = doc
         errString = ""
     }).catch(() => {
@@ -235,46 +225,66 @@ export function getMessageByID(messages: Collection, id: string) {
 
 // TODO: Reshape the return value of find to a JSON array of message model objects
 // last100Messages does something
-export function last100Messages(messages: Collection, id: string, res: any) {
+export async function last100Messages(messages: Collection, id: string, res: any) {
+    console.log("Inside last100Messages");
+    let resultJSON: string = ""
+    let resultArray: string[] = []
+    let successMessage: string = ""
+
     if (id == null) {
         console.log("No id value passed");
-        return null;
+        return {resultJSON, successMessage};
     }
     id = id.toString();
     let cursor = messages.find({ channelID: id }).sort({ createdAt: -1 }).limit(100);
-    // TODO: make sure the returned value is a shape that we can actually use
-    cursor.toArray(function (err, result) {
-        if (err) {
-            console.log("Error getting messages");
-            return null;
-        } else {
-            let successMessage = "Found messages";
+
+    await cursor.hasNext().then(async () => {
+        await cursor.toArray().then((result) => {
+            successMessage = "Found messages";
             console.log(successMessage);
-            res.send(JSON.stringify(result));
-            return successMessage;
-        }
+
+            let messagesArray:string[] = []
+            for (let i = 0 ; i < result.length; i++) {
+                messagesArray.push(JSON.stringify(result[i]))
+            }
+            // resultJSON = JSON.stringify(messagesArray);
+            resultArray = messagesArray
+            console.log("last100Messages JSON")
+            console.log(resultJSON)
+        })
     })
+    return resultArray;
 }
 
 // TODO: Reshape the return value of find to a JSON array of message model objects
 // last100Messages does something
-export function last100SpecificMessages(messages: Collection, channelID: string, messageID: string, res: any) {
+export async function last100SpecificMessages(messages: Collection, channelID: string, messageID: string, res: any) {
+    console.log("Inside last100SpecificMessages");
+    let resultJSON: string = ""
+    let successMessage: string = ""
+    
     if (channelID == null) {
         console.log("No id value passed");
+        return {resultJSON, successMessage};
     }
     channelID = channelID.toString();
     let cursor = messages.find({ channelID: channelID, id: { $lt: messageID } }).sort({ createdAt: -1 }).limit(100);
-    // TODO: make sure the returned value is a shape that we can actually use
-    cursor.toArray(function (err, result) {
-        if (err) {
-            console.log("Error getting messages");
-        } else {
-            let successMessage = "Found specific messages";
+
+    await cursor.hasNext().then(async () => {
+        await cursor.toArray().then((result) => {
+            successMessage = "Found specific messages";
             console.log(successMessage);
-            res.send(JSON.stringify(result));
-            return successMessage;
-        }
+            
+            let messagesArray:string[] = []
+            for (let i = 0 ; i < result.length; i++) {
+                messagesArray.push(JSON.stringify(result[i]))
+            }
+            resultJSON = JSON.stringify(messagesArray);
+            console.log("last100SpecificMessages JSON")
+            console.log(resultJSON)
+        })
     })
+    return {resultJSON, successMessage};
 }
 
 export * from "./mongo_handlers";

@@ -16,6 +16,7 @@ import (
 	"sync/atomic"
 
 	"github.com/go-redis/redis"
+	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
 )
 
@@ -101,7 +102,10 @@ func main() {
 	messagesProxy := &httputil.ReverseProxy{Director: CustomDirector(messagingUrls, ctx)}
 	summaryProxy := httputil.NewSingleHostReverseProxy(&url.URL{Scheme: "http", Host: summaryaddr})
 	// starting a new mux session
-	mux := http.NewServeMux()
+	// mux := http.NewServeMux()
+
+	mux := mux.NewRouter()
+
 	mux.HandleFunc("/", IndexHandler)
 
 	mux.HandleFunc("/v1/users", ctx.UsersHandler)
@@ -110,9 +114,9 @@ func main() {
 	mux.HandleFunc("/v1/sessions/", ctx.SpecificSessionsHandler)
 	mux.Handle("/v1/summary", summaryProxy)
 	mux.HandleFunc("/v1/ws", ctx.WebSocketConnectionHandler)
-	mux.Handle("/v1/channels", messagesProxy)
-	mux.Handle("/v1/channels/{channelID}", messagesProxy)
 	mux.Handle("/v1/channels/{channelID}/members", messagesProxy)
+	mux.Handle("/v1/channels/{channelID}", messagesProxy)
+	mux.Handle("/v1/channels", messagesProxy)
 	mux.Handle("/v1/messages/{messageID}", messagesProxy)
 
 	wrappedMux := handlers.NewLogger(mux)

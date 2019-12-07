@@ -11,8 +11,6 @@ import { Channel } from "./channel";
 
 import * as Amqp from "amqp-ts"
 import { User } from "./user";
-// import * as amqp from "amqplib";
-// import Bluebird from "bluebird";
 
 //create a new express application
 const app = express();
@@ -145,12 +143,218 @@ const main = async () => {
     app.listen(+addr, "", () => {
         //callback is executed once server is listening
         console.log(`server is listening at http://:${addr}...`);
-        // console.log("port : " + port);
-        // console.log("host : " + host);
     });
 
+    app.use("/v1/channels/:channelID/members", (req: any, res: any) => {
+        // Check that the user is authenticated
+        if (req.headers['X-User'] == null) {
+            res.status(401);
+            res.send()
+            return;
+        }
+        // QUERY for the channel based on req.params.channelID
+        if (req.params.channelID == null) {
+            res.status(404);
+            res.send()
+            return;
+        }
+        mongo.getChannelByID(channels, req.params.channelID).then((result) => {
+            if (result.errString.length > 0) {
+                res.status(500);
+                res.send()
+                return;
+            }
+            let resultChannel = result.finalChannel;
+            switch (req.method) {
+                case 'POST':
+                    if (!isChannelCreator(resultChannel, req.headers['x-user'])) {
+                        res.status(403);
+                        res.send()
+                        break;
+                    }
+                    // Call database to UPDATE the current channel
+                    let addResult = mongo.addChannelMember(channels, resultChannel, req);
+                    if (addResult.length > 0) {
+                        res.status(500);
+                        res.send()
+    
+                        break;
+                    }
+                    res.set("Content-Type", "application/json");
+                    res.status(201).send(req.user.ID + " was added to your channel");
+                    break;
+                case 'DELETE':
+                    if (!isChannelCreator(resultChannel, req.Header['X-user'])) {
+                        res.status(403)
+                        res.send()
+    
+                        break;
+                    }
+                    // database to UPDATE the current channel members
+                    mongo.removeChannelMember(channels, resultChannel, req).then(errResult => {
+                        if (errResult.length > 0) {
+                            res.status(500);
+                            res.send()
+                            return;
+                        }
+                        res.set("Content-Type", "text/plain");
+                        res.status(201).send(req.user.ID + " was removed from your channel");
+                        return;
+                    })
+                    break;
+                default:
+                    res.status(405);
+                    res.send()
+                    break;
+            }
+            return;
+        });
+    });
 
+// Specific channel handler
+    app.use("/v1/channels/:channelID", (req: any, res: any) => {
+            
+        // Check that the user is authenticated
+        console.log("JUST GOT inside the handler");
+        if (req.headers['x-user'] == null) {
+            res.status(401);
+            res.send()
+            return;
+        }
+        console.log("BEFORE CHECK CHANNELID");
+        // QUERY for the channel based on req.params.channelID
+        if (req.params.channelID == null) {
+            res.status(404);
+            res.send()
+            return;
+        }
+        console.log("BEFORE getChannelByID");
+        mongo.getChannelByID(channels, req.params.channelID).then((result) => {
+        console.log("Inside getChannelByID");
 
+            if (result.errString.length > 0) {
+                res.status(500);
+                res.send()
+                return;
+            }
+            let resultChannel = result.finalChannel;
+            switch (req.method) {
+                case 'GET':
+                    if (!isChannelMember(resultChannel, req.headers['x-user'])) {
+                        res.status(403);
+                        res.send()
+                        break;
+                    }
+                    // QUERY for last 100 messages here
+                    if (req.params.before != null) {
+                        mongo.last100SpecificMessages(messages, resultChannel.id, req.params.before, res).then((returnedMessages) => {
+                            if (returnedMessages == null) {
+                                res.status(500);
+                                res.send()
+                                return;
+                            }
+                            res.set("Content-Type", "application/json");
+                            res.json(returnedMessages);
+                            res.send()
+                            return;
+                        })
+                        
+                    } else {
+                        mongo.last100Messages(messages, resultChannel.id, res).then((returnedMessages) => {
+                            if (returnedMessages == null) {
+                                res.status(500);
+                                res.send()
+                                return;
+                            }
+                            res.set("Content-Type", "application/json");
+                            res.json(returnedMessages);
+                            res.send()
+                            return;
+                        });
+                        
+                    }
+                    break;    
+                case 'POST':
+                    if (resultChannel.private && !isChannelMember(resultChannel, req.headers['x-user'])) {
+                        res.status(403);
+                        res.send()
+                        break;
+                    }
+                    // Create a new message
+                    // Call database to INSERT a new message to the channel
+                    // let user = req.body.creator
+                    let newUser = req.headers['x-user']//new User(user.id, user.email, user.passHash, user.userName, user.firstName, user.lastName, user.photoURL)
+                    let newMessage = createMessage(req, newUser);
+                    let insertedResult = mongo.insertNewMessage(messages, newMessage);
+                    if (insertedResult.errString.length > 0) {
+                        res.status(500);
+                        res.send()
+                    }
+                    let insertedMessage = insertedResult.newMessage;
+                    res.set("Content-Type", "application/json");
+                    res.json(insertedMessage);
+                    res.status(201);
+                    // probably cant do this >>> .send("success");
+
+                    // // add to rabbitMQ queue
+                    // let PostObj = new RabbitObject('message-new', null, insertedMessage,
+                    //     resultChannel.members, null, null)
+                    // sendObjectToQueue(queue, PostObj)
+                    res.send()
+
+                    break;
+                case 'PATCH':
+                    if (!isChannelCreator(resultChannel, req.headers['x-user'])) {
+                        res.status(403);
+                        res.send()
+                        break;
+                    }
+                    // Call database to UPDATE the channel name and/or description
+                    let updateResult = mongo.updateChannel(channels, resultChannel, req);
+                    if (updateResult.errString.length > 0) {
+                        res.status(500);
+                        res.send()
+                        break;
+                    }
+                    let updatedChannel = updateResult.existingChannel;
+                    res.set("Content-Type", "application/json");
+                    res.json(updatedChannel);
+
+                    // add to rabbitMQ queue
+                    // let PatchObj = new RabbitObject('channel-update', updatedChannel, null,
+                    //     updatedChannel.members, null, null)
+                    // sendObjectToQueue(queue, PatchObj)
+                    res.send()
+                    break;
+                case 'DELETE':
+                    if (!isChannelCreator(resultChannel, req.headers['x-user'])) {
+                        res.status(403);
+                        res.send()
+                        break;
+                    }
+                    // Call database to DELETE this channel
+                    let result = mongo.deleteChannel(channels, messages, resultChannel);
+                    if (result.length > 0) {
+                        res.status(500);
+                        res.send()
+
+                    }
+
+                    // add to rabbitMQ queue
+                    // let obj = new RabbitObject('channel-delete', null, null, resultChannel.members,
+                    //     resultChannel._id, null)
+                    // sendObjectToQueue(queue, obj)
+                    res.set("Content-Type", "text/plain");
+                    res.send("Channel was successfully deleted");
+                    break;
+                default:
+                    res.status(405);
+                    res.send()
+                    break;
+            }
+            return;
+        }) 
+    });
 
 
     app.use("/v1/channels", (req: any, res: any) => {
@@ -161,7 +365,7 @@ const main = async () => {
             res.send();
             return;
         }
-        // if (req.method != 'GET' && req.method != 'POST') {
+        // if (req.method !== 'GET' && req.method !== 'POST') {
         //     res.status(405);
         //     res.send();
         //     return;
@@ -205,8 +409,6 @@ const main = async () => {
                         return
                     }
                     let insertChannel = insertResult.newChannel;
-                    console.log("RESULT")
-                    console.log(insertChannel)
                     res.status(201)
                     res.set("Content-Type", "application/json");
                     res.json(insertChannel);
@@ -220,202 +422,6 @@ const main = async () => {
                 //     insertChannel.members, null, null)
                 // sendObjectToQueue(queue, obj)
             default:
-                break;
-        }
-    });
-
-    // Specific channel handler
-    app.use("/v1/channels/:channelID", (req: any, res: any) => {
-        // Check that the user is authenticated
-        if (req.headers['X-User'] == null) {
-            res.status(401);
-            res.send()
-            return;
-        }
-        // QUERY for the channel based on req.params.channelID
-        if (req.params.channelID == null) {
-            res.status(404);
-            res.send()
-            return;
-        }
-        let result = mongo.getChannelByID(channels, req.params.channelID);
-        if (result.errString.length() > 0) {
-            res.status(500);
-            res.send()
-            return;
-        }
-        let resultChannel = result.finalChannel;
-        switch (req.method) {
-            case 'GET':
-                if (!isChannelMember(resultChannel, req.Header.Xuser)) {
-                    res.status(403);
-                    res.send()
-                    break;
-                }
-                let returnedMessages;
-                // QUERY for last 100 messages here
-                if (req.params.before != null) {
-                    returnedMessages = mongo.last100SpecificMessages(messages, resultChannel.id, req.params.before, res);
-                    if (returnedMessages == null) {
-                        res.status(500);
-                        res.send()
-                        break;
-                    }
-                } else {
-                    returnedMessages = mongo.last100Messages(messages, resultChannel.id, res);
-                    if (returnedMessages == null) {
-                        res.status(500);
-                        res.send()
-                        break;
-                    }
-                }
-                res.set("Content-Type", "application/json");
-                // write last 100 messages to the client, encoded in JSON 
-                // We already did this in the helper function
-                res.json(returnedMessages);
-                break;
-
-            case 'POST':
-                if (resultChannel.private && !isChannelMember(resultChannel, req.Header.Xuser)) {
-                    res.status(403);
-                    res.send()
-                    break;
-                }
-                // Create a new message
-                // Call database to INSERT a new message to the channel
-                let user = req.body.creator
-                let newUser = new User(user.id, user.email, user.passHash, user.userName, user.firstName, user.lastName, user.photoURL)
-                let newMessage = createMessage(req, newUser);
-                let insertedResult = mongo.insertNewMessage(messages, newMessage);
-                if (insertedResult.errString.length > 0) {
-                    res.status(500);
-                    res.send()
-                }
-                let insertedMessage = insertedResult.newMessage;
-                res.set("Content-Type", "application/json");
-                res.json(insertedMessage);
-                res.status(201);
-                  // probably cant do this >>> .send("success");
-
-                // // add to rabbitMQ queue
-                // let PostObj = new RabbitObject('message-new', null, insertedMessage,
-                //     resultChannel.members, null, null)
-                // sendObjectToQueue(queue, PostObj)
-                res.send()
-
-                break;
-            case 'PATCH':
-                if (!isChannelCreator(resultChannel, req.Header.Xuser)) {
-                    res.status(403);
-                    res.send()
-                    break;
-                }
-                // Call database to UPDATE the channel name and/or description
-                let updateResult = mongo.updateChannel(channels, resultChannel, req);
-                if (updateResult.errString.length > 0) {
-                    res.status(500);
-                    res.send()
-                    break;
-                }
-                let updatedChannel = updateResult.existingChannel;
-                res.set("Content-Type", "application/json");
-                res.json(updatedChannel);
-
-                // add to rabbitMQ queue
-                // let PatchObj = new RabbitObject('channel-update', updatedChannel, null,
-                //     updatedChannel.members, null, null)
-                // sendObjectToQueue(queue, PatchObj)
-                res.send()
-                break;
-            case 'DELETE':
-                if (!isChannelCreator(resultChannel, req.Header.Xuser)) {
-                    res.status(403);
-                    res.send()
-                    break;
-                }
-                // Call database to DELETE this channel
-                let result = mongo.deleteChannel(channels, messages, resultChannel);
-                if (result.length > 0) {
-                    res.status(500);
-                    res.send()
-
-                }
-
-                // add to rabbitMQ queue
-                // let obj = new RabbitObject('channel-delete', null, null, resultChannel.members,
-                //     resultChannel._id, null)
-                // sendObjectToQueue(queue, obj)
-                res.set("Content-Type", "text/plain");
-                res.send("Channel was successfully deleted");
-                break;
-            default:
-                res.status(405);
-                res.send()
-                break;
-        }
-    });
-
-    // Adding and removing members from your channel
-    app.use("/v1/channels/:channelID/members", (req: any, res: any) => {
-        // Check that the user is authenticated
-        if (req.headers['X-User'] == null) {
-            res.status(401);
-            res.send()
-            return;
-        }
-        // QUERY for the channel based on req.params.channelID
-        if (req.params.channelID == null) {
-            res.status(404);
-            res.send()
-            return;
-        }
-        let result = mongo.getChannelByID(channels, req.params.channelID);
-        if (result.errString.length() > 0) {
-            res.status(500);
-            res.send()
-            return;
-        }
-        let resultChannel = result.finalChannel;
-        switch (req.method) {
-            case 'POST':
-                if (!isChannelCreator(resultChannel, req.Header.Xuser)) {
-                    res.status(403);
-                    res.send()
-                    break;
-                }
-                // Call database to UPDATE the current channel
-                let addResult = mongo.addChannelMember(channels, resultChannel, req);
-                if (addResult.length > 0) {
-                    res.status(500);
-                    res.send()
-
-                    break;
-                }
-                res.set("Content-Type", "application/json");
-                res.status(201).send(req.user.ID + " was added to your channel");
-                break;
-            case 'DELETE':
-                if (!isChannelCreator(resultChannel, req.Header['X-user'])) {
-                    res.status(403)
-                    res.send()
-
-                    break;
-                }
-                // database to UPDATE the current channel members
-                mongo.removeChannelMember(channels, resultChannel, req).then(errResult => {
-                    if (errResult.length > 0) {
-                        res.status(500);
-                        res.send()
-                        return;
-                    }
-                    res.set("Content-Type", "text/plain");
-                    res.status(201).send(req.user.ID + " was removed from your channel");
-                    return;
-                })
-                break;
-            default:
-                res.status(405);
-                res.send()
                 break;
         }
     });
@@ -436,7 +442,7 @@ const main = async () => {
             return;
         }
         let result = mongo.getMessageByID(messages, req.params.messageID);
-        if (result.errString.length() > 0) {
+        if (result.errString.length > 0) {
             res.status(500);
             res.send()
 
@@ -445,7 +451,7 @@ const main = async () => {
         let resultMessage = result.finalMessage;
         switch (req.method) {
             case 'PATCH':
-                if (!isMessageCreator(resultMessage, req.Header.Xuser)) {
+                if (!isMessageCreator(resultMessage, req.headers['x-user'])) {
                     res.status(403);
                     res.send()
 
@@ -471,7 +477,7 @@ const main = async () => {
                 })
                 break;
             case 'DELETE':
-                if (!isMessageCreator(resultMessage, req.Header.Xuser)) {
+                if (!isMessageCreator(resultMessage, req.headers['x-user'])) {
                     res.status(403)
                     res.send()
                     break;
