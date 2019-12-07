@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"log"
 	"net/http"
 )
 
@@ -29,7 +28,6 @@ func (p *Passer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Expose-Headers", "Authorization")
 	w.Header().Set("Access-Control-Max-Age", "600")
 
-	log.Println("Reaching the middleware")
 	if r.Method == "OPTIONS" {
 		w.WriteHeader(http.StatusOK)
 		return

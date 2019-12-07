@@ -29,7 +29,7 @@ type mqMessage struct {
 
 // Channel is from our messaging service
 type Channel struct {
-	ID          string   `json:"_id"`
+	ID          string   `json:"id"`
 	Name        string   `json:"name"`
 	Description string   `json:"description"`
 	Private     bool     `json:"private"`
@@ -41,7 +41,7 @@ type Channel struct {
 
 // Message is from our messaging service
 type Message struct {
-	ID        string `json:"_id"`
+	ID        string `json:"id"`
 	ChannelID string `json:"channelid"`
 	CreatedAt string `json:"createdat"`
 	Body      string `json:"body"`
