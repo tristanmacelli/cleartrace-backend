@@ -67,30 +67,35 @@ export const insertNewChannel = async (channels: Collection, newChannel: Channel
 }
 
 // insertNewMessage takes in a new Message and
-export function insertNewMessage(messages: Collection, newMessage: Message) {
+export async function insertNewMessage(messages: Collection, newMessage: Message) {
     let errString: string = "";
     let autoAssignedID: any;
-    messages.save({
+    newMessage.createdAt = new Date()
+
+    await messages.save({
         channelID: newMessage.channelID, createdAt: newMessage.createdAt,
         body: newMessage.body, creator: newMessage.creator,
         editedAt: newMessage.editedAt
-    }).catch(() => {
-        errString = "Error inserting new message";
-    });
-    messages.find({ body: newMessage.body, createdAt: newMessage.createdAt }).next()
+    }).then(async () => {
+        await messages.find({ body: newMessage.body, createdAt: newMessage.createdAt }).next()
         .then(doc => {
             autoAssignedID = doc._id
         }).catch(() => {
             autoAssignedID = ""
         });
+    }).catch(() => {
+        errString = "Error inserting new message";
+    });
+    
     newMessage.id = autoAssignedID;
     return { newMessage, errString };
 }
 
 // updatedChannel updates name and body of an existing Channel using a req (request) object
-export function updateChannel(channels: Collection, existingChannel: Channel, req: any) {
+export async function updateChannel(channels: Collection, existingChannel: Channel, req: any) {
     let errString: string = "";
-    channels.save({
+
+    await channels.save({
         name: req.body.name, description: req.body.description,
         private: existingChannel.private, members: existingChannel.members,
         createdAt: existingChannel.createdAt, creator: existingChannel.creator,
@@ -104,10 +109,11 @@ export function updateChannel(channels: Collection, existingChannel: Channel, re
 }
 
 // addChannelMembers takes an existing Channel and adds members using a req (request) object
-export function addChannelMember(channels: Collection, existingChannel: Channel, req: any): string {
+export async function addChannelMember(channels: Collection, existingChannel: Channel, req: any): Promise<string> {
     let errString: string = "";
     existingChannel.members.push(req.body.message.id);
-    channels.save({
+
+    await channels.save({
         name: existingChannel.name, description: existingChannel.description,
         private: existingChannel.private, members: existingChannel.members,
         createdAt: existingChannel.createdAt, creator: existingChannel.creator,
@@ -149,16 +155,20 @@ export async function updateMessage(messages: Collection, existingMessage: Messa
 }
 
 // deleteChannel does something
-export function deleteChannel(channels: Collection, messages: Collection, existingChannel: Channel): string {
+export async function deleteChannel(channels: Collection, messages: Collection, existingChannel: Channel): Promise<string> {
     let errString: string = "";
     // We are not allowed to delete the general channel
     if (existingChannel.creator.id == -1) {
         return "Error deleting channel";
     }
-    channels.remove({ id: new ObjectID(existingChannel.id) }).catch(() => {
+    console.log("DELETE CHANNEL,,,, CHANNEL IS::")
+    console.log(existingChannel)
+    // CHANNEL ID DOES NOT EXIST
+    let channelID = new ObjectID(existingChannel.id)
+    await channels.remove({ _id: channelID }).catch(() => {
         errString = "Error deleting channel";
     });
-    messages.remove({ channelID: existingChannel.id }).catch(() => {
+    await messages.remove({ channelID: existingChannel.id }).catch(() => {
         errString = "Error deleting messages associated with the channel";
     });
     return errString;
@@ -178,8 +188,8 @@ export async function getChannelByID(channels: Collection, id: string) {
     // Since id's are auto-generated and unique we chose to use find instead of findOne() 
     let finalResponse: any;
     let errString: any;
-
-    await channels.find({ id: id }).next().then(doc => {
+    let mongoID = new ObjectID(id)
+    await channels.find({ _id: mongoID }).next().then(doc => {
         finalResponse = doc
         errString = ""
     }).catch(() => {
@@ -194,17 +204,17 @@ export async function getChannelByID(channels: Collection, id: string) {
         return { finalChannel, errString };
     }
     finalChannel = new Channel(finalResponse.name, finalResponse.description, finalResponse.private,
-        finalResponse.members, finalResponse.createdAt, finalResponse.Creator, finalResponse.editedAt);
+        finalResponse.members, finalResponse.createdAt, finalResponse.creator, finalResponse.editedAt);
     return { finalChannel, errString };
 }
 
 // getMessageByID does something
-export function getMessageByID(messages: Collection, id: string) {
+export async function getMessageByID(messages: Collection, id: string) {
     // Since id's are auto-generated and unique we chose to use find instead of findOne() 
     let finalResponse: any;
     let errString: any;
-
-    messages.find({ id: id }).next().then(doc => {
+    let mongoID = new ObjectID(id)
+    await messages.find({ _id: mongoID }).next().then(doc => {
         finalResponse = doc;
         errString = "";
     }).catch(() => {
@@ -215,7 +225,8 @@ export function getMessageByID(messages: Collection, id: string) {
     let finalMessage: Message;
     if (finalResponse == null) {
         let emptyUser = new User(-1, "", new Uint8Array(100), "", "", "", "")
-        finalMessage = new Message("", "", "", emptyUser, "");
+        let dummyDate = new Date()
+        finalMessage = new Message("", dummyDate, "", emptyUser, dummyDate);
         return { finalMessage, errString };
     }
     finalMessage = new Message(finalResponse.channelID, finalResponse.createdAt, finalResponse.body,
@@ -268,7 +279,8 @@ export async function last100SpecificMessages(messages: Collection, channelID: s
         return {resultJSON, successMessage};
     }
     channelID = channelID.toString();
-    let cursor = messages.find({ channelID: channelID, id: { $lt: messageID } }).sort({ createdAt: -1 }).limit(100);
+    let objID = new ObjectID(messageID)
+    let cursor = messages.find({ channelID: channelID, _id: { $lt: objID } }).sort({ createdAt: -1 }).limit(100);
 
     await cursor.hasNext().then(async () => {
         await cursor.toArray().then((result) => {

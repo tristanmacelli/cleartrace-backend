@@ -7,11 +7,11 @@ export class Channel {
     name: string;
     description: string;
     private: boolean;
-    members: string[];
+    members: number[];
     createdAt: Date;
     creator: User;
     editedAt: string;
-    constructor(Name: string, Description: string, Private: boolean, Members: string[], CreatedAt: Date, Creator: User, EditedAt: string) {
+    constructor(Name: string, Description: string, Private: boolean, Members: number[], CreatedAt: Date, Creator: User, EditedAt: string) {
         this.id = "";
         this.name = Name;
         this.description = Description;
