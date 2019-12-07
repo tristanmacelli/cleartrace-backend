@@ -155,27 +155,32 @@ const main = async () => {
 
     app.use("/v1/channels", (req: any, res: any) => {
         // Check that the user is authenticated
-        console.log("Inside Index.ts /channels")
-        console.log(req.headers)
         if (req.headers['x-user'] == null) {
             console.log("pych null")
             res.status(401);
-            res.send()
+            res.send();
             return;
         }
-
+        // if (req.method != 'GET' && req.method != 'POST') {
+        //     res.status(405);
+        //     res.send();
+        //     return;
+        // }
         switch (req.method) {
             case 'GET':
                 // QUERY for all channels here
-                let result = mongo.getAllChannels(channels, res);
-                if (result.successMessage == "") {
-                    res.status(500);
-                    res.send()
-                    break;
-                }
-                res.set("Content-Type", "application/json");
-                res.json(result.resultJSON);
-                res.send();
+                mongo.getAllChannels(channels, res).then((result)=> {
+                    if (result.successMessage == "") {
+                        res.status(500);
+                        res.send()
+                        return;
+                    }
+                    res.set("Content-Type", "application/json");
+                    res.json(result.resultJSON);
+                    res.send();
+                    return
+                })
+                
                 break;
 
             case 'POST':
@@ -215,8 +220,6 @@ const main = async () => {
                 //     insertChannel.members, null, null)
                 // sendObjectToQueue(queue, obj)
             default:
-                res.status(405);
-                res.send()
                 break;
         }
     });
@@ -252,14 +255,14 @@ const main = async () => {
                 let returnedMessages;
                 // QUERY for last 100 messages here
                 if (req.params.before != null) {
-                    returnedMessages = mongo.last100SpecificMessages(messages, resultChannel._id, req.params.before, res);
+                    returnedMessages = mongo.last100SpecificMessages(messages, resultChannel.id, req.params.before, res);
                     if (returnedMessages == null) {
                         res.status(500);
                         res.send()
                         break;
                     }
                 } else {
-                    returnedMessages = mongo.last100Messages(messages, resultChannel._id, res);
+                    returnedMessages = mongo.last100Messages(messages, resultChannel.id, res);
                     if (returnedMessages == null) {
                         res.status(500);
                         res.send()

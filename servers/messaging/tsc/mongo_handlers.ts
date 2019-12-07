@@ -10,37 +10,36 @@ import { User } from "./user";
 
 // getAllChannels does something
 // TODO: make sure the returned value is a shape that we can actually use
-export function getAllChannels(channels: Collection, res: any) {
-    let resultJSON: string = ""
+export async function getAllChannels(channels: Collection, res: any) {
+    let resultJSON: string = "bbb"
     let successMessage: string = ""
     // if channels does not yet exist
     let cursor = channels.find();
-    if (!cursor.hasNext()) {
-        // Throw error
-        console.log("No channels found");
-        return {resultJSON, successMessage};
-    }
-    
-    // TODO: make sure the returned value is a shape that we can actually use
-    cursor.toArray(function (err, result) {
-        if (err) {
-            console.log("Error getting channels");
-            return {resultJSON, successMessage};
-        } else {
+    await cursor.hasNext().then(async () => {
+        await cursor.toArray().then(async (result) => {
             successMessage = "Found channels";
             console.log(successMessage);
-            resultJSON = JSON.stringify(result)
-            
-        }
+
+            let channelsArray:string[] = []
+            for (let i = 0 ; i < result.length; i++) {
+                channelsArray.push(JSON.stringify(result[i]))
+                // channelsString += ","
+            }
+            resultJSON = JSON.stringify(channelsArray)
+        })         
     })
-    return {resultJSON, successMessage};
-}
+        return {resultJSON, successMessage};
+    }
 
 const createChannel = async (channels: Collection, newChannel: Channel, errString: string) => {
+    let rightNow = new Date()
+    console.log("the date we are trying to specify is")
+    console.log(rightNow)
     try {
-        await channels.find({ name: newChannel.name, createdAt: newChannel.createdAt }).next()
+        await channels.find({ name: newChannel.name}).next()
         .then(async (doc) => {
             if (doc == null) {
+                newChannel.createdAt = rightNow
                 errString = ""
                 console.log("NOT a duplicate channel")
                 errString
@@ -48,11 +47,13 @@ const createChannel = async (channels: Collection, newChannel: Channel, errStrin
                     name: newChannel.name, description: newChannel.description,
                     private: newChannel.private, members: newChannel.members,
                     createdAt: newChannel.createdAt, creator: newChannel.creator,
-                    editedAt: newChannel.editedAt
+                    editedAt: newChannel.editedAt 
                 }).then(async () => {
                     await channels.find({ name: newChannel.name, createdAt: newChannel.createdAt }).next()
                     .then(doc => {
-                        newChannel._id = doc._id
+                        console.log("THe doc in the second find is")
+                        console.log(doc)
+                        newChannel.id = doc._id
                     })
                 }).catch(() => {
                     errString = "Error inserting new channel";
@@ -63,6 +64,8 @@ const createChannel = async (channels: Collection, newChannel: Channel, errStrin
     } catch(e) {
         console.log(e)
     }
+    console.log("The new Channel that we send is")
+    console.log(newChannel)
     return {newChannel, errString}
 }
 
@@ -90,7 +93,7 @@ export function insertNewMessage(messages: Collection, newMessage: Message) {
         }).catch(() => {
             autoAssignedID = ""
         });
-    newMessage._id = autoAssignedID;
+    newMessage.id = autoAssignedID;
     return { newMessage, errString };
 }
 
@@ -162,10 +165,10 @@ export function deleteChannel(channels: Collection, messages: Collection, existi
     if (existingChannel.creator.id == -1) {
         return "Error deleting channel";
     }
-    channels.remove({ _id: new ObjectID(existingChannel._id) }).catch(() => {
+    channels.remove({ id: new ObjectID(existingChannel.id) }).catch(() => {
         errString = "Error deleting channel";
     });
-    messages.remove({ channelID: existingChannel._id }).catch(() => {
+    messages.remove({ channelID: existingChannel.id }).catch(() => {
         errString = "Error deleting messages associated with the channel";
     });
     return errString;
@@ -174,7 +177,7 @@ export function deleteChannel(channels: Collection, messages: Collection, existi
 // deleteMessage does something
 export async function deleteMessage(messages: Collection, existingMessage: Message): Promise<string> {
     let errString: string = "";
-    await messages.remove({ messageID: existingMessage._id }).catch(() => {
+    await messages.remove({ messageID: existingMessage.id }).catch(() => {
         errString = "Error deleting message";
     });
     return errString;
@@ -186,7 +189,7 @@ export function getChannelByID(channels: Collection, id: string) {
     let finalResponse: any;
     let errString: any;
 
-    channels.find({ _id: id }).next().then(doc => {
+    channels.find({ id: id }).next().then(doc => {
         finalResponse = doc
         errString = ""
     }).catch(() => {
@@ -196,7 +199,8 @@ export function getChannelByID(channels: Collection, id: string) {
     let finalChannel: Channel;
     if (finalResponse == null) {
         let emptyUser = new User(-1, "", new Uint8Array(100), "", "", "", "")
-        finalChannel = new Channel("", "", false, [], "", emptyUser, "");
+        let dummyDate = new Date()
+        finalChannel = new Channel("", "", false, [], dummyDate, emptyUser, "");
         return { finalChannel, errString };
     }
     finalChannel = new Channel(finalResponse.name, finalResponse.description, finalResponse.private,
@@ -210,7 +214,7 @@ export function getMessageByID(messages: Collection, id: string) {
     let finalResponse: any;
     let errString: any;
 
-    messages.find({ _id: id }).next().then(doc => {
+    messages.find({ id: id }).next().then(doc => {
         finalResponse = doc;
         errString = "";
     }).catch(() => {
@@ -259,7 +263,7 @@ export function last100SpecificMessages(messages: Collection, channelID: string,
         console.log("No id value passed");
     }
     channelID = channelID.toString();
-    let cursor = messages.find({ channelID: channelID, _id: { $lt: messageID } }).sort({ createdAt: -1 }).limit(100);
+    let cursor = messages.find({ channelID: channelID, id: { $lt: messageID } }).sort({ createdAt: -1 }).limit(100);
     // TODO: make sure the returned value is a shape that we can actually use
     cursor.toArray(function (err, result) {
         if (err) {

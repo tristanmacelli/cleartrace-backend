@@ -29,7 +29,8 @@ client.connect(function (err: any) {
         // create general channel (we always want this at startup)
         let channels: Collection = collection;
         let emptyUser = new User(-1, "", new Uint8Array(100), "", "", "", "")
-        let general = new Channel("general", "an open channel for all", false, [], "enter timestamp here", emptyUser, "not yet edited");
+        let dummyDate = new Date()
+        let general = new Channel("general", "an open channel for all", false, [], dummyDate, emptyUser, "not yet edited");
         await mongo.insertNewChannel(channels, general).then(result => {
             // check for insertion errors
             if (result.errString.length > 0) {

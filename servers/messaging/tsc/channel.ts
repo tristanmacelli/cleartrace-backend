@@ -3,16 +3,16 @@
 import { User } from "./user";
 
 export class Channel {
-    _id: string;
+    id: string;
     name: string;
     description: string;
     private: boolean;
     members: string[];
-    createdAt: string;
+    createdAt: Date;
     creator: User;
     editedAt: string;
-    constructor(Name: string, Description: string, Private: boolean, Members: string[], CreatedAt: string, Creator: User, EditedAt: string) {
-        this._id = "";
+    constructor(Name: string, Description: string, Private: boolean, Members: string[], CreatedAt: Date, Creator: User, EditedAt: string) {
+        this.id = "";
         this.name = Name;
         this.description = Description;
         this.private = Private;
