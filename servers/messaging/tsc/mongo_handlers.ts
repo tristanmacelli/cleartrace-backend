@@ -17,7 +17,6 @@ export async function getAllChannels(channels: Collection, res: any) {
     await cursor.hasNext().then(async () => {
         await cursor.toArray().then((result) => {
             successMessage = "Found channels";
-            console.log(successMessage);
 
             let channelsArray:string[] = []
             for (let i = 0 ; i < result.length; i++) {
@@ -143,6 +142,7 @@ export async function removeChannelMember(channels: Collection, existingChannel:
 // updateMessage takes an existing Message and a request with updates to apply to the Message's body 
 export async function updateMessage(messages: Collection, existingMessage: Message, req: any) {
     let errString: string = "";
+
     await messages.save({
         body: req.body, creator: existingMessage.creator,
         createdAt: existingMessage.createdAt, channelID: existingMessage.channelID,
@@ -150,6 +150,7 @@ export async function updateMessage(messages: Collection, existingMessage: Messa
     }).catch(() => {
         errString = "Error updating message";
     });
+
     existingMessage.body = req.body;
     return { existingMessage, errString };
 }
@@ -161,8 +162,6 @@ export async function deleteChannel(channels: Collection, messages: Collection, 
     if (existingChannel.creator.id == -1) {
         return "Error deleting channel";
     }
-    console.log("DELETE CHANNEL,,,, CHANNEL IS::")
-    console.log(existingChannel)
     // CHANNEL ID DOES NOT EXIST
     let channelID = new ObjectID(existingChannel.id)
     await channels.remove({ _id: channelID }).catch(() => {
@@ -237,13 +236,11 @@ export async function getMessageByID(messages: Collection, id: string) {
 // TODO: Reshape the return value of find to a JSON array of message model objects
 // last100Messages does something
 export async function last100Messages(messages: Collection, id: string, res: any) {
-    console.log("Inside last100Messages");
     let resultJSON: string = ""
     let resultArray: string[] = []
     let successMessage: string = ""
 
     if (id == null) {
-        console.log("No id value passed");
         return {resultJSON, successMessage};
     }
     id = id.toString();
@@ -252,7 +249,6 @@ export async function last100Messages(messages: Collection, id: string, res: any
     await cursor.hasNext().then(async () => {
         await cursor.toArray().then((result) => {
             successMessage = "Found messages";
-            console.log(successMessage);
 
             let messagesArray:string[] = []
             for (let i = 0 ; i < result.length; i++) {
@@ -260,8 +256,6 @@ export async function last100Messages(messages: Collection, id: string, res: any
             }
             // resultJSON = JSON.stringify(messagesArray);
             resultArray = messagesArray
-            console.log("last100Messages JSON")
-            console.log(resultJSON)
         })
     })
     return resultArray;
@@ -270,12 +264,10 @@ export async function last100Messages(messages: Collection, id: string, res: any
 // TODO: Reshape the return value of find to a JSON array of message model objects
 // last100Messages does something
 export async function last100SpecificMessages(messages: Collection, channelID: string, messageID: string, res: any) {
-    console.log("Inside last100SpecificMessages");
     let resultJSON: string = ""
     let successMessage: string = ""
     
     if (channelID == null) {
-        console.log("No id value passed");
         return {resultJSON, successMessage};
     }
     channelID = channelID.toString();
@@ -285,30 +277,15 @@ export async function last100SpecificMessages(messages: Collection, channelID: s
     await cursor.hasNext().then(async () => {
         await cursor.toArray().then((result) => {
             successMessage = "Found specific messages";
-            console.log(successMessage);
             
             let messagesArray:string[] = []
             for (let i = 0 ; i < result.length; i++) {
                 messagesArray.push(JSON.stringify(result[i]))
             }
             resultJSON = JSON.stringify(messagesArray);
-            console.log("last100SpecificMessages JSON")
-            console.log(resultJSON)
         })
     })
     return {resultJSON, successMessage};
 }
 
 export * from "./mongo_handlers";
-
-
-// save({
-//     "_id": "5dd720def3df9b13a39876e7",
-//     "name": "saurav",
-//     "description": "an open channel for all",
-//     "private": false,
-//     "members": [1],
-//     "createdAt": "enter timestamp here",
-//     "creator": -1,
-//     "editedAt": "not yet edited"
-// })

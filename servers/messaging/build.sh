@@ -3,4 +3,4 @@
 cd tsc/
 tsc --outDir ../
 cd -
-sudo docker build -t jtanderson7/messaging .
+docker build -t jtanderson7/messaging .

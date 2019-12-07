@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 bash build.sh
-sudo docker push jtanderson7/messaging
+docker push jtanderson7/messaging
 chmod g+x ./refresh.sh
-sudo scp -i ~/.ssh/info441_api.pem ./refresh.sh ec2-user@api.sauravkharb.me:./
-sudo ssh -i ~/.ssh/info441_api.pem ec2-user@api.sauravkharb.me "bash ./refresh.sh"
+scp -i ~/.ssh/info441_api.pem ./refresh.sh ec2-user@api.sauravkharb.me:./
+ssh -i ~/.ssh/info441_api.pem ec2-user@api.sauravkharb.me "bash ./refresh.sh"

@@ -168,8 +168,6 @@ const main = async () => {
             switch (req.method) {
                 case 'POST':
                     let user = JSON.parse(req.headers['x-user'])
-                    // console.log("CHANNEL IS")
-                    // console.log(resultChannel)
                     if (!isChannelCreator(resultChannel, user.id)) {
                         res.status(403);
                         res.set("Content-Type", "text/plain");
@@ -189,8 +187,6 @@ const main = async () => {
                     })
                     break;
                 case 'DELETE':
-                        // console.log("CHANNEL IS")
-                        // console.log(resultChannel)
                     if (!isChannelCreator(resultChannel, req.Header['X-user'])) {
                         res.status(403)
                         res.set("Content-Type", "text/plain");
@@ -236,7 +232,6 @@ const main = async () => {
             return;
         }
         // req.params
-        // console.log(req.query['channelID'])
         mongo.getChannelByID(channels, req.params.channelID).then((result) => {
             if (result.errString.length > 0) {
                 res.status(500);
@@ -314,8 +309,6 @@ const main = async () => {
                     break;
                 case 'PATCH':
                     user = JSON.parse(req.headers['x-user'])
-                    // console.log("CHANNEL IS")
-                    // console.log(resultChannel)
                     
                     if (!isChannelCreator(resultChannel, user.id)) {
                         res.status(403);
@@ -344,8 +337,6 @@ const main = async () => {
                     break;
                 case 'DELETE':
                     user = JSON.parse(req.headers['x-user'])
-                    // console.log("CHANNEL IS")
-                    // console.log(resultChannel)
                     if (!isChannelCreator(resultChannel, user.id)) {
                         res.status(403);
                         res.set("Content-Type", "text/plain");
@@ -386,14 +377,6 @@ const main = async () => {
             res.send();
             return;
         }
-        console.log("THIS IS THE METHOD")
-        console.log(req.method)
-        console.log(String(req.method))
-        // if (req.method !== 'GET' && req.method !== 'POST') {
-        //     res.status(405);
-        //     res.send();
-        //     return;
-        // }
         switch (req.method) {
             case 'GET':
                 // QUERY for all channels here
@@ -432,8 +415,6 @@ const main = async () => {
                         res.send()
                         return
                     }
-                    console.log("NEW CHANNEL BEING SENT TO CLIENT IS")
-                    console.log(insertResult.newChannel)
                     let insertChannel = insertResult.newChannel;
                     res.status(201)
                     res.set("Content-Type", "application/json");
@@ -494,7 +475,7 @@ const main = async () => {
                         }
                         let updatedMessage = updatedResult.existingMessage;
                         res.set("Content-Type", "application/json");
-                        res.json(updatedMessage.body);
+                        res.json(updatedMessage);
                         
                         let resultChannel = mongo.getChannelByID(channels, updatedMessage.channelID)
                         // add to rabbitMQ queue
@@ -544,10 +525,6 @@ const main = async () => {
 
     function createChannel(req: any, creator: User): Channel {
         let c = req.body;
-        console.log("REQUEST BODY IS")
-        console.log(c)
-        console.log("CREATOR IS:")
-        console.log(creator)
 
         c.members.push(creator.id)
         return new Channel(c.name, c.description, c.private,
@@ -556,25 +533,13 @@ const main = async () => {
 
     function createMessage(req: any, creator: User): Message {
         let m = req.body;
-        // console.log("REQUEST BODY IS")
-        // console.log(m)
-        // console.log("CREATOR IS:")
-        // console.log(creator)
-
-        return new Message(req.params.ChannelID, m.createdAt, m.body,
+        return new Message(req.params.channelID, m.createdAt, m.body,
             creator, m.editedAt);
     }
 
     function isChannelMember(channel: Channel, userID: number): boolean {
-        // console.log("INSIDE ISCHANNELMEMBER")
-        // console.log(channel)
         let isMember = false;
-        if (channel.private) {
-            // console.log("THIS CHANNEL IS PRIVATE")
-            // console.log("The channel memebrs are")
-            // console.log(channel.members)
-            // console.log("The user id for private channel is")
-            // console.log(userID)
+        if (channel.private) { 
             for (let i = 0; i < channel.members.length; i++) {
                 if (channel.members[i] === userID) {
                     isMember = true;
@@ -588,8 +553,6 @@ const main = async () => {
     }
 
     function isChannelCreator(channel: Channel, userID: number): boolean {
-        // console.log("CHANNEL IS")
-        // console.log(channel)
         return channel.creator.id === userID;
     }
 
