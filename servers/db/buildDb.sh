@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 
-docker build -t jtanderson7/db .
+docker build -t tristanmacelli/db .
