@@ -4,7 +4,7 @@
 export TLSCERT=/etc/letsencrypt/live/slack.client.tristanmacelli.com/fullchain.pem
 export TLSKEY=/etc/letsencrypt/live/slack.client.tristanmacelli.com/privkey.pem
 
-docker rm -f summaryclient
+docker rm -f summaryClient
 
 # Clean up
 docker volume prune -f
