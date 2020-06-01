@@ -12,7 +12,7 @@ docker image prune -f
 docker volume prune -f
 
 echo "pulling newest version of gateway"
-docker pull jtanderson7/assignment2
+docker pull jtanderson7/gateway
 # docker pull jtanderson7/db
 
 export TLSCERT=/etc/letsencrypt/live/api.sauravkharb.me/fullchain.pem
