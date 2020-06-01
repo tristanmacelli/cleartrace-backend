@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-export TLSCERT=/etc/letsencrypt/live/api.sauravkharb.me/fullchain.pem
-export TLSKEY=/etc/letsencrypt/live/api.sauravkharb.me/privkey.pem
+export TLSCERT=/etc/letsencrypt/live/slack.api.tristanmacelli.com/fullchain.pem
+export TLSKEY=/etc/letsencrypt/live/slack.api.tristanmacelli.com/privkey.pem
 
 docker rm -f summary
 
@@ -9,15 +9,15 @@ docker rm -f summary
 docker image prune
 docker volume prune
 
-docker pull jtanderson7/summary
+docker pull tristanmacelli/summary
 
 docker run -d \
 -p 5050:5050 \
---network=infrastructure \
 --name summary \
 -v /etc/letsencrypt:/etc/letsencrypt:ro \
 -e TLSCERT=$TLSCERT \
 -e TLSKEY=$TLSKEY \
-jtanderson7/summary
+tristanmacelli/summary
+# --network=infrastructure \
 
 docker ps
