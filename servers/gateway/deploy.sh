@@ -1,14 +1,15 @@
 #!/usr/bin/env bash
 
-echo "build starting..."
 bash build.sh
 cd ../db
-# bash buildDb.sh
+bash buildDb.sh
 cd -
 echo "build completed!"
-docker push jtanderson7/gateway
-# docker push jtanderson7/db
-chmod g+x ./dockervm.sh
-sudo scp -i ~/.ssh/info441_api.pem ./dockervm.sh ec2-user@api.sauravkharb.me:./
-echo "service refresh starting..."
-sudo ssh -i ~/.ssh/info441_api.pem ec2-user@api.sauravkharb.me "bash ./dockervm.sh"
+
+echo "Deploying to EC2"
+docker push tristanmacelli/gateway
+docker push tristanmacelli/db
+chmod g+x ./refresh.sh
+
+echo "Starting Gateway Service.."
+ssh -i ~/.ssh/slack-clone-server.pem ec2-user@slack.api.tristanmacelli.com 'bash -s' < refresh.sh
