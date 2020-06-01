@@ -3,6 +3,7 @@ package handlers
 import (
 	"assignments-Tristan6/servers/gateway/sessions"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -211,6 +212,7 @@ func (ctx *HandlerContext) echo(conn *websocket.Conn) {
 			if d.ContentType == "application/json" {
 				err := ctx.handleClientBoundMessages(d)
 				if err != nil {
+					// This should cause the connection to close
 					break
 				}
 			} else {
@@ -228,7 +230,8 @@ func (ctx *HandlerContext) echo(conn *websocket.Conn) {
 				log.Printf("Error acknowledging message : %s", err)
 			} else {
 				log.Printf("Acknowledged message")
-				// TODO: respond to rabbitMQ that we have received the message(s) it sent us.
+				// The Ack call above responds to rabbitMQ saying that we have received
+				// the message it sent us.
 			}
 		}
 	}()
@@ -249,16 +252,21 @@ func (ctx *HandlerContext) handleClientBoundMessages(d amqp.Delivery) error {
 	}
 	userIDs := message.UserIDs
 
+	// Close connection (returning an error causes the for-loop above to break)
+	if message.MessageType == "close-connection" {
+		return errors.New("Closing connection")
+	}
+
 	// Broadcast to all clients assuming we dont have userIDs
 	if userIDs == nil {
-		err = ctx.WriteToAllConnections(1, append([]byte("Got message: ")))
+		err = ctx.WriteToAllConnections(1, d.Body)
 		if err != nil {
 			log.Printf("Error decoding message JSON: %s", err)
 			return err
 		}
 		// Broadcast to specific list assuming we have userIDs
 	} else {
-		err = ctx.WriteToSpecificConnections(1, append([]byte("Got message: ")), userIDs)
+		err = ctx.WriteToSpecificConnections(1, d.Body, userIDs)
 		if err != nil {
 			log.Printf("Error decoding message JSON: %s", err)
 			return err

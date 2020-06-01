@@ -166,6 +166,10 @@ func (ctx *HandlerContext) SpecificSessionsHandler(w http.ResponseWriter, r *htt
 			http.Error(w, "Could not find user", http.StatusInternalServerError)
 			return
 		}
+		// Send message to rabbitMQ indicating connection was removed
+		message := mqMessage{}
+		message.MessageType = "close-connection"
+		// Error check message sending
 		w.Write([]byte("signed out"))
 	}
 }
