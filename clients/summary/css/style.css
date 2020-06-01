@@ -1,0 +1,125 @@
+html {
+    -webkit-box-sizing: border-box;             /* Ensuring box-model support for older broswers */
+    -moz-box-sizing: border-box;
+    box-sizing: border-box;
+  }
+
+  *, *:before, *:after {
+    -webkit-box-sizing: inherit;            /* Ensuring box-model support for older broswers */
+    -moz-box-sizing: inherit;
+    box-sizing: inherit;
+  }
+
+  .center {
+    display: block;
+    margin: 0 auto;
+  }
+
+.fixed{
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+
+    z-index: 1;
+  }
+
+  .container{
+    margin: 0 auto;
+  }
+
+  header {
+      background-color: #1f4068;
+  }
+
+  #sessBtn {
+      background-color: #244a78;
+      border-radius: 3px;
+      color: white;
+  }
+
+  header::after {
+    content:'';
+    display: table;
+    clear: both;
+  }
+
+  nav ul{
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  nav li{
+    display: inline-block;
+
+    position: relative;
+  }
+
+  nav a{
+    color: White;
+    text-decoration: none;
+    text-transform: uppercase;
+    font-size: 1.5em;
+  }
+
+  nav a:visited {
+      color: white;
+      text-decoration: none;
+      font-size: 1.5em;
+  }
+
+  nav a:hover {
+    color: #e43f5a;
+    text-decoration: none;
+  }
+
+  nav a::before {
+    content: '';
+    display: block;
+    height: 5px;
+    background-color: #e43f5a;
+
+    position: absolute;
+    top: 0;
+    width: 0%;
+
+    transition: all ease-in-out 300ms;
+  }
+
+  nav a:hover::before{
+    width: 100%;
+  }
+
+  h1 {
+    font-family: 'Open Sans', sans-serif;
+  }
+
+  .pull-left{
+    float: left;
+    margin-left: 6em;
+    padding: .5em 0;
+  }
+
+  .pull-right{
+    float: right;
+    display: block;
+    margin-left: 6em;
+    margin-right: 6em;
+    padding: 1.5em 0;
+  }
+
+  label {
+      color: white;
+  }
+
+  .about {
+    background-size: cover;
+    height: 100vh;
+    background-color: #e8e8e8;
+    padding-top: 120px;
+  }
+
+  /* h3 {
+      color: #ffffff;
+  } */
