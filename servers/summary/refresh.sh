@@ -6,8 +6,8 @@ export TLSKEY=/etc/letsencrypt/live/slack.api.tristanmacelli.com/privkey.pem
 docker rm -f summary
 
 # clean up
-docker image prune
-docker volume prune
+docker image prune -f
+docker volume prune -f
 
 docker pull tristanmacelli/summary
 
@@ -19,5 +19,6 @@ docker run -d \
 -e TLSKEY=$TLSKEY \
 tristanmacelli/summary
 # --network=infrastructure \
+echo "service refresh completed!"
 
 docker ps
