@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 
-docker build -t tristanmacelli/messagingClient .
+docker build -t tristanmacelli/messagingclient .
