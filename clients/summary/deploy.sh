@@ -1,7 +1,7 @@
   
 #!/usr/bin/env bash
 bash build.sh
-docker push jtanderson7/client
+docker push tristanmacelli/summaryClient
 chmod g+x ./refresh.sh
-scp -i ~/.ssh/info441_a2.pem ./refresh.sh ec2-user@a2.sauravkharb.me:./
-ssh -i ~/.ssh/info441_a2.pem ec2-user@a2.sauravkharb.me "bash ./refresh.sh"
+
+ssh -i ~/.ssh/slack-clone-client.pem ec2-user@slack.client.tristanmacelli.com < 'bash -s' refresh.sh

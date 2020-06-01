@@ -1,4 +1,4 @@
   
 #!/usr/bin/env bash
 
-docker build -t jtanderson7/client .
+docker build -t tristanmacelli/summaryClient .

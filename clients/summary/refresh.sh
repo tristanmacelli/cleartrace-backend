@@ -1,16 +1,16 @@
   
 #!/usr/bin/env bash
 
-docker rm -f client
+export TLSCERT=/etc/letsencrypt/live/slack.client.tristanmacelli.com/fullchain.pem
+export TLSKEY=/etc/letsencrypt/live/slack.client.tristanmacelli.com/privkey.pem
+
+docker rm -f summaryClient
 
 # Clean up
 docker volume prune -f
 docker image prune -f
 
-docker pull jtanderson7/client
-
-export TLSCERT=/etc/letsencrypt/live/a2.sauravkharb.me/fullchain.pem
-export TLSKEY=/etc/letsencrypt/live/a2.sauravkharb.me/privkey.pem
+docker pull tristanmacelli/summaryClient
 
 docker run -d \
 -p 443:443 \
@@ -19,6 +19,6 @@ docker run -d \
 -v /etc/letsencrypt:/etc/letsencrypt:ro \
 -e TLSCERT=$TLSCERT \
 -e TLSKEY=$TLSKEY \
-jtanderson7/client
+tristanmacelli/summaryClient
 
 docker ps
