@@ -31,9 +31,9 @@ $('#createUser').submit(function createNewUser(e) {
         "Email": $('#email').val(),
         "Password": $('#pass').val(),
         "PasswordConf": $('#pass').val(),
-        "UserName": "user",
-        "FirstName": "First",
-        "LastName": "Name"
+        "UserName": $('#firstname').val().$('#lastname').val(),
+        "FirstName": $('#firstname').val(),
+        "LastName": $('#lastname').val()
     }
 
     // send a get request with the above data
@@ -44,6 +44,8 @@ $('#createUser').submit(function createNewUser(e) {
         contentType: "application/json",
         dataType: "json",
         crossDomain: true,
+    }).done(function () {
+        window.location.replace("https://slack.client.tristanmacelli.com/home.html");
     });
 })
 
@@ -74,6 +76,7 @@ $('#signIn').submit(function signIn(e) {
     }).done(function (data, textStatus, xhr) {
         console.log(data)
         console.log(xhr.getResponseHeader('authorization'));
+        window.location.replace("https://slack.client.tristanmacelli.com/home.html");
     });
 })
 
@@ -91,6 +94,7 @@ $('#signOut').submit(function signOut(e) {
         url: url,
         success: function (result) {
             console.log(result)
+            window.location.replace("index.html");
         }
     });
 })

@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Slack Clone</title>
+    <meta charset="UTF-8">
+
+    <meta name="author" content="Tristan Macelli">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta name="keywords" content="slack,clone,messaging,instant,communication">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <link rel="icon" href="./img/icon.png">
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans|Oswald&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+    <header class="fixed">
+        <div class="container">            
+            <nav>
+                <ul>
+                    <li class="pull-left center">
+                        <a href="#">
+                            <h1>Slack Clone</h1>
+                        </a>
+                    </li>
+                    <li class="pull-right">
+                        <form id="signOut" action="https://slack.api.tristanmacelli.com/v1/sessions/mine" method="DELETE" accept-charset="UTF-8">
+                            <input type="submit" id="specSessBtn" value="Log Out" />
+                        </form>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <h3>Request User By ID</h3>
+        <form id="getUser" action="https://slack.api.tristanmacelli.com/v1/users/" method="GET" accept-charset="UTF-8">
+            <input type="text" id="userId" name="utf8" value="">
+            <input type="submit" id="specUserBtn" value="submit" />
+        </form>
+    
+        <h3>Please enter a url below</h3>
+        <form id="summary" action="https://slack.api.tristanmacelli.com/v1/summary" method="POST" accept-charset="UTF-8">
+            <input type="text" id="url" name="utf8" value="">
+            <input type="submit" id="sumBtn" value="submit" />
+        </form>    
+
+        <div id="result" style="border:0.5px solid black">
+
+        </div>
+    </main>
+
+</body>
+
+<script type="text/javascript" src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+<script type="text/javascript" src="app.js"></script>
+
+</html>
