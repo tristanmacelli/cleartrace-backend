@@ -44,8 +44,14 @@ $('#createUser').submit(function createNewUser(e) {
         contentType: "application/json",
         dataType: "json",
         crossDomain: true,
-    }).done(function () {
-        window.location.replace("https://slack.client.tristanmacelli.com/home.html");
+        success: function (result) {
+            console.log(result)
+        }
+    }).done(function (_, _, xhr) {
+        console.log(xhr.getResponseHeader('authorization'));
+        // https://developer.mozilla.org/en-US/docs/Web/API/Window/sessionStorage
+        sessionStorage.setItem('auth', xhr.getResponseHeader('authorization'))
+        // window.location.replace("https://slack.client.tristanmacelli.com/home.html");
     });
 })
 
@@ -67,21 +73,21 @@ $('#signIn').submit(function signIn(e) {
         type: "POST",
         url: url,
         data: JSON.stringify(b),
-        contentType: "application/json"
-        // success: function (result) {
-        //     console.log(result)
-        //     console.log(result.getResponseHeader("authorization"))
-        //     // $("#result").html("<strong>" + result + "</strong>")
-        // }
-    }).done(function (data, textStatus, xhr) {
-        console.log(data)
+        contentType: "application/json",
+        success: function (result) {
+            console.log(result)
+            // $("#result").html("<strong>" + result + "</strong>")
+        }
+    }).done(function (_, _, xhr) {
         console.log(xhr.getResponseHeader('authorization'));
+        sessionStorage.setItem('auth', xhr.getResponseHeader('authorization'))
         window.location.replace("https://slack.client.tristanmacelli.com/home.html");
     });
 })
 
 // Removing a session based on the form values
 $('#signOut').submit(function signOut(e) {
+    console.log(sessionStorage.getItem('auth'))
     e.preventDefault();
 
     var form = $(this);
@@ -92,10 +98,14 @@ $('#signOut').submit(function signOut(e) {
     $.ajax({
         type: "DELETE",
         url: url,
+        headers: {
+            Authorization: sessionStorage.getItem('auth'),
+        },        
         success: function (result) {
             console.log(result)
-            window.location.replace("index.html");
         }
+    }).done(function () {
+        window.location.replace("https://slack.client.tristanmacelli.com/index.html");
     });
 })
 
