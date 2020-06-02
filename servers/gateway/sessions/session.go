@@ -2,7 +2,6 @@ package sessions
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 	"strings"
 )
@@ -35,7 +34,6 @@ func BeginSession(signingKey string, store Store, sessionState interface{}, w ht
 	//  where "<sessionID>" is replaced with the newly-created SessionID
 	//  (note the constants declared for you above, which will help you avoid typos)
 	authValue := schemeBearer + sessionID.String()
-	fmt.Println("Auth value is ", authValue)
 	w.Header().Add(headerAuthorization, authValue)
 	return sessionID, nil
 }
