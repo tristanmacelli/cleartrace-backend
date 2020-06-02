@@ -25,13 +25,13 @@ $('#createUser').submit(function createNewUser(e) {
 
     var form = $(this);
     var url = form.attr('action');
-    var param = form.serialize()
+    var username = $('#firstname').val() + "." + $('#lastname').val()
 
     var b = {
         "Email": $('#email').val(),
         "Password": $('#pass').val(),
         "PasswordConf": $('#pass').val(),
-        "UserName": $('#firstname').val().$('#lastname').val(),
+        "UserName": username,
         "FirstName": $('#firstname').val(),
         "LastName": $('#lastname').val()
     }
@@ -61,7 +61,6 @@ $('#signIn').submit(function signIn(e) {
 
     var form = $(this);
     var url = form.attr('action');
-    var param = form.serialize()
 
     var b = {
         "Email": $('#emailSess').val(),
@@ -92,7 +91,6 @@ $('#signOut').submit(function signOut(e) {
 
     var form = $(this);
     var url = form.attr('action');
-    var param = form.serialize()
 
     // send a get request with the above data
     $.ajax({
