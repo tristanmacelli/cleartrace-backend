@@ -12,7 +12,7 @@ $("#summary").submit(function getSummary(e) {
     $.ajax({
         type: "GET",
         url: url + '?url=' + param.slice(5),
-
+        crossDomain: true,
         success: function (result) {
             display_results(result)
         }
@@ -40,9 +40,8 @@ $('#createUser').submit(function createNewUser(e) {
     $.ajax({
         type: "POST",
         url: url,
-        body: b,
+        data: JSON.stringify(b),
         contentType: "application/json",
-        dataType: "json",
         crossDomain: true,
         success: function (result) {
             console.log(result)
@@ -51,7 +50,7 @@ $('#createUser').submit(function createNewUser(e) {
         console.log(xhr.getResponseHeader('authorization'));
         // https://developer.mozilla.org/en-US/docs/Web/API/Window/sessionStorage
         sessionStorage.setItem('auth', xhr.getResponseHeader('authorization'))
-        // window.location.replace("https://slack.client.tristanmacelli.com/home.html");
+        window.location.replace("https://slack.client.tristanmacelli.com/home.html");
     });
 })
 
