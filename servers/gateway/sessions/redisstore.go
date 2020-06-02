@@ -47,7 +47,8 @@ func (rs *RedisStore) Save(sid SessionID, sessionState interface{}) error {
 	redisKey := sid.getRedisKey()
 
 	// save state to database
-	err = rs.Client.Set(rs.Client.Context(), redisKey, string(j), 0).Err()
+	rs.SessionDuration = time.Hour
+	err = rs.Client.Set(rs.Client.Context(), redisKey, string(j), rs.SessionDuration).Err()
 	if err != nil {
 		return err
 	}
@@ -66,9 +67,18 @@ func (rs *RedisStore) Get(sid SessionID, sessionState interface{}) error {
 
 	// get redis frmatted key
 	redisKey := sid.getRedisKey()
+	ctx := rs.Client.Context()
+	pipe := rs.Client.Pipeline()
 
 	// get the state information from redis
-	marshalledJSON, err := rs.Client.Get(rs.Client.Context(), redisKey).Result()
+	marshalledJSON, err := pipe.Get(ctx, redisKey).Result()
+
+	// reset the expiry time
+	rs.SessionDuration = time.Hour
+	pipe.Expire(ctx, redisKey, rs.SessionDuration)
+	// marshalledJSON, err := rs.Client.Get(ctx, redisKey).Result()
+
+	_, err = pipe.Exec(ctx)
 	if err != nil {
 		// state does not exist for the key
 		return ErrStateNotFound
@@ -76,13 +86,6 @@ func (rs *RedisStore) Get(sid SessionID, sessionState interface{}) error {
 
 	// unmarshal the fetched state and put it into session state using pointer
 	err = json.Unmarshal([]byte(marshalledJSON), &sessionState)
-	if err != nil {
-		return err
-	}
-
-	// reset the expiry time
-	rs.SessionDuration = time.Hour
-	err = rs.Client.Set(rs.Client.Context(), redisKey, marshalledJSON, rs.SessionDuration).Err()
 	if err != nil {
 		return err
 	}
