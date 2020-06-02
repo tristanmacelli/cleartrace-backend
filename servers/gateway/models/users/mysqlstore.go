@@ -41,6 +41,7 @@ func (ms *MysqlStore) GetBy(query string, value string) (*User, error) {
 	user := User{}
 	insq := queryString + query
 	row := ms.DB.QueryRow(insq, value)
+	fmt.Print(row)
 	// Populating the new user
 	err := row.Scan(&user.ID, &user.Email, &user.PassHash, &user.UserName,
 		&user.FirstName, &user.LastName, &user.PhotoURL)
@@ -96,7 +97,6 @@ func (ms *MysqlStore) Insert(user *User) (*User, error) {
 		fmt.Printf("error getting new ID: %v\n", id)
 		return nil, err
 	}
-	fmt.Printf("ID for new row is %d\n", id)
 	// Get and return this new user
 	return ms.GetByID(id)
 }
