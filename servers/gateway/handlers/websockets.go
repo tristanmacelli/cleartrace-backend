@@ -1,12 +1,12 @@
 package handlers
 
 import (
-	"assignments-Tristan6/servers/gateway/sessions"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
 	"net/http"
+	"server-side-mirror/servers/gateway/sessions"
 	"sync"
 
 	"github.com/gorilla/websocket"

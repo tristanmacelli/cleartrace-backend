@@ -1,9 +1,6 @@
 package main
 
 import (
-	"assignments-Tristan6/servers/gateway/handlers"
-	"assignments-Tristan6/servers/gateway/models/users"
-	"assignments-Tristan6/servers/gateway/sessions"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -11,6 +8,9 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"os"
+	"server-side-mirror/servers/gateway/handlers"
+	"server-side-mirror/servers/gateway/models/users"
+	"server-side-mirror/servers/gateway/sessions"
 	"strings"
 	"sync"
 	"sync/atomic"

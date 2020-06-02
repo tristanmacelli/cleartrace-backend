@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"assignments-Tristan6/servers/gateway/models/users"
+	"server-side-mirror/servers/gateway/models/users"
 	"time"
 )
 

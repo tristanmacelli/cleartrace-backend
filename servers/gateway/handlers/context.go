@@ -1,8 +1,8 @@
 package handlers
 
 import (
-	"assignments-Tristan6/servers/gateway/models/users"
-	"assignments-Tristan6/servers/gateway/sessions"
+	"server-side-mirror/servers/gateway/models/users"
+	"server-side-mirror/servers/gateway/sessions"
 )
 
 //HandlerContext a handler context struct that

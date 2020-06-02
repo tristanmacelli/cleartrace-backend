@@ -1,11 +1,11 @@
 package handlers
 
 import (
-	"assignments-Tristan6/servers/gateway/models/users"
-	"assignments-Tristan6/servers/gateway/sessions"
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"server-side-mirror/servers/gateway/models/users"
+	"server-side-mirror/servers/gateway/sessions"
 	"strconv"
 	"strings"
 )
