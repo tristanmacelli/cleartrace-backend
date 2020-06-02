@@ -47,7 +47,7 @@ func (rs *RedisStore) Save(sid SessionID, sessionState interface{}) error {
 	redisKey := sid.getRedisKey()
 
 	// save state to database
-	err = rs.Client.Set(redisKey, string(j), 0).Err()
+	err = rs.Client.Set(rs.Client.Context(), redisKey, string(j), 0).Err()
 	if err != nil {
 		return err
 	}
@@ -68,7 +68,7 @@ func (rs *RedisStore) Get(sid SessionID, sessionState interface{}) error {
 	redisKey := sid.getRedisKey()
 
 	// get the state information from redis
-	marshalledJSON, err := rs.Client.Get(redisKey).Result()
+	marshalledJSON, err := rs.Client.Get(rs.Client.Context(), redisKey).Result()
 	if err != nil {
 		// state does not exist for the key
 		return ErrStateNotFound
@@ -82,7 +82,7 @@ func (rs *RedisStore) Get(sid SessionID, sessionState interface{}) error {
 
 	// reset the expiry time
 	rs.SessionDuration = time.Hour
-	err = rs.Client.Set(redisKey, marshalledJSON, rs.SessionDuration).Err()
+	err = rs.Client.Set(rs.Client.Context(), redisKey, marshalledJSON, rs.SessionDuration).Err()
 	if err != nil {
 		return err
 	}
@@ -95,7 +95,7 @@ func (rs *RedisStore) Delete(sid SessionID) error {
 	//TODO: delete the data stored in redis for the provided SessionID
 	redisKey := sid.getRedisKey()
 	// handle errors here
-	err := rs.Client.Del(redisKey).Err()
+	err := rs.Client.Del(rs.Client.Context(), redisKey).Err()
 	if err != nil {
 		return err
 	}
