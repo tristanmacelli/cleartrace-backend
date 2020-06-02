@@ -91,7 +91,19 @@
                     </tbody>
                 </table>
             </form>
+            
+            <h3>Please enter a url below</h3>
+            <form id="summary" action="https://slack.api.tristanmacelli.com/v1/summary" method="POST" accept-charset="UTF-8">
+                <input type="text" id="url" name="utf8" value="">
+                <input type="submit" id="sumBtn" value="submit" />
+            </form>    
+
+            <div id="result" style="border:0.5px solid black">
+
+            </div>
         </div>
+
+
     </main>
     
 </body>

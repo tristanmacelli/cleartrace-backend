@@ -102,7 +102,7 @@ $('#signOut').submit(function signOut(e) {
             console.log(result)
         }
     }).done(function () {
-        window.location.replace("https://slack.client.tristanmacelli.com/index.html");
+        window.location.replace("https://slack.client.tristanmacelli.com");
     });
 })
 
