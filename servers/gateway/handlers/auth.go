@@ -26,13 +26,13 @@ func (ctx *HandlerContext) UsersHandler(w http.ResponseWriter, r *http.Request) 
 	decoder := json.NewDecoder(r.Body)
 	err := decoder.Decode(&nu)
 	if err != nil {
-		http.Error(w, "Could not parse new user.", http.StatusInternalServerError)
+		http.Error(w, "Could not parse new user.", http.StatusUnprocessableEntity)
 		return
 	}
 
 	user, err := nu.ToUser()
 	if err != nil {
-		http.Error(w, "Invalid user information", http.StatusUnprocessableEntity)
+		http.Error(w, "Invalid user information", http.StatusNotAcceptable)
 		return
 	}
 

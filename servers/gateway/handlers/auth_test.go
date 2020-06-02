@@ -1,13 +1,13 @@
 package handlers
 
 import (
-	"assignments-Tristan6/servers/gateway/models/users"
-	"assignments-Tristan6/servers/gateway/sessions"
 	"bytes"
 	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"server-side-mirror/servers/gateway/models/users"
+	"server-side-mirror/servers/gateway/sessions"
 	"sync"
 	"testing"
 	"time"
@@ -113,7 +113,7 @@ func buildCtxUser(t *testing.T, method string, contentType string,
 	users.SetInsertNextReturn(user)
 	users.SetGetByIDNextReturn(user)
 
-	var conns map[string]*websocket.Conn
+	var conns map[int64]*websocket.Conn
 	socketStore := NewNotify(conns, &sync.Mutex{})
 
 	ctx := NewHandlerContext("1234", userStore, sessionStore, *socketStore)
@@ -153,7 +153,7 @@ func buildCtxSpecificUser(t *testing.T, method string, contentType string,
 	sid, _ := sessions.NewSessionID(sessionID)
 	sessionStore.Save(sid, sessionState)
 
-	var conns map[string]*websocket.Conn
+	var conns map[int64]*websocket.Conn
 	socketStore := NewNotify(conns, &sync.Mutex{})
 
 	ctx := NewHandlerContext("1234", userStore, sessionStore, *socketStore)
@@ -180,7 +180,7 @@ func buildCtxSession(t *testing.T, method string, contentType string,
 		users.SetErr(nil)
 	}
 
-	var conns map[string]*websocket.Conn
+	var conns map[int64]*websocket.Conn
 	socketStore := NewNotify(conns, &sync.Mutex{})
 
 	ctx := NewHandlerContext("anything", userStore, sessionStore, *socketStore)
@@ -203,7 +203,7 @@ func buildCtxSpecificSession(t *testing.T, method string, contentType string,
 	sessionState.User = user
 	sessionState.BeginTime = time.Now()
 
-	var conns map[string]*websocket.Conn
+	var conns map[int64]*websocket.Conn
 	socketStore := NewNotify(conns, &sync.Mutex{})
 
 	ctx := NewHandlerContext("anything", userStore, sessionStore, *socketStore)
