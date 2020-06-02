@@ -21,23 +21,28 @@ docker pull tristanmacelli/db
 
 
 echo "starting gateway"
-docker run --restart=unless-stopped \
+docker run -d --restart=unless-stopped \
+--name userStore \
 --network=infrastructure \
 -e MYSQL_DATABASE=users \
 -e MYSQL_ROOT_PASSWORD=pass \
 -e MYSQL_ROOT_HOST=% \
---name userStore -d tristanmacelli/db 
+tristanmacelli/db
 
-docker run --restart=unless-stopped \
+docker run -d --restart=unless-stopped \
+--name sessionStore \
 --network=infrastructure \
---name sessionStore -d redis
+redis
 
-docker run -d --network=infrastructure \
---hostname messagequeue --name userMessageQueue rabbitmq:3
+docker run -d --hostname messagequeue \
+--name userMessageQueue \
+--network=infrastructure \
+rabbitmq:3
 
 sudo docker run -d \
 -p 443:443 \
 --name gateway \
+--network=infrastructure \
 -v /etc/letsencrypt:/etc/letsencrypt:ro \
 -e TLSCERT=$TLSCERT \
 -e TLSKEY=$TLSKEY \
@@ -48,7 +53,6 @@ sudo docker run -d \
 -e MYSQL_ROOT_PASSWORD=pass \
 tristanmacelli/gateway
 # -e MESSAGEADDR=messaging:5001 \
-# --network=infrastructure \
 echo "service refresh completed!"
 
 docker ps

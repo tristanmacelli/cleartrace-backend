@@ -5,7 +5,6 @@
 
 FROM alpine:3.7
 RUN apk add --no-cache ca-certificates
-COPY ./gateway /build
+COPY ./gateway /gateway
 EXPOSE 443
-ENTRYPOINT ["/build"]
-# ENTRYPOINT ["api.sauravkharb.me"]
+ENTRYPOINT ["/gateway"]

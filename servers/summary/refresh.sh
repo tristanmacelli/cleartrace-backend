@@ -14,11 +14,11 @@ docker pull tristanmacelli/summary
 docker run -d \
 -p 5050:5050 \
 --name summary \
+--network=infrastructure \
 -v /etc/letsencrypt:/etc/letsencrypt:ro \
 -e TLSCERT=$TLSCERT \
 -e TLSKEY=$TLSKEY \
 tristanmacelli/summary
-# --network=infrastructure \
 echo "service refresh completed!"
 
 docker ps
