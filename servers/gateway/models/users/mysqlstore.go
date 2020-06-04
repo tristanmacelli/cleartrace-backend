@@ -25,7 +25,6 @@ const queryString = "SELECT * FROM users WHERE"
 // See docker run command for env vars that define database name & password
 func NewMysqlStore(dsn string) *MysqlStore {
 	// We are using a persistent connection for all transactions
-	fmt.Println("The DSN is ", dsn)
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
 		fmt.Println("Error opening db", err)
@@ -41,7 +40,6 @@ func (ms *MysqlStore) GetBy(query string, value string) (*User, error) {
 	user := User{}
 	insq := queryString + query
 	row := ms.DB.QueryRow(insq, value)
-	fmt.Print(row)
 	// Populating the new user
 	err := row.Scan(&user.ID, &user.Email, &user.PassHash, &user.UserName,
 		&user.FirstName, &user.LastName, &user.PhotoURL)

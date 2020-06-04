@@ -205,7 +205,7 @@ func (ctx *HandlerContext) echo(conn *websocket.Conn) {
 	forever := make(chan bool)
 
 	go func() {
-		fmt.Println("Now actively listening for messages!!")
+		fmt.Println("Now actively listening for messages!")
 		for d := range msgs {
 			log.Printf("Received a message: %s", d.Body)
 
