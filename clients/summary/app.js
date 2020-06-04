@@ -47,6 +47,11 @@ $('#createUser').submit(function createNewUser(e) {
         crossDomain: true,
         success: function (result) {
             console.log(result)
+        },
+        error: function(result) {
+            // $("#result").html("<strong>" + result + "</strong>")
+            message = "Error: " + result.responseText
+            alert(message)
         }
     }).done(function (_, _, xhr) {
         // https://developer.mozilla.org/en-US/docs/Web/API/Window/sessionStorage
@@ -76,7 +81,11 @@ $('#signIn').submit(function signIn(e) {
         contentType: "application/json",
         success: function (result) {
             console.log(result)
+        },
+        error: function(result) {
             // $("#result").html("<strong>" + result + "</strong>")
+            message = "Error: " + result.responseText
+            alert(message)
         }
     }).done(function (_, _, xhr) {
         sessionToken = xhr.getResponseHeader('authorization')
