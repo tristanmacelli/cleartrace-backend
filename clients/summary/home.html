@@ -40,9 +40,12 @@
         <div class="about">
             <h3>Request User By ID</h3>
             <form id="getUser" action="https://slack.api.tristanmacelli.com/v1/users/" method="GET" accept-charset="UTF-8">
-                <input type="text" id="userId" name="utf8" value="">
+                <input type="text" name="userId" id="userId" value="">
                 <input type="submit" id="specUserBtn" value="submit" />
             </form>
+            <div id="userResult" style="border:0.5px solid black">
+
+            </div>
         </div>
     </main>
 

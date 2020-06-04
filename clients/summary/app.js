@@ -5,13 +5,15 @@ $("#summary").submit(function getSummary(e) {
     e.preventDefault();
 
     var form = $(this);
-    var url = form.attr('action');
+    var endpoint = form.attr('action');
     var param = form.serialize()
+    var url = endpoint + '?' + $.param({ url: param.slice(5) })//url=' + param.slice(5)
+    console.log(url)
 
     // send a get request with the above data
     $.ajax({
         type: "GET",
-        url: url + '?url=' + param.slice(5),
+        url: url,
         crossDomain: true,
         success: function (result) {
             display_results(result)
@@ -49,7 +51,8 @@ $('#createUser').submit(function createNewUser(e) {
     }).done(function (_, _, xhr) {
         console.log(xhr.getResponseHeader('authorization'));
         // https://developer.mozilla.org/en-US/docs/Web/API/Window/sessionStorage
-        sessionStorage.setItem('auth', xhr.getResponseHeader('authorization'))
+        sessionToken = xhr.getResponseHeader('authorization')
+        sessionStorage.setItem('auth', sessionToken)
         window.location.replace("https://slack.client.tristanmacelli.com/home.html");
     });
 })
@@ -78,25 +81,26 @@ $('#signIn').submit(function signIn(e) {
         }
     }).done(function (_, _, xhr) {
         console.log(xhr.getResponseHeader('authorization'));
-        sessionStorage.setItem('auth', xhr.getResponseHeader('authorization'))
+        sessionToken = xhr.getResponseHeader('authorization')
+        sessionStorage.setItem('auth', sessionToken)
         window.location.replace("https://slack.client.tristanmacelli.com/home.html");
     });
 })
 
 // Removing a session based on the form values
 $('#signOut').submit(function signOut(e) {
-    console.log(sessionStorage.getItem('auth'))
     e.preventDefault();
 
     var form = $(this);
     var url = form.attr('action');
+    sessionToken = sessionStorage.getItem('auth')
 
     // send a get request with the above data
     $.ajax({
         type: "DELETE",
         url: url,
         headers: {
-            Authorization: sessionStorage.getItem('auth'),
+            Authorization: sessionToken,
         },        
         success: function (result) {
             console.log(result)
@@ -106,31 +110,27 @@ $('#signOut').submit(function signOut(e) {
     });
 })
 
-// $('#getUser').submit(function (e) {
-//     e.preventDefault();
+$('#getUser').submit(function getUser(e) {
+    e.preventDefault();
 
-//     var form = $(this);
-//     var url = form.attr('action') + $('#userId').val();
-//     var param = form.serialize()
+    var form = $(this);
+    var url = form.attr('action') + $('#userId').val();
+    sessionToken = sessionStorage.getItem('auth')
 
-//     // var b = {
-//     //     "Email":        $('#emailSess').val(),
-//     //     "Password":     $('#passSess').val(),
-//     // }
-
-//     //console.log(b)
-
-//     // send a get request with the above data
-//     $.ajax({
-//         type: "GET",
-//         url: url,
-//         contentType:"application/json",
-//         success: function (result) {
-//             console.log(result)
-//             // $("#result").html("<strong>" + result + "</strong>")
-//         }
-//     });
-// })
+    // send a get request with the above data
+    $.ajax({
+        type: "GET",
+        url: url,
+        contentType:"application/json",
+        headers: {
+            Authorization: sessionToken,
+        },
+        success: function (result) {
+            console.log("Result", result)
+            // $("#userResult").html("<strong>" + result + "</strong>")
+        }
+    });
+})
 
 function display_results(result) {
     json_obj = JSON.parse(result)

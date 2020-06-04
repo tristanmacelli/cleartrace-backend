@@ -2,6 +2,7 @@ package sessions
 
 import (
 	"encoding/json"
+	"log"
 
 	"time"
 
@@ -60,7 +61,7 @@ func (rs *RedisStore) Save(sid SessionID, sessionState interface{}) error {
 //Get populates `sessionState` with the data previously saved
 //for the given SessionID
 func (rs *RedisStore) Get(sid SessionID, sessionState interface{}) error {
-	//TODO: get the previously-saved session state data from redis,
+	//Get the previously-saved session state data from redis,
 	//unmarshal it back into the `sessionState` parameter
 	//and reset the expiry time, so that it doesn't get deleted until
 	//the SessionDuration has elapsed.
@@ -71,25 +72,29 @@ func (rs *RedisStore) Get(sid SessionID, sessionState interface{}) error {
 	pipe := rs.Client.Pipeline()
 
 	// get the state information from redis
-	marshalledJSON, err := pipe.Get(ctx, redisKey).Result()
+	getResult := pipe.Get(ctx, redisKey)
 
 	// reset the expiry time
 	rs.SessionDuration = time.Hour
 	pipe.Expire(ctx, redisKey, rs.SessionDuration)
-	// marshalledJSON, err := rs.Client.Get(ctx, redisKey).Result()
 
-	_, err = pipe.Exec(ctx)
+	_, err := pipe.Exec(ctx)
 	if err != nil {
+		log.Println("Error in pipeline:", err)
 		// state does not exist for the key
 		return ErrStateNotFound
 	}
-
-	// unmarshal the fetched state and put it into session state using pointer
-	err = json.Unmarshal([]byte(marshalledJSON), &sessionState)
+	marshalledJSON, err := getResult.Result()
 	if err != nil {
+		log.Println("Error getting state information:", err)
 		return err
 	}
 
+	// unmarshal the fetched state and put it into session state using pointer
+	err = json.Unmarshal([]byte(marshalledJSON), sessionState)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -112,3 +117,74 @@ func (sid SessionID) getRedisKey() string {
 	//redis instance
 	return "sid:" + sid.String()
 }
+
+// type Unpacker struct {
+// 	Data interface{}
+// }
+
+// func (u *Unpacker) UnmarshalJSON(b []byte) error {
+// 	sessionState := &SessionState{}
+// 	err := json.Unmarshal(b, sessionState)
+
+// 	// no error, but we also need to make sure we unmarshaled something
+// 	if err == nil && sessionState.User != "" {
+// 		u.Data = sessionState
+// 		return nil
+// 	}
+
+// 	// abort if we have an error other than the wrong type
+// 	if _, ok := err.(*json.UnmarshalTypeError); err != nil && !ok {
+// 		return err
+// 	}
+
+// 	return nil
+// }
+
+// package main
+
+// import (
+// 	"encoding/json"
+// 	"fmt"
+// 	"time"
+// )
+
+// type SessionState struct {
+// 	BeginTime time.Time   `json:"BeginTime"`
+// 	User      *User `json:"User"`
+// }
+
+// type User struct {
+// 	ID        int64  `json:"ID"`
+// 	Email     string `json:"-"` //never JSON encoded/decoded
+// 	PassHash  []byte `json:"-"` //never JSON encoded/decoded
+// 	UserName  string `json:"UserName"`
+// 	FirstName string `json:"FirstName"`
+// 	LastName  string `json:"LastName"`
+// 	PhotoURL  string `json:"PhotoURL"`
+// }
+
+// func createSession() []byte {
+// 	u := User{}
+// 	u.ID = 123
+// 	u.UserName = "Tristan.Macelli"
+// 	u.FirstName = "Tristan"
+// 	u.LastName = "Macelli"
+// 	u.PhotoURL = "https://www.gravatar.com/avatar/7eb40b28ba887c07ba1e90118036396e"
+
+// 	s := SessionState{}
+// 	s.BeginTime = time.Now()
+// 	s.User = &u
+// 	j, _ := json.Marshal(&s)
+// 	fmt.Println("sessionState:", s)
+// 	return j
+// }
+
+// func main() {
+// 	x := SessionState{}
+// //	data := `{"BeginTime":"0001-01-01T00:00:00Z","User":{"ID":1,"UserName":"Tristan.Macelli","FirstName":"Tristan","LastName":"Macelli","PhotoURL":"https://www.gravatar.com/avatar/7eb40b28ba887c07ba1e90118036396e"}}`
+// 	data := createSession()
+// 	_ = json.Unmarshal(data, &x)
+// 	fmt.Println(x)
+// 	fmt.Println(x.User)
+// 	fmt.Println(x.User.FirstName)
+// }

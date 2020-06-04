@@ -8,6 +8,7 @@ import (
 	"server-side-mirror/servers/gateway/sessions"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // UsersHandler creates a new user, enters them into the users database and begins a session for them
@@ -62,7 +63,7 @@ func (ctx *HandlerContext) SpecificUserHandler(w http.ResponseWriter, r *http.Re
 	//Authentication process
 	// Check the values in the authentication handler passed to the responsewriter
 
-	var sessionState SessionState
+	sessionState := &SessionState{}
 	_, err := sessions.GetState(r, ctx.Key, ctx.SessionStore, sessionState)
 	if err != nil {
 		http.Error(w, "You are not authenticated", http.StatusUnauthorized)
@@ -198,6 +199,7 @@ func (ctx *HandlerContext) beginSession(user *users.User, w http.ResponseWriter)
 	// create a new session
 	var sessionState SessionState
 	sessionState.User = user
+	sessionState.BeginTime = time.Now()
 	_, err := sessions.BeginSession(ctx.Key, ctx.SessionStore, sessionState, w)
 	if err != nil {
 		fmt.Printf("Could not begin session")
