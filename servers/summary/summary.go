@@ -46,6 +46,8 @@ func SummaryHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 
 	keys, ok := r.URL.Query()["url"]
+	w.Header().Del("Access-Control-Allow-Origin")
+
 	// not considering length of string here
 	if !ok {
 		// case when there are no url parameters present in the requested url
