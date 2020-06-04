@@ -67,20 +67,20 @@
                     <tbody>
                         <tr>
                             <td>
-                                <input type="text" id="firstname" name="utf8" value="First Name">
+                                <input type="text" id="firstname" name="utf8" placeholder="First Name">
                             </td>
                             <td>
-                                <input type="text" id="lastname" name="utf8" value="Last Name">
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>
-                                <input type="text" id="email" name="utf8" value="Email">
+                                <input type="text" id="lastname" name="utf8" placeholder="Last Name">
                             </td>
                         </tr>
                         <tr>
                             <td>
-                                <input type="password" id="pass" name="utf8" value="New Password">
+                                <input type="text" id="email" name="utf8" placeholder="Email">
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <input type="password" id="pass" name="utf8" placeholder="New Password">
                             </td>
                         </tr>
                         <tr>
@@ -94,11 +94,11 @@
             
             <h3>Please enter a url below</h3>
             <form id="summary" action="https://slack.api.tristanmacelli.com/v1/summary" method="POST" accept-charset="UTF-8">
-                <input type="text" id="url" name="utf8" value="">
+                <input type="text" id="summaryUrl" name="utf8" />
                 <input type="submit" id="sumBtn" value="submit" />
             </form>    
 
-            <div id="result" style="border:0.5px solid black">
+            <div id="summaryResult" style="border:0.5px solid black">
 
             </div>
         </div>

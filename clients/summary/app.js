@@ -5,18 +5,18 @@ $("#summary").submit(function getSummary(e) {
     e.preventDefault();
 
     var form = $(this);
-    var endpoint = form.attr('action');
-    var param = form.serialize()
-    var url = endpoint + '?' + $.param({ url: param.slice(5) })//url=' + param.slice(5)
-    console.log(url)
+    var url = form.attr('action');
 
     // send a get request with the above data
     $.ajax({
         type: "GET",
         url: url,
-        crossDomain: true,
+        data: {
+            url: $('#summaryUrl').val()
+        },
+        crossDomain: false,
         success: function (result) {
-            display_results(result)
+            display_results(result, "#summaryResult")
         }
     });
 });
@@ -49,7 +49,6 @@ $('#createUser').submit(function createNewUser(e) {
             console.log(result)
         }
     }).done(function (_, _, xhr) {
-        console.log(xhr.getResponseHeader('authorization'));
         // https://developer.mozilla.org/en-US/docs/Web/API/Window/sessionStorage
         sessionToken = xhr.getResponseHeader('authorization')
         sessionStorage.setItem('auth', sessionToken)
@@ -80,7 +79,6 @@ $('#signIn').submit(function signIn(e) {
             // $("#result").html("<strong>" + result + "</strong>")
         }
     }).done(function (_, _, xhr) {
-        console.log(xhr.getResponseHeader('authorization'));
         sessionToken = xhr.getResponseHeader('authorization')
         sessionStorage.setItem('auth', sessionToken)
         window.location.replace("https://slack.client.tristanmacelli.com/home.html");
@@ -132,18 +130,25 @@ $('#getUser').submit(function getUser(e) {
     });
 })
 
-function display_results(result) {
-    json_obj = JSON.parse(result)
-    var final_html = "<h2> Summary of " + json_obj.url + "</h2>"
-    final_html += "<h4> Title : " + json_obj.title + " </h4>"
-    final_html += "<h4> Description : " + json_obj.description + " </h4>"
-    image_div = "<div>"
+function display_results(result, result_id) {
+    if (result) {
+        result_str = JSON.stringify(result)
+        json_obj = JSON.parse(result_str)
 
-    for (i = 0; i < json_obj.images.length; i++) {
-        image_div += "<img src=\"" + json_obj.images[i].url + "\">"
+        var final_html = "<h2> Summary of " + json_obj.url + "</h2>"
+        final_html += "<h4> Title : " + json_obj.title + " </h4>"
+        final_html += "<h4> Description : " + json_obj.description + " </h4>"
+        image_div = "<div>"
+
+        if (json_obj.images) {
+            for (i = 0; i < json_obj.images.length; i++) {
+                image_div += "<img src=\"" + json_obj.images[i].url + "\">"
+            }
+        }
+        
+        image_div += "</div>"
+        final_html += image_div
+        $(result_id).html(final_html)
     }
-    image_div += "</div>"
-    final_html += image_div
-    $("#result").html(final_html)
 }
 
