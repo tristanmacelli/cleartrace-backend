@@ -61,7 +61,6 @@ func getAllUrls(addresses string) []*url.URL {
 		url := url.URL{Scheme: "http", Host: u}
 		urls = append(urls, &url)
 	}
-	log.Println("These are a list of urls: ", urls)
 	return urls
 }
 
