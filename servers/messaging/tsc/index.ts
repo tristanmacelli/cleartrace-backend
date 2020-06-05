@@ -1,4 +1,4 @@
-// "use strict";
+"use strict";
 // version 0.1
 
 //require the express and morgan packages
@@ -140,10 +140,30 @@ const main = async () => {
 
     // TODO: We should do a test of the mongo helper methods
 
-    app.listen(+addr, "", () => {
+    app.listen(+addr, "", (req, res) => {
         //callback is executed once server is listening
         console.log(`server is listening at http://:${addr}...`);
     });
+
+    // function isAuthenticated(req: any) {
+    //     return req.headers['x-user'] != null
+    // }
+    // const allowedMethods = ['GET','POST','PATCH','DELETE'];
+
+    // app.all('*', function preflightCheck(req, res, next){
+    //     if (!isAuthenticated(req)) {
+    //         res.status(401);
+    //         res.send()
+    //         next(new Error("401 Unauthorized"))
+    //     } else if (!allowedMethods.includes(req.method)) {
+    //         res.status(405);
+    //         res.set("Content-Type", "text/plain");
+    //         res.send("Method Not Allowed");
+    //         next(new Error("405 Method Not Allowed"))
+    //     } else {
+    //         next();
+    //     }
+    // });
 
     app.use("/v1/channels/:channelID/members", (req: any, res: any) => {
         // Check that the user is authenticated
@@ -168,7 +188,7 @@ const main = async () => {
             const resultChannel = result.channel;
             switch (req.method) {
                 case 'POST':
-                    if (!isChannelCreator(resultChannel, user.id)) {
+                    if (!isChannelCreator(resultChannel, user.ID)) {
                         res.status(403);
                         res.set("Content-Type", "text/plain");
                         res.send("Cannot change members")
@@ -181,14 +201,14 @@ const main = async () => {
                             res.send()
                             return;
                         }
-                        res.set("Content-Type", "application/json");
+                        res.set("Content-Type", "text/plain");
                         res.status(201)
-                        res.send(user.id + " was added to your channel");
+                        res.send(user.ID + " was added to your channel");
                         return;
                     })
                     break;
                 case 'DELETE':
-                    if (!isChannelCreator(resultChannel, user.id)) {
+                    if (!isChannelCreator(resultChannel, user.ID)) {
                         res.status(403)
                         res.set("Content-Type", "text/plain");
                         res.send("Cannot delete members")
@@ -203,17 +223,16 @@ const main = async () => {
                         }
                         res.set("Content-Type", "text/plain");
                         res.status(201)
-                        res.send(user.id + " was removed from your channel");
+                        res.send(user.ID + " was removed from your channel");
                         return;
                     })
                     break;
                 default:
                     res.status(405);
                     res.set("Content-Type", "text/plain");
-                    res.send("Incorrect HTTP Header")
+                    res.send("Method Not Allowed")
                     break;
             }
-            return;
         });
     });
 
@@ -243,7 +262,7 @@ const main = async () => {
             let resultChannel = result.channel;
             switch (req.method) {
                 case 'GET':
-                    if (!isChannelMember(resultChannel, user.id)) {
+                    if (!isChannelMember(resultChannel, user.ID)) {
                         res.status(403);
                         res.set("Content-Type", "text/plain");
                         res.send("Cannot get messages")
@@ -279,7 +298,7 @@ const main = async () => {
                     }
                     break;
                 case 'POST':
-                    if (!isChannelMember(resultChannel, user.id)) {
+                    if (!isChannelMember(resultChannel, user.ID)) {
                         res.status(403);
                         res.set("Content-Type", "text/plain");
                         res.send("Cannot post message")
@@ -307,7 +326,7 @@ const main = async () => {
                     })
                     break;
                 case 'PATCH':
-                    if (!isChannelCreator(resultChannel, user.id)) {
+                    if (!isChannelCreator(resultChannel, user.ID)) {
                         res.status(403);
                         res.set("Content-Type", "text/plain");
                         res.send("Cannot amend channel")
@@ -333,14 +352,14 @@ const main = async () => {
                     })
                     break;
                 case 'DELETE':
-                    if (!isChannelCreator(resultChannel, user.id)) {
+                    if (!isChannelCreator(resultChannel, user.ID)) {
                         res.status(403);
                         res.set("Content-Type", "text/plain");
-                        res.send("You cannot delete this message")
+                        res.send("You cannot delete this channel")
                         break;
                     }
                     // Call database to DELETE this channel
-                    mongo.deleteChannel(channels, messages, resultChannel).then((err) => {
+                    mongo.deleteChannel(channels, messages, resultChannel, req.params.channelID).then((err) => {
                         if (err) {
                             res.status(500);
                             res.send()
@@ -358,10 +377,9 @@ const main = async () => {
                 default:
                     res.status(405);
                     res.set("Content-Type", "text/plain");
-                    res.send("Incorrect HTTP Header")
+                    res.send("Method Not Allowed")
                     break;
             }
-            return;
         })
     });
 
@@ -422,12 +440,10 @@ const main = async () => {
                     return;
                 })
                 break;
-
-
             default:
                 res.status(405);
                 res.set("Content-Type", "text/plain");
-                res.send("Incorrect HTTP Header")
+                res.send("Method Not Allowed")
                 break;
         }
     });
@@ -456,7 +472,7 @@ const main = async () => {
             let resultMessage = result.message;
             switch (req.method) {
                 case 'PATCH':
-                    if (!isMessageCreator(resultMessage, user.id)) {
+                    if (!isMessageCreator(resultMessage, user.ID)) {
                         res.status(403);
                         res.set("Content-Type", "text/plain");
                         res.send("Cannot update message");
@@ -484,7 +500,7 @@ const main = async () => {
                     })
                     break;
                 case 'DELETE':
-                    if (!isMessageCreator(resultMessage, user.id)) {
+                    if (!isMessageCreator(resultMessage, user.ID)) {
                         res.status(403);
                         res.set("Content-Type", "text/plain");
                         res.send("Cannot delete message");
@@ -512,7 +528,7 @@ const main = async () => {
                 default:
                     res.status(405);
                     res.set("Content-Type", "text/plain");
-                    res.send("Incorrect HTTP Header");
+                    res.send("Method Not Allowed");
                     break;
             }
         })
@@ -521,7 +537,7 @@ const main = async () => {
     function createChannel(req: any, creator: User): Channel {
         let c = req.body;
 
-        c.members.push(creator.id)
+        c.members.push(creator.ID)
         return new Channel(c.name, c.description, c.private,
             c.members, c.createdAt, creator, c.editedAt);
     }
@@ -546,11 +562,11 @@ const main = async () => {
     }
 
     function isChannelCreator(channel: Channel, userID: number): boolean {
-        return channel.creator.id === userID;
+        return channel.creator.ID === userID;
     }
 
     function isMessageCreator(message: Message, userID: number): boolean {
-        return message.creator.id === userID;
+        return message.creator.ID === userID;
     }
 
     // error handler that will be called if

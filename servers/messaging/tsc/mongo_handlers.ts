@@ -111,7 +111,6 @@ export async function updateChannel(channels: Collection, existingChannel: Chann
 // addChannelMembers takes an existing Channel and adds members using a req (request) object
 export async function addChannelMember(channels: Collection, existingChannel: Channel, req: any): Promise<boolean> {
     let err: boolean = false;
-    // Removed .message after body in the statement below
     existingChannel.members.push(req.body.id);
 
     await channels.save({
@@ -129,7 +128,6 @@ export async function addChannelMember(channels: Collection, existingChannel: Ch
 export async function removeChannelMember(channels: Collection, existingChannel: Channel, req: any): Promise<boolean> {
     // Remove the specified member from this channel's list of members
     let err: boolean = false;
-    // Removed .message after body in the statement below
     existingChannel.members.splice(req.body.id, 1);
     await channels.save({
         name: existingChannel.name, description: existingChannel.description,
@@ -145,29 +143,31 @@ export async function removeChannelMember(channels: Collection, existingChannel:
 // updateMessage takes an existing Message and a request with updates to apply to the Message's body 
 export async function updateMessage(messages: Collection, existingMessage: Message, req: any) {
     let err: boolean = false;
+    existingMessage.editedAt = new Date()
 
     await messages.save({
-        body: req.body, creator: existingMessage.creator,
+        body: req.body.body, creator: existingMessage.creator,
         createdAt: existingMessage.createdAt, channelID: existingMessage.channelID,
         editedAt: existingMessage.editedAt
     }).catch(() => {
         err = true
     });
 
-    existingMessage.body = req.body;
+    existingMessage.body = req.body.body;
+    existingMessage.id = req.params.messageID;
     return { existingMessage, err };
 }
 
 // deleteChannel does something
-export async function deleteChannel(channels: Collection, messages: Collection, existingChannel: Channel): Promise<boolean> {
+export async function deleteChannel(channels: Collection, messages: Collection, existingChannel: Channel, channelID: string): Promise<boolean> {
     let err: boolean = false;
-    // We are not allowed to delete the general channel
-    if (existingChannel.creator.id == -1) {
+    // The general channel never gets deleted
+    if (existingChannel.creator.ID == -1) {
         err = true;
     }
-    // CHANNEL ID DOES NOT EXIST
-    let channelID = new ObjectID(existingChannel.id)
-    await channels.remove({ _id: channelID }).catch(() => {
+
+    let chanID = new ObjectID(channelID)
+    await channels.remove({ _id: chanID }).catch(() => {
         err = true;
     });
     await messages.remove({ channelID: existingChannel.id }).catch(() => {

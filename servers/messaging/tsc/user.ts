@@ -1,7 +1,7 @@
 "use strict";
 
 export class User {
-    id: number;
+    ID: number;
     email: string;
     passHash: Uint8Array;
     userName: string;
@@ -9,8 +9,8 @@ export class User {
     lastName: string;
     photoURL: string;
 
-    constructor(id: number, email: string, passHash: Uint8Array, userName: string, firstName: string, lastName: string, photoURL: string) {
-        this.id = id;
+    constructor(ID: number, email: string, passHash: Uint8Array, userName: string, firstName: string, lastName: string, photoURL: string) {
+        this.ID = ID;
         this.email = email;
         this.passHash = passHash;
         this.userName = userName;
