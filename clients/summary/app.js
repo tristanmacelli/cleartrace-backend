@@ -101,6 +101,7 @@ $('#signOut').submit(function signOut(e) {
     var form = $(this);
     var url = form.attr('action');
     sessionToken = sessionStorage.getItem('auth')
+    sessionStorage.removeItem('auth')
 
     // send a get request with the above data
     $.ajax({
@@ -143,28 +144,33 @@ function display_results(result, result_id) {
 
 // Loads user info into home page after page is loaded
 $(document).ready(
-    function getUser() {
-        if (window.location.toString().includes("home")) {    
-            var url = "https://slack.api.tristanmacelli.com/v1/users/"
-            sessionToken = sessionStorage.getItem('auth')
-        
-            // send a get request with the above data
-            $.ajax({
-                type: "GET",
-                url: url,
-                contentType:"application/json",
-                headers: {
-                    Authorization: sessionToken,
-                },
-                success: function (result) {
-                    console.log("Result", result)
+    function homePageLoad() {
+        if (window.location.toString().includes("home")) {
+            if (sessionToken) {
+                var url = "https://slack.api.tristanmacelli.com/v1/users/"
+                sessionToken = sessionStorage.getItem('auth')
+            
+                // send a get request with the above data
+                $.ajax({
+                    type: "GET",
+                    url: url,
+                    contentType:"application/json",
+                    headers: {
+                        Authorization: sessionToken,
+                    },
+                    success: function (result) {
+                        console.log("Result", result)
 
-                    display_user(result)
-                },
-                error: function (result) {
-                    console.log(result)
-                }
-            });
+                        display_user(result)
+                    },
+                    error: function (result) {
+                        console.log(result)
+                    }
+                });
+            } else {
+                $("#about").empty();
+                $("#about").append("<h1 class=\"center\">Access Denied: You are not authenticated</h1>");
+            }
         }
     }
 );
