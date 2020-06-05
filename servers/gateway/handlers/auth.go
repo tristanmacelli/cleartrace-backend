@@ -55,7 +55,43 @@ func (ctx *HandlerContext) UsersHandler(w http.ResponseWriter, r *http.Request) 
 // SpecificUserHandler either returns all the user information or updates the users
 // first and last names on a specific user
 func (ctx *HandlerContext) SpecificUserHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet && r.Method != http.MethodPatch {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Incorrect HTTP Method", http.StatusMethodNotAllowed)
+		return
+	}
+
+	//Authentication process
+	// Check the values in the authentication handler passed to the responsewriter
+
+	sessionState := &SessionState{}
+	_, err := sessions.GetState(r, ctx.Key, ctx.SessionStore, sessionState)
+	if err != nil {
+		http.Error(w, "You are not authenticated", http.StatusUnauthorized)
+		return
+	}
+	var userFromSession = sessionState.User
+	var userID = userFromSession.ID
+
+	user, err := ctx.UserStore.GetByID(userID)
+	if err != nil {
+		http.Error(w, "Error getting user with the corresponding ID", http.StatusInternalServerError)
+		return
+	}
+	// We are checking for a nil value since our GetBy method will not return an
+	// error if there were no matches (since this is not necessarily a failure)
+	// We are also checking for an unpopulated user field because in the case that nobody
+	// is found, the field will not be populated (in the case that someone is found the
+	// user should always have that value)
+	if user.FirstName == "" && err == nil {
+		http.Error(w, "There is no user with the corresponding ID", http.StatusNotFound)
+		return
+	}
+	userJSON := encodeUser(user)
+	formatResponse(w, http.StatusOK, userJSON)
+}
+
+func (ctx *HandlerContext) UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPatch {
 		http.Error(w, "Incorrect HTTP Method", http.StatusMethodNotAllowed)
 		return
 	}
@@ -73,26 +109,6 @@ func (ctx *HandlerContext) SpecificUserHandler(w http.ResponseWriter, r *http.Re
 	var userID = user.ID
 	var queryID []string = strings.Split(r.URL.String(), "users/")
 
-	if r.Method == http.MethodGet {
-		user, err := ctx.UserStore.GetByID(userID)
-		if err != nil {
-			http.Error(w, "Error getting user with the corresponding ID", http.StatusInternalServerError)
-			return
-		}
-		// We are checking for a nil value since our GetBy method will not return an
-		// error if there were no matches (since this is not necessarily a failure)
-		// We are also checking for an unpopulated user field because in the case that nobody
-		// is found, the field will not be populated (in the case that someone is found the
-		// user should always have that value)
-		if user.FirstName == "" && err == nil {
-			http.Error(w, "There is no user with the corresponding ID", http.StatusNotFound)
-			return
-		}
-		userJSON := encodeUser(user)
-		formatResponse(w, http.StatusOK, userJSON)
-		return
-		// Patch
-	}
 	id, _ := strconv.ParseInt(queryID[1], 10, 64)
 	if queryID[1] != "me" && id != userID {
 		http.Error(w, "You are unauthorized to perform this action", http.StatusForbidden)

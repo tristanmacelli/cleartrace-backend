@@ -7,6 +7,6 @@ import (
 
 // SessionState is a struct
 type SessionState struct {
-	BeginTime time.Time   `json:"beginTime"`
-	User      *users.User `json:"user"`
+	BeginTime time.Time   `json:"BeginTime"`
+	User      *users.User `json:"User"`
 }
