@@ -33,7 +33,7 @@ client.connect(function (err: any) {
         let general = new Channel("general", "an open channel for all", false, [], dummyDate, emptyUser, "not yet edited");
         await mongo.insertNewChannel(channels, general).then(result => {
             // check for insertion errors
-            if (result.errString.length > 0) {
+            if (result.err) {
                 console.log("Failed to create new general channel upon opening connection to DB");
             }
         })
