@@ -47,12 +47,12 @@ sudo docker run -d \
 -e TLSCERT=$TLSCERT \
 -e TLSKEY=$TLSKEY \
 -e SUMMARYADDR=summary:5050 \
+-e MESSAGEADDR=messaging:5001 \
 -e SESSIONKEY=sessionkeyrandom \
 -e DSN=userStore:3306 \
 -e REDISADDR=sessionStore:6379 \
 -e MYSQL_ROOT_PASSWORD=pass \
 tristanmacelli/gateway
-# -e MESSAGEADDR=messaging:5001 \
 echo "service refresh completed!"
 
 docker ps
