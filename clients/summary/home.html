@@ -37,19 +37,14 @@
     </header>
 
     <main>
-        <div class="about">
-            <h3>Request User By ID</h3>
-            <form id="getUser" action="https://slack.api.tristanmacelli.com/v1/users/" method="GET" accept-charset="UTF-8">
-                <input type="text" name="userId" id="userId" placeholder="Enter a user ID or me">
-                <input type="submit" id="specUserBtn" value="submit" />
-            </form>
-            <div id="userResult" style="border:0.5px solid black">
+        <div class="about">            
+            <div id="userInfo">
 
             </div>
 
-            <h3>Please enter a url below</h3>
+            <h3>Enter a url below to view a webpage summary</h3>
             <form id="summary" action="https://slack.api.tristanmacelli.com/v1/summary" method="POST" accept-charset="UTF-8">
-                <input type="text" id="summaryUrl" name="utf8" />
+                <input type="text" id="summaryUrl" name="utf8" placeholder="https://www.example.com" />
                 <input type="submit" id="sumBtn" value="submit" />
             </form>    
 

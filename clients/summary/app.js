@@ -117,27 +117,7 @@ $('#signOut').submit(function signOut(e) {
     });
 })
 
-$('#getUser').submit(function getUser(e) {
-    e.preventDefault();
-
-    var form = $(this);
-    var url = form.attr('action') + $('#userId').val();
-    sessionToken = sessionStorage.getItem('auth')
-
-    // send a get request with the above data
-    $.ajax({
-        type: "GET",
-        url: url,
-        contentType:"application/json",
-        headers: {
-            Authorization: sessionToken,
-        },
-        success: function (result) {
-            console.log("Result", result)
-            // $("#userResult").html("<strong>" + result + "</strong>")
-        }
-    });
-})
+// $('#updateUser').submit()
 
 function display_results(result, result_id) {
     if (result) {
@@ -161,3 +141,43 @@ function display_results(result, result_id) {
     }
 }
 
+// Loads user info into home page after page is loaded
+$(document).ready(
+    function getUser() {
+        if (window.location.toString().includes("home")) {    
+            var url = "https://slack.api.tristanmacelli.com/v1/users/"
+            sessionToken = sessionStorage.getItem('auth')
+        
+            // send a get request with the above data
+            $.ajax({
+                type: "GET",
+                url: url,
+                contentType:"application/json",
+                headers: {
+                    Authorization: sessionToken,
+                },
+                success: function (result) {
+                    console.log("Result", result)
+
+                    display_user(result)
+                },
+                error: function (result) {
+                    console.log(result)
+                }
+            });
+        }
+    }
+);
+
+function display_user(result) {
+    var final_html = "<table cellspacing=0 role=\"presentation\"><tbody>"
+    final_html += "<tr><td><p>Username: </p></td>"
+    final_html += "<td>" + result.UserName + "</td></tr>"
+    
+    final_html += "<tr><td><p>First name: </p></td>"
+    final_html += "<td>" + result.FirstName + "</td>"
+    final_html += "<td><p>Last name: </p></td>"
+    final_html += "<td>" + result.LastName + "</td></tr>"
+
+    $("#userInfo").html(final_html)
+}
