@@ -400,7 +400,7 @@ const main = async () => {
                         return;
                     }
                     res.set("Content-Type", "application/json");
-                    res.json(result.allChannelsJSON);
+                    res.json(result.allChannels);
                     res.send();
                     return;
                 })

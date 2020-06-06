@@ -10,9 +10,8 @@ import { User } from "./user";
 // getAllChannels does something
 // TODO: make sure the returned value is a shape that we can actually use
 export async function getAllChannels(channels: Collection) {
-    let allChannelsJSON: string = ""
     let err: boolean = false;
-    let channelsArray: Channel[] = []
+    let allChannels: Channel[] = []
     // if channels does not yet exist
     let cursor = channels.find();
     await cursor.hasNext().then(async () => {
@@ -20,16 +19,15 @@ export async function getAllChannels(channels: Collection) {
             for (let i = 0; i < result.length; i++) {
                 let channel = new Channel(result[i]._id, result[i].name, result[i].description, result[i].private,
                     result[i].members, result[i].createdAt, result[i].creator, result[i].editedAt);
-                channelsArray.push(channel)
+                allChannels.push(channel)
             }
-            allChannelsJSON = JSON.stringify(channelsArray)
         }).catch(() => {
             err = true;
         })
     }).catch(() => {
         err = true;
     })
-    return { allChannelsJSON, err };
+    return { allChannels, err };
 }
 
 const createChannel = async (channels: Collection, newChannel: Channel, duplicates: boolean, err: boolean) => {
