@@ -177,6 +177,7 @@ function homePageLoad() {
     sessionToken = localStorage.getItem('auth')
     if (sessionToken) {
         request_user(display_user_first_name, sessionToken)
+        new WebSocket("wss://slack.api.tristanmacelli.com/v1/ws?auth=" + sessionToken)
     }
 }
 
