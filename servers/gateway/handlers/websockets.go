@@ -149,7 +149,7 @@ func (ctx *HandlerContext) WebSocketConnectionHandler(w http.ResponseWriter, r *
 		http.Error(w, "Failed to open websocket connection", 401)
 		return
 	}
-	var sessionState SessionState
+	sessionState := &SessionState{}
 	// Should we be using the sessionID or the userID when mapping connections?
 	sessions.GetState(r, ctx.Key, ctx.SessionStore, sessionState)
 
