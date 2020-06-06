@@ -145,24 +145,24 @@ function display_results(result, result_id) {
     }
 }
 
-// Loads user info into home page after page is loaded
-$(document).ready(
-    function homePageLoad() {
-        sessionToken = localStorage.getItem('auth')
-        if (window.location.pathname == "/home.html" && sessionToken) {
-            request_user(display_user_first_name, sessionToken)
-        }
-    }
-);
+$("#home-page").addEventListener("load", homePageLoad)
 
-$(document).ready(
-    function accountPageLoad() {
-        sessionToken = localStorage.getItem('auth')
-        if (window.location.pathname == "/account.html" && sessionToken) {
-            request_user(display_user, sessionToken)
-        }
+// Loads user info into home page after page is loaded
+function homePageLoad() {
+    sessionToken = localStorage.getItem('auth')
+    if (sessionToken) {
+        request_user(display_user_first_name, sessionToken)
     }
-);
+}
+
+$("#account-page").addEventListener("load", accountPageLoad)
+
+function accountPageLoad() {
+    sessionToken = localStorage.getItem('auth')
+    if (sessionToken) {
+        request_user(display_user, sessionToken)
+    }
+}
 
 function request_user(display_user_fn, token) {
     var url = "https://slack.api.tristanmacelli.com/v1/users/"
