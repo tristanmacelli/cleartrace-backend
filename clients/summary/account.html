@@ -26,14 +26,15 @@
                             <h1>Slack Clone</h1>
                         </a>
                     </li>
+                    
                     <li class="pull-right">
                         <form id="signOut" action="https://slack.api.tristanmacelli.com/v1/sessions/mine" method="DELETE" accept-charset="UTF-8">
                             <input type="submit" id="specSessBtn" value="Log Out" />
                         </form>
                     </li>
                     <li class="pull-right">
-                        <a href="account.html">
-                            <p id="auth-user-first-name"></p>
+                        <a href="home.html">
+                            <p>Home</p>
                         </a>
                     </li>
                 </ul>
@@ -43,14 +44,7 @@
 
     <main>
         <div class="about" id="about">
-
-            <h3>Enter a url below to view a webpage summary</h3>
-            <form id="summary" action="https://slack.api.tristanmacelli.com/v1/summary" method="POST" accept-charset="UTF-8">
-                <input type="text" id="summaryUrl" name="utf8" placeholder="https://www.example.com" />
-                <input type="submit" id="sumBtn" value="submit" />
-            </form>    
-
-            <div id="summaryResult" style="border:0.5px solid black">
+            <div id="userInfo">
 
             </div>
         </div>

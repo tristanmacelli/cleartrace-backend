@@ -148,32 +148,45 @@ function display_results(result, result_id) {
 // Loads user info into home page after page is loaded
 $(document).ready(
     function homePageLoad() {
-        if (window.location.toString().includes("home")) {
-            sessionToken = localStorage.getItem('auth')
-            if (sessionToken) {
-                var url = "https://slack.api.tristanmacelli.com/v1/users/"
-            
-                // send a get request with the above data
-                $.ajax({
-                    type: "GET",
-                    url: url,
-                    contentType:"application/json",
-                    headers: {
-                        Authorization: sessionToken,
-                    },
-                    success: function (result) {
-                        console.log("Result", result)
-
-                        display_user(result)
-                    },
-                    error: function (result) {
-                        console.log(result)
-                    }
-                });
-            }
+        sessionToken = localStorage.getItem('auth')
+        if (window.location.pathname == "/home.html" && sessionToken) {
+            request_user(display_user_first_name, sessionToken)
         }
     }
 );
+
+$(document).ready(
+    function accountPageLoad() {
+        sessionToken = localStorage.getItem('auth')
+        if (window.location.pathname == "/account.html" && sessionToken) {
+            request_user(display_user, sessionToken)
+        }
+    }
+);
+
+function request_user(display_user_fn, token) {
+    var url = "https://slack.api.tristanmacelli.com/v1/users/"
+            
+    $.ajax({
+        type: "GET",
+        url: url,
+        contentType:"application/json",
+        headers: {
+            Authorization: token,
+        },
+        success: function (result) {
+            console.log("Result", result)
+            display_user_fn(result)
+        },
+        error: function (result) {
+            console.log(result)
+        }
+    });
+}
+
+function display_user_first_name(user) {
+    $("#auth-user-first-name").text(user.FirstName)
+}
 
 function display_user(result) {
     var final_html = "<table cellspacing=0 role=\"presentation\"><tbody>"

@@ -71,28 +71,15 @@ html {
   }
 
   nav a:hover {
-    color: #e43f5a;
+    background-color: #305f99;
     text-decoration: none;
   }
 
-  nav a::before {
-    content: '';
-    display: block;
-    height: 5px;
-    background-color: #e43f5a;
-
-    position: absolute;
-    top: 0;
-    width: 0%;
-
-    transition: all ease-in-out 300ms;
-  }
-
-  nav a:hover::before{
-    width: 100%;
-  }
-
   h1 {
+    font-family: 'Open Sans', sans-serif;
+  }
+
+  h2 {
     font-family: 'Open Sans', sans-serif;
   }
 
