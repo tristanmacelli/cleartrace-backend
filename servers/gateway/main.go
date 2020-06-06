@@ -37,8 +37,10 @@ func CustomDirector(targets []*url.URL, ctx *handlers.HandlerContext) Director {
 		state := &handlers.SessionState{}
 		_, err := sessions.GetState(r, ctx.Key, ctx.SessionStore, state)
 		if err != nil {
+			r.Header.Del("X-User")
 			log.Println("Error getting User from GetState")
 			log.Println(err)
+			return
 		}
 
 		userJSON, _ := json.Marshal(state.User)

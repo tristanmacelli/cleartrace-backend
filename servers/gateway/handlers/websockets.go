@@ -134,12 +134,12 @@ func (ctx *HandlerContext) WebSocketConnectionHandler(w http.ResponseWriter, r *
 
 	if ctx.SessionStore == nil {
 		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte("Status Code 403: Unauthorized"))
+		w.Write([]byte("Status Code 401: Unauthorized"))
 		return
 	}
 	// handle the websocket handshake
 
-	if r.Header.Get("Origin") != "https://a2.sauravkharb.me" {
+	if r.Header.Get("Origin") != "https://slack.client.tristanmacelli.com" {
 		http.Error(w, "Websocket Connection Refused", 403)
 		return
 	}
@@ -173,7 +173,7 @@ func (ctx *HandlerContext) WebSocketConnectionHandler(w http.ResponseWriter, r *
 
 // echo does something
 func (ctx *HandlerContext) echo(conn *websocket.Conn) {
-	connMQ, err := amqp.Dial("amqp://rabbitMQ")
+	connMQ, err := amqp.Dial("amqp://userMessageQueue")
 	failOnError("Failed to open connection to RabbitMQ", err)
 	defer connMQ.Close()
 
