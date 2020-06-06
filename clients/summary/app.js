@@ -175,6 +175,19 @@ $(document).ready(
     }
 );
 
+function display_user(result) {
+    var final_html = "<table cellspacing=0 role=\"presentation\"><tbody>"
+    final_html += "<tr><td><p>Username: </p></td>"
+    final_html += "<td>" + result.UserName + "</td></tr>"
+    
+    final_html += "<tr><td><p>First name: </p></td>"
+    final_html += "<td>" + result.FirstName + "</td>"
+    final_html += "<td><p>Last name: </p></td>"
+    final_html += "<td>" + result.LastName + "</td></tr>"
+
+    $("#userInfo").html(final_html)
+}
+
 // Users returning to the website with an active session get redirected from the log in page
 // to the home page
 $(document).ready(
@@ -195,16 +208,3 @@ $(document).ready(
         }
     }
 )
-
-function display_user(result) {
-    var final_html = "<table cellspacing=0 role=\"presentation\"><tbody>"
-    final_html += "<tr><td><p>Username: </p></td>"
-    final_html += "<td>" + result.UserName + "</td></tr>"
-    
-    final_html += "<tr><td><p>First name: </p></td>"
-    final_html += "<td>" + result.FirstName + "</td>"
-    final_html += "<td><p>Last name: </p></td>"
-    final_html += "<td>" + result.LastName + "</td></tr>"
-
-    $("#userInfo").html(final_html)
-}
