@@ -17,6 +17,9 @@ $("#summary").submit(function getSummary(e) {
         crossDomain: false,
         success: function (result) {
             display_results(result, "#summaryResult")
+        },
+        error: function(result) {
+            alert(result)
         }
     });
 });
@@ -56,7 +59,7 @@ $('#createUser').submit(function createNewUser(e) {
     }).done(function (_, _, xhr) {
         // https://developer.mozilla.org/en-US/docs/Web/API/Window/sessionStorage
         sessionToken = xhr.getResponseHeader('authorization')
-        sessionStorage.setItem('auth', sessionToken)
+        localStorage.setItem('auth', sessionToken)
         window.location.replace("https://slack.client.tristanmacelli.com/home.html");
     });
 })
@@ -89,7 +92,7 @@ $('#signIn').submit(function signIn(e) {
         }
     }).done(function (_, _, xhr) {
         sessionToken = xhr.getResponseHeader('authorization')
-        sessionStorage.setItem('auth', sessionToken)
+        localStorage.setItem('auth', sessionToken)
         window.location.replace("https://slack.client.tristanmacelli.com/home.html");
     });
 })
@@ -100,8 +103,8 @@ $('#signOut').submit(function signOut(e) {
 
     var form = $(this);
     var url = form.attr('action');
-    sessionToken = sessionStorage.getItem('auth')
-    sessionStorage.removeItem('auth')
+    sessionToken = localStorage.getItem('auth')
+    localStorage.removeItem('auth')
 
     // send a get request with the above data
     $.ajax({
@@ -112,10 +115,10 @@ $('#signOut').submit(function signOut(e) {
         },        
         success: function (result) {
             console.log(result)
+            localStorage.removeItem('auth')
+            window.location.replace("https://slack.client.tristanmacelli.com");
         }
-    }).done(function () {
-        window.location.replace("https://slack.client.tristanmacelli.com");
-    });
+    })
 })
 
 // $('#updateUser').submit()
@@ -146,9 +149,9 @@ function display_results(result, result_id) {
 $(document).ready(
     function homePageLoad() {
         if (window.location.toString().includes("home")) {
+            sessionToken = localStorage.getItem('auth')
             if (sessionToken) {
                 var url = "https://slack.api.tristanmacelli.com/v1/users/"
-                sessionToken = sessionStorage.getItem('auth')
             
                 // send a get request with the above data
                 $.ajax({
@@ -167,13 +170,31 @@ $(document).ready(
                         console.log(result)
                     }
                 });
-            } else {
-                $("#about").empty();
-                $("#about").append("<h1 class=\"center\">Access Denied: You are not authenticated</h1>");
             }
         }
     }
 );
+
+// Users returning to the website with an active session get redirected from the log in page
+// to the home page
+$(document).ready(
+    function indexPageLoad() {
+        if (window.location.pathname == "/" && localStorage.getItem("auth")) {
+            window.location.replace("https://slack.client.tristanmacelli.com/home.html");
+        }
+    }
+)
+
+// Unauthenticated users trying to visit pages requiring authentication will be returned to
+// the log in page
+$(document).ready(
+    function requiredAuthPageLoad() {
+        if (window.location.pathname != "/" && !localStorage.getItem("auth")) {
+            alert("You are not authenticated: please return to the Log In page")
+            window.location.replace("https://slack.client.tristanmacelli.com/");
+        }
+    }
+)
 
 function display_user(result) {
     var final_html = "<table cellspacing=0 role=\"presentation\"><tbody>"
