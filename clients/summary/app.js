@@ -145,7 +145,7 @@ function display_results(result, result_id) {
     }
 }
 
-$("#home-page").addEventListener("load", homePageLoad)
+$("#home-page").ready(homePageLoad)
 
 // Loads user info into home page after page is loaded
 function homePageLoad() {
@@ -155,7 +155,7 @@ function homePageLoad() {
     }
 }
 
-$("#account-page").addEventListener("load", accountPageLoad)
+$("#account-page").ready(accountPageLoad)
 
 function accountPageLoad() {
     sessionToken = localStorage.getItem('auth')
