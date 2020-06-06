@@ -12,13 +12,15 @@ import { User } from "./user";
 export async function getAllChannels(channels: Collection) {
     let allChannelsJSON: string = ""
     let err: boolean = false;
+    let channelsArray: Channel[] = []
     // if channels does not yet exist
     let cursor = channels.find();
     await cursor.hasNext().then(async () => {
         await cursor.toArray().then((result) => {
-            let channelsArray: string[] = []
             for (let i = 0; i < result.length; i++) {
-                channelsArray.push(JSON.stringify(result[i]))
+                let channel = new Channel(result[i]._id, result[i].name, result[i].description, result[i].private,
+                    result[i].members, result[i].createdAt, result[i].creator, result[i].editedAt);
+                channelsArray.push(channel)
             }
             allChannelsJSON = JSON.stringify(channelsArray)
         }).catch(() => {
@@ -94,6 +96,7 @@ export async function insertNewMessage(messages: Collection, newMessage: Message
 // updatedChannel updates name and body of an existing Channel using a req (request) object
 export async function updateChannel(channels: Collection, existingChannel: Channel, req: any) {
     let err: boolean = false;
+    existingChannel.editedAt = new Date()
 
     await channels.save({
         name: req.body.name, description: req.body.description,
@@ -159,14 +162,14 @@ export async function updateMessage(messages: Collection, existingMessage: Messa
 }
 
 // deleteChannel does something
-export async function deleteChannel(channels: Collection, messages: Collection, existingChannel: Channel, channelID: string): Promise<boolean> {
+export async function deleteChannel(channels: Collection, messages: Collection, existingChannel: Channel): Promise<boolean> {
     let err: boolean = false;
     // The general channel never gets deleted
     if (existingChannel.creator.ID == -1) {
         err = true;
     }
 
-    let chanID = new ObjectID(channelID)
+    let chanID = new ObjectID(existingChannel.id.toString())
     await channels.remove({ _id: chanID }).catch(() => {
         err = true;
     });
@@ -205,10 +208,10 @@ export async function getChannelByID(channels: Collection, id: string) {
     if (findResult == null) {
         let emptyUser = new User(-1, "", new Uint8Array(100), "", "", "", "")
         let dummyDate = new Date()
-        channel = new Channel("", "", false, [], dummyDate, emptyUser, "");
+        channel = new Channel("", "", "", false, [], dummyDate, emptyUser, dummyDate);
         return { channel, err };
     }
-    channel = new Channel(findResult.name, findResult.description, findResult.private,
+    channel = new Channel(findResult._id, findResult.name, findResult.description, findResult.private,
         findResult.members, findResult.createdAt, findResult.creator, findResult.editedAt);
     return { channel, err };
 }
@@ -231,10 +234,10 @@ export async function getMessageByID(messages: Collection, id: string) {
     if (findResult == null) {
         let emptyUser = new User(-1, "", new Uint8Array(100), "", "", "", "")
         let dummyDate = new Date()
-        message = new Message("", dummyDate, "", emptyUser, dummyDate);
+        message = new Message("", "", dummyDate, "", emptyUser, dummyDate);
         return { message, err };
     }
-    message = new Message(findResult.channelID, findResult.createdAt, findResult.body,
+    message = new Message(findResult._id, findResult.channelID, findResult.createdAt, findResult.body,
         findResult.creator, findResult.editedAt)
     return { message, err }
 }
@@ -242,7 +245,7 @@ export async function getMessageByID(messages: Collection, id: string) {
 // TODO: Reshape the return value of find to a JSON array of message model objects
 // last100Messages does something
 export async function last100Messages(messages: Collection, channelID: string) {
-    let last100messages: string[] = []
+    let last100messages: Message[] = []
     let err: boolean = false;
 
     if (channelID == null) {
@@ -255,7 +258,9 @@ export async function last100Messages(messages: Collection, channelID: string) {
     await cursor.hasNext().then(async () => {
         await cursor.toArray().then((result) => {
             for (let i = 0; i < result.length; i++) {
-                last100messages.push(JSON.stringify(result[i]))
+                let message = new Message(result[i]._id, result[i].channelID, result[i].createdAt, result[i].body,
+                    result[i].creator, result[i].editedAt)
+                last100messages.push(message)
             }
         }).catch(() => {
             err = true;
@@ -269,7 +274,7 @@ export async function last100Messages(messages: Collection, channelID: string) {
 // TODO: Reshape the return value of find to a JSON array of message model objects
 // last100Messages does something
 export async function last100SpecificMessages(messages: Collection, channelID: string, messageID: string) {
-    let last100messages: string[] = []
+    let last100messages: Message[] = []
     let err: boolean = false;
 
     if (channelID == null) {
@@ -283,7 +288,9 @@ export async function last100SpecificMessages(messages: Collection, channelID: s
     await cursor.hasNext().then(async () => {
         await cursor.toArray().then((result) => {
             for (let i = 0; i < result.length; i++) {
-                last100messages.push(JSON.stringify(result[i]))
+                let message = new Message(result[i]._id, result[i].channelID, result[i].createdAt, result[i].body,
+                    result[i].creator, result[i].editedAt)
+                last100messages.push(message)
             }
         }).catch(() => {
             err = true;

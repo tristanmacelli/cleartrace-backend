@@ -9,8 +9,8 @@ export class Message {
     body: string;
     creator: User;
     editedAt: Date;
-    constructor(ChannelID: string, CreatedAt: Date, Body: string, Creator: User, EditedAt: Date) {
-        this.id = "";
+    constructor(id: string, ChannelID: string, CreatedAt: Date, Body: string, Creator: User, EditedAt: Date) {
+        this.id = id;
         this.channelID = ChannelID;
         this.createdAt = CreatedAt;
         this.body = Body;

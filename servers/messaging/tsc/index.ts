@@ -281,7 +281,6 @@ const main = async () => {
                             res.send()
                             return;
                         })
-
                     } else {
                         mongo.last100Messages(messages, resultChannel.id).then((result) => {
                             if (result.err) {
@@ -294,7 +293,6 @@ const main = async () => {
                             res.send()
                             return;
                         });
-
                     }
                     break;
                 case 'POST':
@@ -359,7 +357,7 @@ const main = async () => {
                         break;
                     }
                     // Call database to DELETE this channel
-                    mongo.deleteChannel(channels, messages, resultChannel, req.params.channelID).then((err) => {
+                    mongo.deleteChannel(channels, messages, resultChannel).then((err) => {
                         if (err) {
                             res.status(500);
                             res.send()
@@ -538,13 +536,13 @@ const main = async () => {
         let c = req.body;
 
         c.members.push(creator.ID)
-        return new Channel(c.name, c.description, c.private,
+        return new Channel("", c.name, c.description, c.private,
             c.members, c.createdAt, creator, c.editedAt);
     }
 
     function createMessage(req: any, creator: User): Message {
         let m = req.body;
-        return new Message(req.params.channelID, m.createdAt, m.body,
+        return new Message("", req.params.channelID, m.createdAt, m.body,
             creator, m.editedAt);
     }
 

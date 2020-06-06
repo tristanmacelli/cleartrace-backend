@@ -30,7 +30,7 @@ client.connect(function (err: any) {
         let channels: Collection = collection;
         let emptyUser = new User(-1, "", new Uint8Array(100), "", "", "", "")
         let dummyDate = new Date()
-        let general = new Channel("general", "an open channel for all", false, [], dummyDate, emptyUser, "not yet edited");
+        let general = new Channel("", "general", "an open channel for all", false, [], dummyDate, emptyUser, dummyDate);
         await mongo.insertNewChannel(channels, general).then(result => {
             // check for insertion errors
             if (result.err) {
