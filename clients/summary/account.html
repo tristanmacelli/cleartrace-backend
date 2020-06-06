@@ -44,8 +44,23 @@
 
     <main id="account-page">
         <div class="about" id="about">
-            <div id="userInfo" onload="accountPageLoad()">
-
+            <div id="userInfo">
+                <table cellspacing=0 role="presentation">
+                    <tbody>
+                        <tr>
+                            <td><p>Username: </p></td>
+                            <td><p id="account-username"></p></td>
+                        </tr>
+                        
+                        <tr>
+                            <td><p>First name: </p></td>
+                            <td><input type="text" id="account-firstname" name="utf8" value="" /></td>
+                            <td><p>Last name: </p></td>
+                            <td><input type="text" id="account-lastname" name="utf8" value="" /></td>
+                            <td><p id="account-change-name">CHANGE</p></td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
     </main>

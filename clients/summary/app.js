@@ -52,7 +52,6 @@ $('#createUser').submit(function createNewUser(e) {
             console.log(result)
         },
         error: function(result) {
-            // $("#result").html("<strong>" + result + "</strong>")
             message = "Error: " + result.responseText
             alert(message)
         }
@@ -86,7 +85,6 @@ $('#signIn').submit(function signIn(e) {
             console.log(result)
         },
         error: function(result) {
-            // $("#result").html("<strong>" + result + "</strong>")
             message = "Error: " + result.responseText
             alert(message)
         }
@@ -104,7 +102,6 @@ $('#signOut').submit(function signOut(e) {
     var form = $(this);
     var url = form.attr('action');
     sessionToken = localStorage.getItem('auth')
-    localStorage.removeItem('auth')
 
     // send a get request with the above data
     $.ajax({
@@ -121,7 +118,35 @@ $('#signOut').submit(function signOut(e) {
     })
 })
 
-// $('#updateUser').submit()
+$("#account-change-name").on("click", function updateUser() {
+
+    var url = "https://slack.api.tristanmacelli.com/v1/users/me"
+
+    var b = {
+        "FirstName": $('#account-firstname').val(),
+        "LastName": $('#account-lastname').val(),
+    }
+    sessionToken = localStorage.getItem('auth')
+
+    // send a get request with the above data
+    $.ajax({
+        type: "PATCH",
+        url: url,
+        data: JSON.stringify(b),
+        headers: {
+            Authorization: sessionToken,
+        },
+        contentType: "application/json",
+        success: function (result) {
+            console.log(result)
+            request_user(display_user, sessionToken)
+        },
+        error: function(result) {
+            message = "Error: " + result.responseText
+            alert(message)
+        }
+    })
+})
 
 function display_results(result, result_id) {
     if (result) {
@@ -189,16 +214,9 @@ function display_user_first_name(user) {
 }
 
 function display_user(result) {
-    var final_html = "<table cellspacing=0 role=\"presentation\"><tbody>"
-    final_html += "<tr><td><p>Username: </p></td>"
-    final_html += "<td>" + result.UserName + "</td></tr>"
-    
-    final_html += "<tr><td><p>First name: </p></td>"
-    final_html += "<td>" + result.FirstName + "</td>"
-    final_html += "<td><p>Last name: </p></td>"
-    final_html += "<td>" + result.LastName + "</td></tr>"
-
-    $("#userInfo").html(final_html)
+    $("#account-username").text(result.UserName)
+    $("#account-firstname").val(result.FirstName)
+    $("#account-lastname").val(result.LastName)
 }
 
 // Users returning to the website with an active session get redirected from the log in page
