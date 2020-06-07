@@ -40,6 +40,6 @@ tristanmacelli/messaging
 # tristanmacelli/messaging
 
 sleep 1
-docker exec -d messaging node startup.js
+docker exec -t messaging node startup.js
 
 docker ps
