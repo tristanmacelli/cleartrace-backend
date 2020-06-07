@@ -3,13 +3,13 @@
 // to compile run tsc --outDir ../
 
 import { ObjectID, Collection } from "mongodb";
-import { Channel } from "./channel";
+import { Channel, isChannelMember } from "./channel";
 import { Message } from "./message";
 import { User } from "./user";
 
 // getAllChannels does something
 // TODO: make sure the returned value is a shape that we can actually use
-export async function getAllChannels(channels: Collection) {
+export async function getAllChannels(channels: Collection, userID: number) {
     let err: boolean = false;
     let allChannels: Channel[] = []
     // if channels does not yet exist
@@ -19,7 +19,9 @@ export async function getAllChannels(channels: Collection) {
             for (let i = 0; i < result.length; i++) {
                 let channel = new Channel(result[i]._id, result[i].name, result[i].description, result[i].private,
                     result[i].members, result[i].createdAt, result[i].creator, result[i].editedAt);
-                allChannels.push(channel)
+                if (isChannelMember(channel, userID)) {
+                    allChannels.push(channel)
+                }               
             }
         }).catch(() => {
             err = true;
