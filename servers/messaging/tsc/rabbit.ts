@@ -22,7 +22,7 @@ export class RabbitObject {
     }
 }
 
-// const createMQConnection = async (): Promise<amqp.Connection> => {
+// export const createMQConnection = async (): Promise<amqp.Connection> => {
 //     let client: amqp.Connection;
 //     while (1) {
 //         try {
@@ -33,11 +33,10 @@ export class RabbitObject {
 //             sleep(1)
 //         }
 //     }
-    
 //     return client!;
 // }
 
-// const createMQChannel = async (conn: amqp.Connection): Promise<amqp.Channel> => {
+// export const createMQChannel = async (conn: amqp.Connection): Promise<amqp.Channel> => {
 //     let channel: amqp.Channel;
 //     try {
 //         channel = await conn.createChannel();

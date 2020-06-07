@@ -4,7 +4,7 @@
 //require the express and morgan packages
 import express from "express";
 import morgan from "morgan";
-import { MongoClient, Collection, Db } from "mongodb";
+import { Collection, Db } from "mongodb";
 import * as mongo from "./mongo_handlers";
 import { Message, isMessageCreator } from "./message";
 import { Channel, isChannelCreator, isChannelMember } from "./channel";
@@ -37,25 +37,9 @@ const mqURL = "amqp://rabbitMQ"
 
 // Mongo DB variables
 const dbName = 'mongodb';
-const mongoURL = 'mongodb://mongodb:27017/mongodb';
-
-// Create a new MongoClient
-const mc = new MongoClient(mongoURL, { useUnifiedTopology: true });
-
-async function createConnection() {
-    let client: MongoClient;
-    try {
-        client = await mc.connect();
-    } catch (e) {
-        console.log("Cannot connect to mongo: MongoNetworkError: failed to connect to server");
-        console.log("Restarting Messaging server");
-        process.exit(1);
-    }
-    return client!;
-}
 
 const main = async () => {
-    const client = await createConnection();
+    const client = await mongo.createConnection();
     const db = client.db(dbName);
     var channels = db.collection("channels");
     var messages = db.collection("messages");
@@ -231,13 +215,16 @@ const main = async () => {
                     return;
                 }
                 let insertedMessage = insertResult.newMessage;
+                // add to rabbitMQ queue
+                let postMembers = (resultChannel.private ? resultChannel.members : null)
+
+                let post = new RabbitObject('message-new', null, insertedMessage,
+                    postMembers, null, null)
+                sendObjectToQueue(queue, post)
+
                 res.status(201);
                 res.set("Content-Type", "application/json");
                 res.json(insertedMessage);
-                // // add to rabbitMQ queue
-                // let PostObj = new RabbitObject('message-new', null, insertedMessage,
-                //     resultChannel.members, null, null)
-                // sendObjectToQueue(queue, PostObj)
                 res.send()
                 break;
             case 'PATCH':
@@ -255,13 +242,15 @@ const main = async () => {
                     return;
                 }
                 let updatedChannel = updateResult.existingChannel;
+                // add to rabbitMQ queue
+                let patchMembers = (updatedChannel.private ? updatedChannel.members : null)
+
+                let PatchObj = new RabbitObject('channel-update', updatedChannel, null,
+                    patchMembers, null, null)
+                sendObjectToQueue(queue, PatchObj)
+                
                 res.set("Content-Type", "application/json");
                 res.json(updatedChannel);
-
-                // add to rabbitMQ queue
-                // let PatchObj = new RabbitObject('channel-update', updatedChannel, null,
-                //     updatedChannel.members, null, null)
-                // sendObjectToQueue(queue, PatchObj)
                 res.send()
                 break;
             case 'DELETE':
@@ -279,9 +268,12 @@ const main = async () => {
                     return;
                 }
                 // add to rabbitMQ queue
-                // let obj = new RabbitObject('channel-delete', null, null, resultChannel.members,
-                //     resultChannel.id, null)
-                // sendObjectToQueue(queue, obj)
+                let deleteMembers = (resultChannel.private ? resultChannel.members : null)
+
+                let obj = new RabbitObject('channel-delete', null, null, deleteMembers,
+                    resultChannel.id, null)
+                sendObjectToQueue(queue, obj)
+
                 res.set("Content-Type", "text/plain");
                 res.send("Channel was successfully deleted");
                 break;
@@ -337,10 +329,13 @@ const main = async () => {
                     return;
                 }
                 let insertChannel = insertResult.newChannel;
-                // // add to rabbitMQ queue
-                // let obj = new RabbitObject('channel-new', insertChannel, null,
-                //     insertChannel.members, null, null)
-                // sendObjectToQueue(queue, obj)
+                // add to rabbitMQ queue
+                let members = (insertChannel.private ? insertChannel.members : null)
+
+                let post = new RabbitObject('channel-new', insertChannel, null,
+                    members, null, null)
+                sendObjectToQueue(queue, post)
+
                 res.status(201);
                 res.set("Content-Type", "application/json");
                 res.json(insertChannel);
@@ -392,19 +387,17 @@ const main = async () => {
                     return;
                 }
                 let updatedMessage = result.existingMessage;
-                res.set("Content-Type", "application/json");
-                res.json(updatedMessage);
 
                 mongo.getChannelByID(channels, updatedMessage.channelID).then((result) => {
                     // add to rabbitMQ queue
-                    let members = null
-                    if (result.channel.private) {
-                        members = result.channel.members
-                    }
+                    let members = (result.channel.private ? result.channel.members : null)
+
                     let post = new RabbitObject('message-update', null, updatedMessage,
-                        result.channel.members, null, null)
+                        members, null, null)
                     sendObjectToQueue(queue, post)
                 })
+                res.set("Content-Type", "application/json");
+                res.json(updatedMessage);
                 res.send();
                 break;
             case 'DELETE':
@@ -423,10 +416,8 @@ const main = async () => {
                 }
                 mongo.getChannelByID(channels, resultMessage.channelID).then((result) => {
                     // add to rabbitMQ queue
-                    let members = null
-                    if (result.channel.private) {
-                        members = result.channel.members
-                    }
+                    let members = (result.channel.private ? result.channel.members : null)
+
                     let post = new RabbitObject('message-delete', null, null,
                         members, null, resultMessage.id)
                     sendObjectToQueue(queue, post)
