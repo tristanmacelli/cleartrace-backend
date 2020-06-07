@@ -19,6 +19,10 @@ export class Message {
     }
 }
 
+export function isMessageCreator(message: Message, userID: number): boolean {
+    return message.creator.ID === userID;
+}
+
 // export default Message;
 
 // to compile run tsc --outDir ../

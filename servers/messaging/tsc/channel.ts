@@ -23,6 +23,23 @@ export class Channel {
     }
 }
 
+export function isChannelCreator(channel: Channel, userID: number): boolean {
+    return channel.creator.ID === userID;
+}
+
+export function isChannelMember(channel: Channel, userID: number): boolean {
+    if (channel.private) {
+        for (let i = 0; i < channel.members.length; i++) {
+            if (channel.members[i] === userID) {
+                return true;
+            }
+        }
+    } else {
+        return true;
+    }
+    return false;
+}
+
 // export default Channel;
 
 // to compile run tsc --outDir ../

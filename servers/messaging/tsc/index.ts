@@ -6,8 +6,8 @@ import express from "express";
 import morgan from "morgan";
 import { MongoClient, Collection, Db } from "mongodb";
 import * as mongo from "./mongo_handlers";
-import { Message } from "./message";
-import { Channel } from "./channel";
+import { Message, isMessageCreator } from "./message";
+import { Channel, isChannelCreator, isChannelMember } from "./channel";
 
 import * as Amqp from "amqp-ts"
 import { User } from "./user";
@@ -146,7 +146,7 @@ const main = async () => {
     // function isAuthenticated(req: any) {
     //     return req.headers['x-user'] != null
     // }
-    
+
     // app.all('*', function preflightCheck(req, res, next){
     //     if (!isAuthenticated(req)) {
     //         res.status(401);
@@ -385,7 +385,7 @@ const main = async () => {
         switch (req.method) {
             case 'GET':
                 // QUERY for all channels here
-                mongo.getAllChannels(channels).then((result) => {
+                mongo.getAllChannels(channels, user.ID).then((result) => {
                     if (result.err) {
                         res.status(500);
                         res.send()
@@ -536,27 +536,6 @@ const main = async () => {
         let m = req.body;
         return new Message("", req.params.channelID, m.createdAt, m.body,
             creator, m.editedAt);
-    }
-
-    function isChannelMember(channel: Channel, userID: number): boolean {
-        if (channel.private) {
-            for (let i = 0; i < channel.members.length; i++) {
-                if (channel.members[i] === userID) {
-                    return true;
-                }
-            }
-        } else {
-            return true;
-        }
-        return false;
-    }
-
-    function isChannelCreator(channel: Channel, userID: number): boolean {
-        return channel.creator.ID === userID;
-    }
-
-    function isMessageCreator(message: Message, userID: number): boolean {
-        return message.creator.ID === userID;
     }
 
     // error handler that will be called if
