@@ -13,27 +13,21 @@ async function startUp() {
     var db: Db = client.db(dbName);
 
     // check if any collection exists
-    await db.createCollection('channels')
-    .then(async (channels) => {
-        let emptyUser = new User(-1, "", "", "", "", "")
-        let dummyDate = new Date()
-        let general = new Channel("", "general", "an open channel for all", false, [], dummyDate, emptyUser, dummyDate);
+    let channels = await db.createCollection('channels')
+    let emptyUser = new User(-1, "", "", "", "", "")
+    let dummyDate = new Date()
+    let general = new Channel("", "general", "an open channel for all", false, [], dummyDate, emptyUser, dummyDate);
+    
+    let result = await mongo.insertNewChannel(channels, general)
+    // check for insertion errors
+    if (result.duplicates) {
+        console.log("Error inserting new channel, channel name already exists")
+    }
+    if (result.err) {
+        console.log("Error inserting new general channel", result.err)
+        process.exit(1)
+    }
         
-        await mongo.insertNewChannel(channels, general)
-        .then(result => {
-            // check for insertion errors
-            if (result.err) {
-                console.log("Failed to create new general channel upon opening connection to DB");
-            }
-        })
-        .catch((err: MongoError) => {
-            console.log("Error inserting new channel", err)
-        })
-    })
-    .catch((err: MongoError) => {
-        console.log("Error creating new collection", err)
-    })
-
     db.createCollection('messages')
     .catch((err: MongoError) => {
         console.log("Error creating new collection", err)
