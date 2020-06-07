@@ -11,38 +11,63 @@ const url = 'mongodb://mongodb:27017/mongodb';
 const dbName = 'mongodb';
 
 // Create a new MongoClient
-const client = new MongoClient(url);
+const mc = new MongoClient(url, { useUnifiedTopology: true });
+
+function sleep(seconds: number) {
+    let milliseconds = seconds * 1000
+    const stop = new Date().getTime() + milliseconds;
+    while(new Date().getTime() < stop);       
+}
+
+const createConnection = async (): Promise<MongoClient> => {
+    let client: MongoClient;
+    while (1) {
+        try {
+            client = await mc.connect();
+            break;
+        } catch (e) {
+            console.log("Cannot connect to mongo: MongoNetworkError: failed to connect to server");
+            console.log("Retrying in 1 second");
+            sleep(1)
+        }
+    }
+    return client!;
+}
 
 const startUp = async () => {
-    client.connect(function (err: any) {
-        if (err) {
-            console.log("Error connecting to Mongodb: ", err);
-        } else {
-            console.log("Connected successfully to Mongodb");
-        }
-        var db: Db = client.db(dbName);
+    const client = await createConnection();
+    console.log("Connected successfully to Mongodb");
+    var db: Db = client.db(dbName);
 
-        // check if any collection exists
-        db.createCollection('channels', async function (err: MongoError, collection: Collection<any>) {
-            if (err) {
-                console.log("Error creating new collection: ", err);
+    // check if any collection exists
+    await db.createCollection('channels')
+    .then(async (channels) => {
+        let emptyUser = new User(-1, "", "", "", "", "")
+        let dummyDate = new Date()
+        let general = new Channel("", "general", "an open channel for all", false, [], dummyDate, emptyUser, dummyDate);
+        
+        await mongo.insertNewChannel(channels, general)
+        .then(result => {
+            // check for insertion errors
+            if (result.err) {
+                console.log("Failed to create new general channel upon opening connection to DB");
             }
-            // create general channel (we always want this at startup)
-            let channels: Collection = collection;
-            let emptyUser = new User(-1, "", "", "", "", "")
-            let dummyDate = new Date()
-            let general = new Channel("", "general", "an open channel for all", false, [], dummyDate, emptyUser, dummyDate);
-            await mongo.insertNewChannel(channels, general).then(result => {
-                // check for insertion errors
-                if (result.err) {
-                    console.log("Failed to create new general channel upon opening connection to DB");
-                }
-            })
-            
-        });
+        })
+        .catch((err: MongoError) => {
+            console.log("Error inserting new channel", err)
+        })
+    })
+    .catch((err: MongoError) => {
+        console.log("Error creating new collection", err)
+    })
 
-        db.createCollection('messages');
-        // client.close();
-    });
+    db.createCollection('messages')
+    .catch((err: MongoError) => {
+        console.log("Error creating new collection", err)
+    })
+
+    console.log("MongoDB start up complete")
+    process.exit(0)
 }
+
 startUp();

@@ -49,8 +49,6 @@ class RabbitObject {
     }
 }
 
-// Reasoning for refactor: 
-// https://bit.ly/342jCtj
 // Connection URL
 const url = 'mongodb://mongodb:27017/mongodb';
 
@@ -148,18 +146,12 @@ const main = async () => {
     // function isAuthenticated(req: any) {
     //     return req.headers['x-user'] != null
     // }
-    // const allowedMethods = ['GET','POST','PATCH','DELETE'];
-
+    
     // app.all('*', function preflightCheck(req, res, next){
     //     if (!isAuthenticated(req)) {
     //         res.status(401);
     //         res.send()
     //         next(new Error("401 Unauthorized"))
-    //     } else if (!allowedMethods.includes(req.method)) {
-    //         res.status(405);
-    //         res.set("Content-Type", "text/plain");
-    //         res.send("Method Not Allowed");
-    //         next(new Error("405 Method Not Allowed"))
     //     } else {
     //         next();
     //     }
