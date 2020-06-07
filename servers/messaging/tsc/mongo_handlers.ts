@@ -204,7 +204,7 @@ export async function getChannelByID(channels: Collection, id: string) {
     });
     let channel: Channel;
     if (findResult == null) {
-        let emptyUser = new User(-1, "", new Uint8Array(100), "", "", "", "")
+        let emptyUser = new User(-1, "", "", "", "", "")
         let dummyDate = new Date()
         channel = new Channel("", "", "", false, [], dummyDate, emptyUser, dummyDate);
         return { channel, err };
@@ -230,7 +230,7 @@ export async function getMessageByID(messages: Collection, id: string) {
 
     let message: Message;
     if (findResult == null) {
-        let emptyUser = new User(-1, "", new Uint8Array(100), "", "", "", "")
+        let emptyUser = new User(-1, "", "", "", "", "")
         let dummyDate = new Date()
         message = new Message("", "", dummyDate, "", emptyUser, dummyDate);
         return { message, err };

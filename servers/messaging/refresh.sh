@@ -39,4 +39,7 @@ tristanmacelli/messaging
 # -e ADDR=5002 \
 # tristanmacelli/messaging
 
+sleep 1
+docker exec -d messaging node startup.js
+
 docker ps
