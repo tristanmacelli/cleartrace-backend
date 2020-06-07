@@ -8,9 +8,11 @@ import { MongoClient, Collection, Db } from "mongodb";
 import * as mongo from "./mongo_handlers";
 import { Message, isMessageCreator } from "./message";
 import { Channel, isChannelCreator, isChannelMember } from "./channel";
+import { RabbitObject, sendObjectToQueue } from "./rabbit";
+import { User } from "./user";
 
 import * as Amqp from "amqp-ts"
-import { User } from "./user";
+// import * as amqp from "amqplib"
 
 //create a new express application
 const app = express();
@@ -26,39 +28,21 @@ app.use(express.json());
 app.use(morgan("dev"));
 
 var db: Db;
-
 var messages: Collection;
 var channels: Collection;
 
-class RabbitObject {
-    type: string;
-    channel: Channel | any;
-    message: Message | any;
-    userIDs: string[] | any;
-    channelID: string | any;
-    messageID: string | any;
-    constructor(t: string, c: Channel | any, m: Message | any, ids: string[] | any,
-        cid: string | any, mid: string | any) {
+// Rabbit MQ variables
+const mqName = "helloQueue"
+const mqURL = "amqp://rabbitMQ"
 
-        this.type = t;
-        this.channel = c;
-        this.message = m;
-        this.userIDs = ids;
-        this.channelID = cid;
-        this.messageID = mid
-    }
-}
-
-// Connection URL
-const url = 'mongodb://mongodb:27017/mongodb';
-
-// Database Name
+// Mongo DB variables
 const dbName = 'mongodb';
+const mongoURL = 'mongodb://mongodb:27017/mongodb';
 
 // Create a new MongoClient
-const mc = new MongoClient(url, { useUnifiedTopology: true });
+const mc = new MongoClient(mongoURL, { useUnifiedTopology: true });
 
-const createConnection = async (): Promise<MongoClient> => {
+async function createConnection() {
     let client: MongoClient;
     try {
         client = await mc.connect();
@@ -70,73 +54,25 @@ const createConnection = async (): Promise<MongoClient> => {
     return client!;
 }
 
-// const createMQConnection = async (): Bluebird<amqp.Connection> => {
-//     let client: amqp.Connection;
-//     try {
-//         client = await amqp.connect("amqp://localhost");;
-//     } catch (e) {
-//         console.log("Cannot connect to RabbitMQ: failed to connect to server ", e);
-//         process.exit(1);
-//     }
-//     return client!;
-// }
-
-// const createMQChannel = async (conn: amqp.Connection): Bluebird<amqp.Channel> => {
-//     let channel: amqp.Channel;
-//     try {
-//         channel = await conn.createChannel();
-//     } catch (e) {
-//         console.log("Cannot create channel on RabbitMQ ", e);
-//         process.exit(1);
-//     }
-//     return channel!;
-// }
-
-function sendObjectToQueue(q: Amqp.Queue, ob: RabbitObject) {
-    const message = new Amqp.Message(ob)
-    // let json = JSON.stringify(message)
-    q.send(message)
-    console.log("Sent out the message");
-}
-
-
 const main = async () => {
     const client = await createConnection();
     const db = client.db(dbName);
     var channels = db.collection("channels");
     var messages = db.collection("messages");
 
-    // let rabbitConn: Amqp.Connection;
-    // rabbitConn = new Amqp.Connection("amqp://rabbitMQ");
-    // let queue = rabbitConn.declareQueue("helloQueue");
+    let rabbitConn: Amqp.Connection;
+    rabbitConn = new Amqp.Connection(mqURL);
+    let queue = rabbitConn.declareQueue(mqName);
 
     // let mqClient = await createMQConnection();
     // let mqChannel = await createMQChannel(mqClient);
+    // mqChannel.assertQueue(mqName)
+    // mqChannel.sendToQueue(mqName, Buffer.from('something to do'));
 
-    // mqClient.then(function (conn) {
-    //     return conn.createChannel();
-    // }).then(function (ch) {
-    //     return ch.assertQueue(q).then(function (ok) {
-    //         return ch.sendToQueue(q, Buffer.from('something to do'));
-    //     });
-    // })
-
-    // mqClient.createChannel(function (error1: any, channel: any) {
-    //     if (error1) {
-    //         throw error1;
-    //     }
-    //     var queue = 'hello';
-    //     var msg = 'Hello world';
-
-    //     channel.assertQueue(queue, {
-    //         durable: false
-    //     });
-
-    //     channel.sendToQueue(queue, Buffer.from(msg));
-    //     console.log(" [x] Sent %s", msg);
+    // channel.assertQueue(queue, {
+    //     durable: false
     // });
-
-    // TODO: We should do a test of the mongo helper methods
+    // channel.sendToQueue(queue, Buffer.from(msg));
 
     app.listen(+addr, "", (req, res) => {
         //callback is executed once server is listening
@@ -439,7 +375,7 @@ const main = async () => {
     });
 
     // Editing the body of or deleting a message
-    app.use("/v1/messages/:messageID", (req: any, res: any) => {
+    app.use("/v1/messages/:messageID", async (req: any, res: any) => {
         // Check that the user is authenticated
         if (req.headers['x-user'] == null) {
             res.status(401);
@@ -452,77 +388,80 @@ const main = async () => {
             res.send()
             return;
         }
-        mongo.getMessageByID(messages, req.params.messageID).then((result) => {
-            if (result.err) {
-                res.status(500);
-                res.send()
-                return;
-            }
-            // Can we use this as a const?
-            let resultMessage = result.message;
-            switch (req.method) {
-                case 'PATCH':
-                    if (!isMessageCreator(resultMessage, user.ID)) {
-                        res.status(403);
-                        res.set("Content-Type", "text/plain");
-                        res.send("Cannot update message");
-                        break;
-                    }
-                    // TODO: Call the database to UPDATE the message in the database using the messageID
-                    mongo.updateMessage(messages, resultMessage, req).then(result => {
-                        if (result.err) {
-                            res.status(500);
-                            res.send();
-                            return;
-                        }
-                        let updatedMessage = result.existingMessage;
-                        res.set("Content-Type", "application/json");
-                        res.json(updatedMessage);
-
-                        // mongo.getChannelByID(channels, updatedMessage.channelID).then((resultChannel) => {
-                        // add to rabbitMQ queue
-                        // let pobj = new RabbitObject('message-update', null, updatedMessage,
-                        // resultChannel.finalChannel.members, null, null)
-                        // sendObjectToQueue(queue, pobj)
-                        // })
-                        res.send();
-                        return;
-                    })
-                    break;
-                case 'DELETE':
-                    if (!isMessageCreator(resultMessage, user.ID)) {
-                        res.status(403);
-                        res.set("Content-Type", "text/plain");
-                        res.send("Cannot delete message");
-                        break;
-                    }
-                    // Call database to DELETE the specified message using the messageID
-                    mongo.deleteMessage(messages, resultMessage).then(err => {
-                        if (err) {
-                            res.status(500);
-                            res.send();
-                            return;
-                        }
-                        // mongo.getChannelByID(channels, resultMessage.channelID).then((deleteMessageChannel) => {
-                        //     // add to rabbitMQ queue
-                        //     let PostObj = new RabbitObject('message-delete', null, null,
-                        //         deleteMessageChannel.finalChannel.members, null, resultMessage.id)
-                        //     sendObjectToQueue(queue, PostObj)
-                        // })
-
-                        res.set("Content-Type", "text/plain");
-                        res.send("Message deleted");
-                        return;
-                    });
-                    break;
-                default:
-                    res.status(405);
+        let result = await mongo.getMessageByID(messages, req.params.messageID)
+        if (result.err) {
+            res.status(500);
+            res.send()
+            return;
+        }
+        // Can we use this as a const?
+        let resultMessage = result.message;
+        switch (req.method) {
+            case 'PATCH':
+                if (!isMessageCreator(resultMessage, user.ID)) {
+                    res.status(403);
                     res.set("Content-Type", "text/plain");
-                    res.send("Method Not Allowed");
+                    res.send("Cannot update message");
                     break;
-            }
-        })
-    });
+                }
+                // TODO: Call the database to UPDATE the message in the database using the messageID
+                let result = await mongo.updateMessage(messages, resultMessage, req)
+                if (result.err) {
+                    res.status(500);
+                    res.send();
+                    return;
+                }
+                let updatedMessage = result.existingMessage;
+                res.set("Content-Type", "application/json");
+                res.json(updatedMessage);
+
+                mongo.getChannelByID(channels, updatedMessage.channelID).then((result) => {
+                    // add to rabbitMQ queue
+                    let members = null
+                    if (result.channel.private) {
+                        members = result.channel.members
+                    }
+                    let post = new RabbitObject('message-update', null, updatedMessage,
+                        result.channel.members, null, null)
+                    sendObjectToQueue(queue, post)
+                })
+                res.send();
+                return;
+            case 'DELETE':
+                if (!isMessageCreator(resultMessage, user.ID)) {
+                    res.status(403);
+                    res.set("Content-Type", "text/plain");
+                    res.send("Cannot delete message");
+                    break;
+                }
+                // Call database to DELETE the specified message using the messageID
+                let err = await mongo.deleteMessage(messages, resultMessage)
+                if (err) {
+                    res.status(500);
+                    res.send();
+                    return;
+                }
+                mongo.getChannelByID(channels, resultMessage.channelID).then((result) => {
+                    // add to rabbitMQ queue
+                    let members = null
+                    if (result.channel.private) {
+                        members = result.channel.members
+                    }
+                    let post = new RabbitObject('message-delete', null, null,
+                        members, null, resultMessage.id)
+                    sendObjectToQueue(queue, post)
+                })
+
+                res.set("Content-Type", "text/plain");
+                res.send("Message deleted");
+                return;
+            default:
+                res.status(405);
+                res.set("Content-Type", "text/plain");
+                res.send("Method Not Allowed");
+                break;
+        }
+    })
 
     function createChannel(req: any, creator: User): Channel {
         let c = req.body;
