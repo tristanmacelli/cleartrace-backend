@@ -176,27 +176,20 @@ const main = async () => {
                     break;
                 }
                 // QUERY for last 100 messages here
-                if (req.params.before != null) {
-                    let result = await mongo.last100SpecificMessages(messages, resultChannel.id, req.params.before)
-                    if (result.err) {
-                        res.status(500);
-                        res.send()
-                        return;
-                    }
-                    res.set("Content-Type", "application/json");
-                    res.json(result.last100messages);
-                    res.send()
+                let result
+                if (!req.params.before) {
+                    result = await mongo.last100Messages(messages, resultChannel.id, "")
                 } else {
-                    let result = await mongo.last100Messages(messages, resultChannel.id)
-                    if (result.err) {
-                        res.status(500);
-                        res.send()
-                        return;
-                    }
-                    res.set("Content-Type", "application/json");
-                    res.json(result.last100messages);
-                    res.send()
+                    result = await mongo.last100Messages(messages, resultChannel.id, req.params.before)
                 }
+                if (result.err) {
+                    res.status(500);
+                    res.send()
+                    return;
+                }
+                res.set("Content-Type", "application/json");
+                res.json(result.last100messages);
+                res.send()
                 break;
             case 'POST':
                 if (!isChannelMember(resultChannel, user.ID)) {
@@ -297,7 +290,12 @@ const main = async () => {
         switch (req.method) {
             case 'GET':
                 // QUERY for all channels here
-                let getResult = await mongo.getAllChannels(channels, user.ID)
+                let getResult
+                if (!req.params.startsWith) {
+                    getResult = await mongo.getChannels(channels, user.ID, "")
+                } else {
+                    getResult = await mongo.getChannels(channels, user.ID, req.params.startsWith)
+                }
                 if (getResult.err) {
                     res.status(500);
                     res.send()

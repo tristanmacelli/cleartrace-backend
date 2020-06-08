@@ -1,6 +1,6 @@
 "use strict";
 
-import { ObjectID, Collection, MongoClient } from "mongodb";
+import { ObjectID, Collection, MongoClient, Cursor } from "mongodb";
 import { Channel, isChannelMember } from "./channel";
 import { Message } from "./message";
 import { User } from "./user";
@@ -26,12 +26,16 @@ export async function createConnection() {
 }
 
 // getAllChannels does something
-// TODO: make sure the returned value is a shape that we can actually use
-export async function getAllChannels(channels: Collection, userID: number) {
+export async function getChannels(channels: Collection, userID: number, search: string) {
     let err: boolean = false;
     let allChannels: Channel[] = []
     // if channels does not yet exist
-    let cursor = channels.find();
+    let cursor: Cursor<any>
+    if (!search) {
+        cursor = channels.find();
+    } else {
+        cursor = channels.find({ name: { $regex: "/^"+ search +"/i" } });
+    }
     if (await cursor.hasNext()) {    
         let result = await cursor.toArray()
         for (let i = 0; i < result.length; i++) {
@@ -249,7 +253,7 @@ export async function getMessageByID(messages: Collection, id: string) {
 
 // TODO: Reshape the return value of find to a JSON array of message model objects
 // last100Messages does something
-export async function last100Messages(messages: Collection, channelID: string) {
+export async function last100Messages(messages: Collection, channelID: string, messageID: string) {
     let last100messages: Message[] = []
     let err: boolean = false;
 
@@ -258,32 +262,13 @@ export async function last100Messages(messages: Collection, channelID: string) {
         return { last100messages, err };
     }
     channelID = channelID.toString();
-    let cursor = messages.find({ channelID: channelID }).sort({ createdAt: -1 }).limit(100);
-
-    if (await cursor.hasNext()) {    
-        let result = await cursor.toArray()
-        for (let i = 0; i < result.length; i++) {
-            let message = new Message(result[i]._id, result[i].channelID, result[i].createdAt, result[i].body,
-                result[i].creator, result[i].editedAt)
-            last100messages.push(message)
-        }
+    let cursor
+    if (!messageID) {
+        cursor = messages.find({ channelID: channelID }).sort({ createdAt: -1 }).limit(100);
+    } else {
+        let objID = new ObjectID(messageID)
+        cursor = messages.find({ channelID: channelID, _id: { $lt: objID } }).sort({ createdAt: -1 }).limit(100);
     }
-    return { last100messages, err };
-}
-
-// TODO: Reshape the return value of find to a JSON array of message model objects
-// last100Messages does something
-export async function last100SpecificMessages(messages: Collection, channelID: string, messageID: string) {
-    let last100messages: Message[] = []
-    let err: boolean = false;
-
-    if (channelID == null) {
-        err = true;
-        return { last100messages, err };
-    }
-    channelID = channelID.toString();
-    let objID = new ObjectID(messageID)
-    let cursor = messages.find({ channelID: channelID, _id: { $lt: objID } }).sort({ createdAt: -1 }).limit(100);
 
     if (await cursor.hasNext()) {    
         let result = await cursor.toArray()
