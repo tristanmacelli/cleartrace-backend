@@ -1,152 +1,74 @@
+import * as auth from "./js/auth.handlers"
+
+var app = new Vue({
+    el: '#app',
+    data: {
+        isAuthenticated: false
+    },
+    methods: {
+        Authenticate: auth.signIn(),
+        CreateUser: auth.createNewUser(),
+        SignOut: auth.signOut()
+    }
+})
+
+$("#get-messages").on("click", async function getMessages() {
+    var url = "https://slack.api.tristanmacelli.com/v1/channels/5edbf9c61d5a4d4adcee0f3b"
+    sessionToken = localStorage.getItem('auth')
+
+    // send a get request with the above data
+    let resp = await fetch(url, {
+        method: 'GET',
+        headers: {
+            "Authorization": sessionToken
+        }
+    })
+    if (!resp.ok) {
+        alert("Error: ", resp.status)
+    }
+    response = await resp.json()
+    console.log(response)
+})
+
+$("#get-channels").on("click", async function getChannels() {
+    console.log("Getting Channels:")
+    var url = "https://slack.api.tristanmacelli.com/v1/channels"
+    sessionToken = localStorage.getItem('auth')
+
+    // send a get request with the above data
+    resp = await fetch(url, {
+        method: 'GET',
+        headers: {
+            "Authorization": sessionToken
+        }
+    });
+    if (!resp.ok) {
+        alert(resp.status)
+        throw new Error(resp.status)
+    }
+    let channels = await resp.json();
+    console.log(channels)
+})
 
 // when the form is submitted
-$("#summary").submit(function getSummary(e) {
-
+$("#summary").submit(async function getSummary(e) {
     e.preventDefault();
 
-    var form = $(this);
-    var url = form.attr('action');
+    let urlToSummarize = document.getElementById("summaryUrl").innerText
+    let url = new URL("https://slack.api.tristanmacelli.com/v1/summary")
+    url.searchParams.append("url", urlToSummarize)
 
     // send a get request with the above data
-    $.ajax({
-        type: "GET",
-        url: url,
-        data: {
-            url: $('#summaryUrl').val()
-        },
-        crossDomain: false,
-        success: function (result) {
-            display_results(result, "#summaryResult")
-        },
-        error: function(result) {
-            alert(result)
-        }
-    });
+    let resp = await fetch(url, {
+        method: 'GET'
+    })
+    if (!resp.ok) {
+        alert("Error: ", resp.status)
+    }
+    response = await resp.json()
+    console.log(response)
+    // display_results(result, "#summaryResult")
 });
-
-// Creating a new user based on the form values
-$('#createUser').submit(function createNewUser(e) {
-    e.preventDefault();
-
-    var form = $(this);
-    var url = form.attr('action');
-    var username = $('#firstname').val() + "." + $('#lastname').val()
-
-    var b = {
-        "Email": $('#email').val(),
-        "Password": $('#pass').val(),
-        "PasswordConf": $('#pass').val(),
-        "UserName": username,
-        "FirstName": $('#firstname').val(),
-        "LastName": $('#lastname').val()
-    }
-
-    // send a get request with the above data
-    $.ajax({
-        type: "POST",
-        url: url,
-        data: JSON.stringify(b),
-        contentType: "application/json",
-        crossDomain: true,
-        success: function (result) {
-            console.log(result)
-        },
-        error: function(result) {
-            message = "Error: " + result.responseText
-            alert(message)
-        }
-    }).done(function (_, _, xhr) {
-        // https://developer.mozilla.org/en-US/docs/Web/API/Window/sessionStorage
-        sessionToken = xhr.getResponseHeader('authorization')
-        localStorage.setItem('auth', sessionToken)
-        window.location.replace("https://slack.client.tristanmacelli.com/home.html");
-    });
-})
-
-// Creating a new session based on the form values
-$('#signIn').submit(function signIn(e) {
-    e.preventDefault();
-
-    var form = $(this);
-    var url = form.attr('action');
-
-    var b = {
-        "Email": $('#emailSess').val(),
-        "Password": $('#passSess').val(),
-    }
-
-    // send a get request with the above data
-    $.ajax({
-        type: "POST",
-        url: url,
-        data: JSON.stringify(b),
-        contentType: "application/json",
-        success: function (result) {
-            console.log(result)
-        },
-        error: function(result) {
-            message = "Error: " + result.responseText
-            alert(message)
-        }
-    }).done(function (_, _, xhr) {
-        sessionToken = xhr.getResponseHeader('authorization')
-        localStorage.setItem('auth', sessionToken)
-        window.location.replace("https://slack.client.tristanmacelli.com/home.html");
-    });
-})
-
-// Removing a session based on the form values
-$('#signOut').submit(function signOut(e) {
-    e.preventDefault();
-
-    var form = $(this);
-    var url = form.attr('action');
-    sessionToken = localStorage.getItem('auth')
-
-    // send a get request with the above data
-    $.ajax({
-        type: "DELETE",
-        url: url,
-        headers: {
-            Authorization: sessionToken,
-        },        
-        success: function (result) {
-            console.log(result)
-            localStorage.removeItem('auth')
-            window.location.replace("https://slack.client.tristanmacelli.com");
-        }
-    })
-})
-
-$("#account-change-name").on("click", function updateUser() {
-
-    var url = "https://slack.api.tristanmacelli.com/v1/users/me"
-
-    var b = {
-        "FirstName": $('#account-firstname').val(),
-        "LastName": $('#account-lastname').val(),
-    }
-    sessionToken = localStorage.getItem('auth')
-
-    // send a get request with the above data
-    $.ajax({
-        type: "PATCH",
-        url: url,
-        data: JSON.stringify(b),
-        headers: {
-            Authorization: sessionToken,
-        },
-        contentType: "application/json",
-        success: function (result) {
-            console.log(result)
-            request_user(display_user, sessionToken)
-        },
-        error: function(result) {
-            message = "Error: " + result.responseText
-            alert(message)
-        }
-    })
-})
 
 function display_results(result, result_id) {
     if (result) {
@@ -176,7 +98,7 @@ $("#home-page").ready(homePageLoad)
 function homePageLoad() {
     sessionToken = localStorage.getItem('auth')
     if (sessionToken) {
-        request_user(display_user_first_name, sessionToken)
+        auth.request_user(auth.display_user_first_name, sessionToken)
         new WebSocket("wss://slack.api.tristanmacelli.com/v1/ws?auth=" + sessionToken)
     }
 }
@@ -186,38 +108,8 @@ $("#account-page").ready(accountPageLoad)
 function accountPageLoad() {
     sessionToken = localStorage.getItem('auth')
     if (sessionToken) {
-        request_user(display_user, sessionToken)
+        auth.request_user(auth.display_user, sessionToken)
     }
-}
-
-function request_user(display_user_fn, token) {
-    var url = "https://slack.api.tristanmacelli.com/v1/users/"
-            
-    $.ajax({
-        type: "GET",
-        url: url,
-        contentType:"application/json",
-        headers: {
-            Authorization: token,
-        },
-        success: function (result) {
-            console.log("Result", result)
-            display_user_fn(result)
-        },
-        error: function (result) {
-            console.log(result)
-        }
-    });
-}
-
-function display_user_first_name(user) {
-    $("#auth-user-first-name").text(user.FirstName)
-}
-
-function display_user(result) {
-    $("#account-username").text(result.UserName)
-    $("#account-firstname").val(result.FirstName)
-    $("#account-lastname").val(result.LastName)
 }
 
 // Users returning to the website with an active session get redirected from the log in page
