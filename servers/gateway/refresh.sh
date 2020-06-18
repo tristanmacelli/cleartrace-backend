@@ -6,8 +6,8 @@ export MYSQL_ROOT_PASSWORD=$(openssl rand -base64 18)
 
 docker rm -f gateway
 # TODO: We should probably not be removing the redis & sql on every deploy
-docker rm -f userStore # SQL
-docker rm -f sessionStore # REDIS
+# docker rm -f userStore # SQL
+# docker rm -f sessionStore # REDIS
 docker rm -f userMessageQueue
 
 # clean up
@@ -21,18 +21,18 @@ docker pull tristanmacelli/db
 
 
 echo "starting gateway"
-docker run -d --restart=unless-stopped \
---name userStore \
---network=infrastructure \
--e MYSQL_DATABASE=users \
--e MYSQL_ROOT_PASSWORD=pass \
--e MYSQL_ROOT_HOST=% \
-tristanmacelli/db
+# docker run -d --restart=unless-stopped \
+# --name userStore \
+# --network=infrastructure \
+# -e MYSQL_DATABASE=users \
+# -e MYSQL_ROOT_PASSWORD=pass \
+# -e MYSQL_ROOT_HOST=% \
+# tristanmacelli/db
 
-docker run -d --restart=unless-stopped \
---name sessionStore \
---network=infrastructure \
-redis
+# docker run -d --restart=unless-stopped \
+# --name sessionStore \
+# --network=infrastructure \
+# redis
 
 docker run -d --hostname messagequeue \
 --name userMessageQueue \

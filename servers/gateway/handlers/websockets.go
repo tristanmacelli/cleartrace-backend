@@ -139,7 +139,7 @@ func (ctx *HandlerContext) WebSocketConnectionHandler(w http.ResponseWriter, r *
 	}
 	// handle the websocket handshake
 
-	if r.Header.Get("Origin") != "https://slack.client.tristanmacelli.com" {
+	if r.Header.Get("Origin") != "https://slack.tristanmacelli.com" {
 		http.Error(w, "Websocket Connection Refused", 403)
 		return
 	}

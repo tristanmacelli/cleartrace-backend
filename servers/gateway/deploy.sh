@@ -2,13 +2,13 @@
 
 bash build.sh
 cd ../db
-bash buildDb.sh
+# bash buildDb.sh
 cd -
 echo "build completed!"
 
 echo "Deploying to EC2"
 docker push tristanmacelli/gateway
-docker push tristanmacelli/db
+# docker push tristanmacelli/db
 chmod g+x ./refresh.sh
 
 echo "Starting Gateway Service.."
