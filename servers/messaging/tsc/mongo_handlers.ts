@@ -281,7 +281,7 @@ export async function last100Messages(messages: Collection, channelID: string, m
     return { last100messages, err };
 }
 
-function sleep(seconds: number) {
+export function sleep(seconds: number) {
     let milliseconds = seconds * 1000
     const stop = new Date().getTime() + milliseconds;
     while(new Date().getTime() < stop);       
