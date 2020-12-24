@@ -8,7 +8,7 @@ docker rm -f gateway
 # TODO: We should probably not be removing the redis & sql on every deploy
 # docker rm -f userStore # SQL
 # docker rm -f sessionStore # REDIS
-docker rm -f userMessageQueue
+# docker rm -f userMessageQueue
 
 # clean up
 echo "cleaning up unused docker artifacts"
@@ -34,10 +34,10 @@ echo "starting gateway"
 # --network=infrastructure \
 # redis
 
-docker run -d --hostname messagequeue \
---name userMessageQueue \
---network=infrastructure \
-rabbitmq:3
+# docker run -d --hostname messagequeue \
+# --name userMessageQueue \
+# --network=infrastructure \
+# rabbitmq:3
 
 sudo docker run -d \
 -p 443:443 \

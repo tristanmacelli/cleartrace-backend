@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -93,13 +92,12 @@ func (ctx *HandlerContext) WriteToAllConnections(curUserID int64, messageType in
 	s := ctx.SocketStore
 	var writeError error
 
-	for _, conn := range s.Connections {
-		// Either
-		// reflect.DeepEqual(s.Connections[curUserID], conn)
-		// OR cmp.Equal(s.Connections[curUserID], conn)
-		writeError = conn.WriteMessage(messageType, data)
-		if writeError != nil {
-			return writeError
+	for id, conn := range s.Connections {
+		if id != curUserID {
+			writeError = conn.WriteMessage(messageType, data)
+			if writeError != nil {
+				return writeError
+			}
 		}
 	}
 
@@ -222,45 +220,28 @@ func (ctx *HandlerContext) echo(conn *websocket.Conn) {
 		fmt.Println("Now actively listening for messages!")
 		for d := range msgs {
 			fmt.Println("Looping through infinitely!")
-			fmt.Println("Message object is:", d)
-			// THIS STATEMENT WILL BLOCK UNTIL ANOTHER MSG ARRIVES AT THE SRVR
-			// AKA ALL STATEMENTS AFTER ReadJSON WILL NOT EXECUTE UNTIL NEW MSG
-			// err := conn.ReadJSON(&d.Body)
-			// if err != nil {
-			// 	fmt.Println("Error reading JSON: ", err)
+			// TODO: Handle connection closure
+			// Close connection (returning an error causes the for-loop above to break)
+			// if _, _, err := conn.NextReader(); err != nil {
+			// 	conn.Close()
 			// 	break
 			// }
-			// CURRENTLY THE CONTENT TYPE IS NIL
-			// fmt.Println()
-			// fmt.Println()
-			// fmt.Println("Content Type of MQ message is: ", d.ContentType)
-			// if d.ContentType == "application/json" {
-			// d.Body is a uint8 type which is equivalent to byte
-			fmt.Println("Handling Client Bound Messages")
-			err := ctx.handleClientBoundMessages(d)
+			// fmt.Println("1")
+
+			message := &mqMessage{}
+			err := json.Unmarshal(d.Body, message)
+			if err != nil {
+				log.Printf("Error decoding message JSON: %s", err)
+				break
+			}
+			// fmt.Println("2")
+
+			err = ctx.handleClientBoundMessages(d, message)
 			if err != nil {
 				// This should cause the connection to close
 				fmt.Println("Error handling Client-bound messages: ", err)
 				break
 			}
-			// } else {
-			// 	// Close connection ?
-			// }
-			// TODO: Handle connection closure
-			// } else if messageType == CloseMessage {
-			// 	fmt.Println("Close message received.")
-			// 	break
-			// } else if err != nil {
-			// 	fmt.Println("Error reading message.")
-			// 	break
-			// }
-			// if err := d.Ack(false); err != nil {
-			// 	log.Printf("Error acknowledging message : %s", err)
-			// } else {
-			// 	log.Printf("Acknowledged message")
-			// 	// The Ack call above responds to rabbitMQ saying that we have received
-			// 	// the message it sent us.
-			// }
 		}
 	}()
 
@@ -271,36 +252,22 @@ func (ctx *HandlerContext) echo(conn *websocket.Conn) {
 	fmt.Println("infinite loop exited")
 }
 
-// handleClientBoundMessages sends messages to
-func (ctx *HandlerContext) handleClientBoundMessages(d amqp.Delivery) error {
-	message := &mqMessage{}
-	err := json.Unmarshal(d.Body, message)
-	if err != nil {
-		log.Printf("Error decoding message JSON: %s", err)
-		return err
-	}
+// handleClientBoundMessages forwards messages from the messaging microservice to the
+// clients that are linked to the message
+func (ctx *HandlerContext) handleClientBoundMessages(d amqp.Delivery, message *mqMessage) error {
 	userIDs := message.UserIDs
 	curUserID := message.Message.Creator.ID
 
-	// Close connection (returning an error causes the for-loop above to break)
-	if message.MessageType == "close-connection" {
-		return errors.New("Closing connection")
-	}
-
 	// Broadcast to all clients when userIDs are not provided
 	if userIDs == nil {
-		log.Printf("Writing to all connections")
-		err = ctx.WriteToAllConnections(curUserID, 1, d.Body)
-		log.Printf("Wrote to all connections")
+		err := ctx.WriteToAllConnections(curUserID, 1, d.Body)
 		if err != nil {
 			log.Printf("Error writing message to all connections: %s", err)
 			return err
 		}
 		// Broadcast to specific list when userIDs are provided
 	} else {
-		log.Printf("Writing to specific connections")
-		err = ctx.WriteToSpecificConnections(curUserID, 1, d.Body, userIDs)
-		log.Printf("Wrote to specific connections")
+		err := ctx.WriteToSpecificConnections(curUserID, 1, d.Body, userIDs)
 		if err != nil {
 			log.Printf("Error writing message to specific connections: %s", err)
 			return err
