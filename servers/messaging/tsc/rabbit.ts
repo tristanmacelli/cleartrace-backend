@@ -1,7 +1,8 @@
 import { Message } from "./message";
 import { Channel } from "./channel";
+import { sleep } from "./mongo_handlers"
 import * as Amqp from "amqp-ts"
-// import * as amqp from "amqplib"
+import * as amqp from "amqplib"
 
 export class RabbitObject {
     type: string;
@@ -21,35 +22,39 @@ export class RabbitObject {
         this.messageID = mid
     }
 }
+// The following hostnames don't work:
+//     RabbitMQ, rabbitMQ:5672, rabbitmq, 
 
-// export const createMQConnection = async (): Promise<amqp.Connection> => {
-//     let client: amqp.Connection;
-//     while (1) {
-//         try {
-//             client = await amqp.connect(mqURL);
-//             break
-//         } catch (e) {
-//             console.log("Cannot connect to RabbitMQ: failed to connect to server ", e);
-//             sleep(1)
-//         }
-//     }
-//     return client!;
-// }
+const mqURL = "amqp://userMessageQueue"
+const mqName = "helloQueue"
 
-// export const createMQChannel = async (conn: amqp.Connection): Promise<amqp.Channel> => {
-//     let channel: amqp.Channel;
-//     try {
-//         channel = await conn.createChannel();
-//     } catch (e) {
-//         console.log("Cannot create channel on RabbitMQ ", e);
-//         process.exit(1)
-//     }
-//     return channel!;
-// }
+export const createMQConnection = async (): Promise<amqp.Connection> => {
+    let client: amqp.Connection;
+    while (1) {
+        try {
+            client = await amqp.connect(mqURL);
+            break
+        } catch (e) {
+            console.log("Cannot connect to RabbitMQ: failed to connect to server ", e);
+            sleep(1)
+        }
+    }
+    return client!;
+}
 
-export function sendObjectToQueue(q: Amqp.Queue, ob: RabbitObject) {
-    const message = new Amqp.Message(ob)
-    // let json = JSON.stringify(message)
-    q.send(message)
-    console.log("Sent out the message");
+export const createMQChannel = async (conn: amqp.Connection): Promise<amqp.Channel> => {
+    let channel: amqp.Channel;
+    try {
+        channel = await conn.createChannel();
+    } catch (e) {
+        console.log("Cannot create channel on RabbitMQ ", e);
+        process.exit(1)
+    }
+    return channel!;
+}
+
+export function sendObjectToQueue(channel: amqp.Channel, ob: RabbitObject) {
+  let json = JSON.stringify(ob)
+  channel.sendToQueue(mqName, Buffer.from(json))
+  console.log("Sent out the message");
 }

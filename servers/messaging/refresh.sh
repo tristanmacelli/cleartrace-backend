@@ -21,6 +21,8 @@ mongo
 
 docker run -d \
 --restart=unless-stopped \
+--log-opt max-size=10m \
+--log-opt max-file=3 \
 --network=infrastructure \
 --name messaging \
 -v /etc/letsencrypt:/etc/letsencrypt:ro \

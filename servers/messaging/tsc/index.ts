@@ -8,11 +8,8 @@ import { Collection, Db } from "mongodb";
 import * as mongo from "./mongo_handlers";
 import { Message, isMessageCreator } from "./message";
 import { Channel, isChannelCreator, isChannelMember } from "./channel";
-import { RabbitObject, sendObjectToQueue } from "./rabbit";
+import { RabbitObject, sendObjectToQueue, createMQChannel, createMQConnection } from "./rabbit";
 import { User } from "./user";
-
-import * as Amqp from "amqp-ts"
-// import * as amqp from "amqplib"
 
 //create a new express application
 const app = express();
@@ -31,32 +28,22 @@ var db: Db;
 var messages: Collection;
 var channels: Collection;
 
-// Rabbit MQ variables
-const mqName = "helloQueue"
-const mqURL = "amqp://rabbitMQ"
-
 // Mongo DB variables
 const dbName = 'mongodb';
 
 const main = async () => {
     const client = await mongo.createConnection();
     const db = client.db(dbName);
+    
+    // These collections save interactions so that users may log in later
+    // and review old conversations/pick up where things left off
     var channels = db.collection("channels");
     var messages = db.collection("messages");
 
-    let rabbitConn: Amqp.Connection;
-    rabbitConn = new Amqp.Connection(mqURL);
-    let queue = rabbitConn.declareQueue(mqName);
-
-    // let mqClient = await createMQConnection();
-    // let mqChannel = await createMQChannel(mqClient);
-    // mqChannel.assertQueue(mqName)
-    // mqChannel.sendToQueue(mqName, Buffer.from('something to do'));
-
-    // channel.assertQueue(queue, {
-    //     durable: false
-    // });
-    // channel.sendToQueue(queue, Buffer.from(msg));
+    // This queue sends all the pertinent messages back to the users through the gateway
+    // via a websockets connection
+    let mqClient = await createMQConnection();
+    let mqChannel = await createMQChannel(mqClient);
 
     app.listen(+addr, "", (req, res) => {
         //callback is executed once server is listening
@@ -213,7 +200,8 @@ const main = async () => {
 
                 let post = new RabbitObject('message-new', null, insertedMessage,
                     postMembers, null, null)
-                sendObjectToQueue(queue, post)
+                // sendObjectToQueue(queue, post)
+                sendObjectToQueue(mqChannel, post)
 
                 res.status(201);
                 res.set("Content-Type", "application/json");
@@ -240,7 +228,8 @@ const main = async () => {
 
                 let PatchObj = new RabbitObject('channel-update', updatedChannel, null,
                     patchMembers, null, null)
-                sendObjectToQueue(queue, PatchObj)
+                // sendObjectToQueue(queue, PatchObj)
+                sendObjectToQueue(mqChannel, PatchObj)
                 
                 res.set("Content-Type", "application/json");
                 res.json(updatedChannel);
@@ -265,7 +254,8 @@ const main = async () => {
 
                 let obj = new RabbitObject('channel-delete', null, null, deleteMembers,
                     resultChannel.id, null)
-                sendObjectToQueue(queue, obj)
+                // sendObjectToQueue(queue, obj)
+                sendObjectToQueue(mqChannel, obj)
 
                 res.set("Content-Type", "text/plain");
                 res.send("Channel was successfully deleted");
@@ -332,7 +322,8 @@ const main = async () => {
 
                 let post = new RabbitObject('channel-new', insertChannel, null,
                     members, null, null)
-                sendObjectToQueue(queue, post)
+                // sendObjectToQueue(queue, post)
+                sendObjectToQueue(mqChannel, post)
 
                 res.status(201);
                 res.set("Content-Type", "application/json");
@@ -392,7 +383,8 @@ const main = async () => {
 
                     let post = new RabbitObject('message-update', null, updatedMessage,
                         members, null, null)
-                    sendObjectToQueue(queue, post)
+                    // sendObjectToQueue(queue, post)
+                    sendObjectToQueue(mqChannel, post)
                 })
                 res.set("Content-Type", "application/json");
                 res.json(updatedMessage);
@@ -418,7 +410,8 @@ const main = async () => {
 
                     let post = new RabbitObject('message-delete', null, null,
                         members, null, resultMessage.id)
-                    sendObjectToQueue(queue, post)
+                    // sendObjectToQueue(queue, post)
+                    sendObjectToQueue(mqChannel, post)
                 })
 
                 res.set("Content-Type", "text/plain");
