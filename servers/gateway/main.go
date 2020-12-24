@@ -124,9 +124,34 @@ func main() {
 	wrappedMux := handlers.NewLogger(mux)
 
 	// logging server location or errors
-	log.Printf("server is listening testing %s...", address)
+	log.Printf("server is listening %s...", address)
+	// config := &tls.Config{
+	// 	MinVersion: tls.VersionTLS12,
+	// 	MaxVersion: tls.VersionTLS13,
+	// 	CipherSuites: []uint16{
+	// 		TLS_AES_128_GCM_SHA256,
+	// 		TLS_AES_256_GCM_SHA384,
+	// 		TLS_CHACHA20_POLY1305_SHA256,
+	// 		tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+	// 		tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256,
+	// 		tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
+	// 		tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
+	// 	},
+	// 	PreferServerCipherSuites: true,
+	// 	ClientSessionCache:       tls.NewLRUClientSessionCache(128),
+	// }
+
+	// server := &http.Server{Addr: address, Handler: nil, TLSConfig: config}
+	// log.Fatal(server.ListenAndServeTLS(tlsCertPath, tlsKeyPath))
+
 	log.Fatal(http.ListenAndServeTLS(address, tlsCertPath, tlsKeyPath, wrappedMux))
 
+	// server := &http.Server{Addr: ":4000", Handler: nil, TLSConfig: config}
+	// http2.ConfigureServer(server, nil)
+
+	// log.Printf("Staring webserver ...")
+	// go http.ListenAndServe(":3000", nil)
+	// server.ListenAndServeTLS(TLS_PUBLIC_KEY, TLS_PRIVATE_KEY)
 	/* To host server:
 	- change path until in folder with main.go in it
 	- 'go install main.go'

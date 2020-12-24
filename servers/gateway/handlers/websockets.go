@@ -36,18 +36,27 @@ type Channel struct {
 	Private     bool     `json:"private"`
 	Members     []string `json:"members"`
 	CreatedAt   string   `json:"createdat"`
-	Creator     string   `json:"creator"`
+	Creator     Creator  `json:"creator"`
 	EditedAt    string   `json:"editedat"`
 }
 
 // Message is from our messaging service
 type Message struct {
-	ID        string `json:"id"`
-	ChannelID string `json:"channelid"`
-	CreatedAt string `json:"createdat"`
-	Body      string `json:"body"`
-	Creator   string `json:"creator"`
-	EditedAt  string `json:"editedat"`
+	ID        string  `json:"id"`
+	ChannelID string  `json:"channelid"`
+	CreatedAt string  `json:"createdat"`
+	Body      string  `json:"body"`
+	Creator   Creator `json:"creator"`
+	EditedAt  string  `json:"editedat"`
+}
+
+type Creator struct {
+	ID        int64  `json:"id"`
+	Email     string `json:"email"`
+	UserName  string `json:"userName"`
+	FirstName string `json:"firstName"`
+	LastName  string `json:"lastName"`
+	PhotoURL  string `json:"photoURL"`
 }
 
 // NewNotify does something
@@ -80,11 +89,14 @@ func (ctx *HandlerContext) RemoveConnection(connID int, userID int64) {
 // In your homework, you will be writing a message to a subset of connections
 // (if the message is intended for a private channel), or to all of them (if the message
 // is posted on a public channel
-func (ctx *HandlerContext) WriteToAllConnections(messageType int, data []byte) error {
+func (ctx *HandlerContext) WriteToAllConnections(curUserID int64, messageType int, data []byte) error {
 	s := ctx.SocketStore
 	var writeError error
 
 	for _, conn := range s.Connections {
+		// Either
+		// reflect.DeepEqual(s.Connections[curUserID], conn)
+		// OR cmp.Equal(s.Connections[curUserID], conn)
 		writeError = conn.WriteMessage(messageType, data)
 		if writeError != nil {
 			return writeError
@@ -96,16 +108,18 @@ func (ctx *HandlerContext) WriteToAllConnections(messageType int, data []byte) e
 
 // WriteToSpecificConnections writes to specific connections denoted by the userIDs attached to the
 // message being returned from the message queue
-func (ctx *HandlerContext) WriteToSpecificConnections(messageType int, data []byte, ids []int64) error {
+func (ctx *HandlerContext) WriteToSpecificConnections(curUserID int64, messageType int, data []byte, ids []int64) error {
 	s := ctx.SocketStore
 	var writeError error
 
 	for _, id := range ids {
-		conn := s.Connections[id]
-		if conn != nil {
-			writeError = conn.WriteMessage(messageType, data)
-			if writeError != nil {
-				return writeError
+		if id != curUserID {
+			conn := s.Connections[id]
+			if conn != nil {
+				writeError = conn.WriteMessage(messageType, data)
+				if writeError != nil {
+					return writeError
+				}
 			}
 		}
 	}
@@ -207,18 +221,32 @@ func (ctx *HandlerContext) echo(conn *websocket.Conn) {
 	go func() {
 		fmt.Println("Now actively listening for messages!")
 		for d := range msgs {
-			log.Printf("Received a message: %s", d.Body)
-
-			if d.ContentType == "application/json" {
-				err := ctx.handleClientBoundMessages(d)
-				if err != nil {
-					// This should cause the connection to close
-					break
-				}
-			} else {
-				// Close connection ?
+			fmt.Println("Looping through infinitely!")
+			fmt.Println("Message object is:", d)
+			// THIS STATEMENT WILL BLOCK UNTIL ANOTHER MSG ARRIVES AT THE SRVR
+			// AKA ALL STATEMENTS AFTER ReadJSON WILL NOT EXECUTE UNTIL NEW MSG
+			// err := conn.ReadJSON(&d.Body)
+			// if err != nil {
+			// 	fmt.Println("Error reading JSON: ", err)
+			// 	break
+			// }
+			// CURRENTLY THE CONTENT TYPE IS NIL
+			// fmt.Println()
+			// fmt.Println()
+			// fmt.Println("Content Type of MQ message is: ", d.ContentType)
+			// if d.ContentType == "application/json" {
+			// d.Body is a uint8 type which is equivalent to byte
+			fmt.Println("Handling Client Bound Messages")
+			err := ctx.handleClientBoundMessages(d)
+			if err != nil {
+				// This should cause the connection to close
+				fmt.Println("Error handling Client-bound messages: ", err)
+				break
 			}
-			// TODO: Handle closure
+			// } else {
+			// 	// Close connection ?
+			// }
+			// TODO: Handle connection closure
 			// } else if messageType == CloseMessage {
 			// 	fmt.Println("Close message received.")
 			// 	break
@@ -226,13 +254,13 @@ func (ctx *HandlerContext) echo(conn *websocket.Conn) {
 			// 	fmt.Println("Error reading message.")
 			// 	break
 			// }
-			if err := d.Ack(false); err != nil {
-				log.Printf("Error acknowledging message : %s", err)
-			} else {
-				log.Printf("Acknowledged message")
-				// The Ack call above responds to rabbitMQ saying that we have received
-				// the message it sent us.
-			}
+			// if err := d.Ack(false); err != nil {
+			// 	log.Printf("Error acknowledging message : %s", err)
+			// } else {
+			// 	log.Printf("Acknowledged message")
+			// 	// The Ack call above responds to rabbitMQ saying that we have received
+			// 	// the message it sent us.
+			// }
 		}
 	}()
 
@@ -240,6 +268,7 @@ func (ctx *HandlerContext) echo(conn *websocket.Conn) {
 	<-forever
 	// What should we be doing as a part of this cleanup
 	// cleanup
+	fmt.Println("infinite loop exited")
 }
 
 // handleClientBoundMessages sends messages to
@@ -251,24 +280,29 @@ func (ctx *HandlerContext) handleClientBoundMessages(d amqp.Delivery) error {
 		return err
 	}
 	userIDs := message.UserIDs
+	curUserID := message.Message.Creator.ID
 
 	// Close connection (returning an error causes the for-loop above to break)
 	if message.MessageType == "close-connection" {
 		return errors.New("Closing connection")
 	}
 
-	// Broadcast to all clients assuming we dont have userIDs
+	// Broadcast to all clients when userIDs are not provided
 	if userIDs == nil {
-		err = ctx.WriteToAllConnections(1, d.Body)
+		log.Printf("Writing to all connections")
+		err = ctx.WriteToAllConnections(curUserID, 1, d.Body)
+		log.Printf("Wrote to all connections")
 		if err != nil {
-			log.Printf("Error decoding message JSON: %s", err)
+			log.Printf("Error writing message to all connections: %s", err)
 			return err
 		}
-		// Broadcast to specific list assuming we have userIDs
+		// Broadcast to specific list when userIDs are provided
 	} else {
-		err = ctx.WriteToSpecificConnections(1, d.Body, userIDs)
+		log.Printf("Writing to specific connections")
+		err = ctx.WriteToSpecificConnections(curUserID, 1, d.Body, userIDs)
+		log.Printf("Wrote to specific connections")
 		if err != nil {
-			log.Printf("Error decoding message JSON: %s", err)
+			log.Printf("Error writing message to specific connections: %s", err)
 			return err
 		}
 	}

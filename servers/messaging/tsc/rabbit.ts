@@ -1,7 +1,6 @@
 import { Message } from "./message";
 import { Channel } from "./channel";
 import { sleep } from "./mongo_handlers"
-import * as Amqp from "amqp-ts"
 import * as amqp from "amqplib"
 
 export class RabbitObject {
@@ -22,8 +21,6 @@ export class RabbitObject {
         this.messageID = mid
     }
 }
-// The following hostnames don't work:
-//     RabbitMQ, rabbitMQ:5672, rabbitmq, 
 
 const mqURL = "amqp://userMessageQueue"
 const mqName = "helloQueue"
