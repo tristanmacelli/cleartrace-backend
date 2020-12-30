@@ -50,7 +50,7 @@ export async function getChannels(channels: Collection, userID: number, search: 
     return { allChannels, err };
 }
 
-// insertNewChannel takes in a new Channel and
+// insertNewChannel takes in a new Channel and inserts it into the messaging DB
 export async function insertNewChannel(channels: Collection, newChannel: Channel) {
     let err: boolean = false;
     let duplicates: boolean = true;
@@ -79,7 +79,7 @@ export async function insertNewChannel(channels: Collection, newChannel: Channel
     return { newChannel, duplicates, err }
 }
 
-// insertNewMessage takes in a new Message and
+// insertNewMessage takes in a new Message and inserts it into the messaging DB
 export async function insertNewMessage(messages: Collection, newMessage: Message) {
     let err: boolean = false;
     newMessage.createdAt = new Date()
@@ -103,75 +103,84 @@ export async function insertNewMessage(messages: Collection, newMessage: Message
     return { newMessage, err };
 }
 
-// updatedChannel updates name and body of an existing Channel using a req (request) object
-export async function updateChannel(channels: Collection, existingChannel: Channel, req: any) {
-    let err: boolean = false;
-    existingChannel.editedAt = new Date()
-
-    await channels.save({
-        name: req.body.name, description: req.body.description,
-        private: existingChannel.private, members: existingChannel.members,
-        createdAt: existingChannel.createdAt, creator: existingChannel.creator,
-        editedAt: existingChannel.editedAt
-    }).catch(() => {
-        err = true;
-    });
-    existingChannel.name = req.body.name;
-    existingChannel.description = req.body.description;
-    return { existingChannel, err };
-}
-
 // addChannelMembers takes an existing Channel and adds members using a req (request) object
 export async function addChannelMember(channels: Collection, existingChannel: Channel, req: any): Promise<boolean> {
-    let err: boolean = false;
-    existingChannel.members.push(req.body.id);
-
-    await channels.save({
-        name: existingChannel.name, description: existingChannel.description,
-        private: existingChannel.private, members: existingChannel.members,
-        createdAt: existingChannel.createdAt, creator: existingChannel.creator,
-        editedAt: existingChannel.editedAt
-    }).catch(() => {
-        err = true;
-    });
-    return err;
+  existingChannel.members.push(req.body.id);
+  return await updateChannelMembers(channels, existingChannel.id, existingChannel.members)
 }
 
 // removeChannelMember takes an existing Channel and removes members using a req (request) object
 export async function removeChannelMember(channels: Collection, existingChannel: Channel, req: any): Promise<boolean> {
     // Remove the specified member from this channel's list of members
-    let err: boolean = false;
     existingChannel.members.splice(req.body.id, 1);
-    await channels.save({
-        name: existingChannel.name, description: existingChannel.description,
-        private: existingChannel.private, members: existingChannel.members,
-        createdAt: existingChannel.createdAt, creator: existingChannel.creator,
+    return updateChannelMembers(channels, existingChannel.id, existingChannel.members)
+}
+
+async function updateChannelMembers(channels: Collection, channelID: string, channelMembers: number[]): Promise<boolean> {
+  let err: boolean = false;
+  let newEditedAt = new Date()
+  let mongoID = new ObjectID(channelID)
+
+  await channels.updateOne(
+    { filter: { _id: mongoID } }, 
+    {
+      update: { 
+        members: channelMembers, 
+        editedAt: newEditedAt
+      }
+    }
+  ).catch(() => {
+    err = true;
+  })
+  return err;
+}
+
+// updatedChannel updates name and body of an existing Channel using a req (request) object
+export async function updateChannel(channels: Collection, existingChannel: Channel, req: any) {
+  let err: boolean = false;
+  existingChannel.editedAt = new Date()
+  let mongoID = new ObjectID(existingChannel.id)
+
+  await channels.updateOne(
+    { filter: { _id: mongoID } }, 
+    {
+      update: { 
+        name: req.body.name, description: req.body.description,
         editedAt: existingChannel.editedAt
-    }).catch(() => {
-        err = true;
-    });
-    return err;
+      }
+    }
+  ).catch(() => {
+    err = true;
+  })
+  existingChannel.name = req.body.name;
+  existingChannel.description = req.body.description;
+  return { existingChannel, err };
 }
 
 // updateMessage takes an existing Message and a request with updates to apply to the Message's body 
 export async function updateMessage(messages: Collection, existingMessage: Message, req: any) {
     let err: boolean = false;
     existingMessage.editedAt = new Date()
+    let mongoID = new ObjectID(existingMessage.id)
 
-    await messages.save({
-        body: req.body.body, creator: existingMessage.creator,
-        createdAt: existingMessage.createdAt, channelID: existingMessage.channelID,
-        editedAt: existingMessage.editedAt
-    }).catch(() => {
-        err = true
-    });
+    await messages.updateOne(
+      { filter: { _id: mongoID } }, 
+      {
+        update: { 
+          body: req.body.body,
+          editedAt: existingMessage.editedAt
+        }
+      }
+    ).catch(() => {
+      err = true;
+    })
 
     existingMessage.body = req.body.body;
     existingMessage.id = req.params.messageID;
     return { existingMessage, err };
 }
 
-// deleteChannel does something
+// deleteChannel deletes a single channel & its associated messages
 export async function deleteChannel(channels: Collection, messages: Collection, existingChannel: Channel): Promise<boolean> {
     let err: boolean = false;
     // The general channel never gets deleted
@@ -186,14 +195,10 @@ export async function deleteChannel(channels: Collection, messages: Collection, 
     await messages.deleteOne({ channelID: existingChannel.id }).catch(() => {
         err = true;
     });
-    // Try this version which is not deprecated
-    // await messages.deleteMany({ channelID: existingChannel.id }).catch(() => {
-    //     errString = "Error deleting messages associated with the channel";
-    // });
     return err;
 }
 
-// deleteMessage does something
+// deleteMessage deletes a single message
 export async function deleteMessage(messages: Collection, existingMessage: Message): Promise<boolean> {
     await messages.deleteOne({ messageID: existingMessage.id }).catch(() => {
         return true;
