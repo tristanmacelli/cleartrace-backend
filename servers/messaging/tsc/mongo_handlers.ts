@@ -60,7 +60,7 @@ export async function insertNewChannel(channels: Collection, newChannel: Channel
     if (!await cursor.hasNext()) {
         duplicates = false;
         newChannel.createdAt = rightNow
-        await channels.save({
+        await channels.insertOne({
             name: newChannel.name, description: newChannel.description,
             private: newChannel.private, members: newChannel.members,
             createdAt: newChannel.createdAt, creator: newChannel.creator,
@@ -84,7 +84,7 @@ export async function insertNewMessage(messages: Collection, newMessage: Message
     let err: boolean = false;
     newMessage.createdAt = new Date()
 
-    await messages.save({
+    await messages.insertOne({
         channelID: newMessage.channelID, createdAt: newMessage.createdAt,
         body: newMessage.body, creator: newMessage.creator,
         editedAt: newMessage.editedAt
@@ -180,10 +180,10 @@ export async function deleteChannel(channels: Collection, messages: Collection, 
     }
 
     let chanID = new ObjectID(existingChannel.id.toString())
-    await channels.remove({ _id: chanID }).catch(() => {
+    await channels.deleteOne({ _id: chanID }).catch(() => {
         err = true;
     });
-    await messages.remove({ channelID: existingChannel.id }).catch(() => {
+    await messages.deleteOne({ channelID: existingChannel.id }).catch(() => {
         err = true;
     });
     // Try this version which is not deprecated
@@ -195,7 +195,7 @@ export async function deleteChannel(channels: Collection, messages: Collection, 
 
 // deleteMessage does something
 export async function deleteMessage(messages: Collection, existingMessage: Message): Promise<boolean> {
-    await messages.remove({ messageID: existingMessage.id }).catch(() => {
+    await messages.deleteOne({ messageID: existingMessage.id }).catch(() => {
         return true;
     });
     return false;
