@@ -28,13 +28,8 @@ var db: Db;
 var messages: Collection;
 var channels: Collection;
 
-// Mongo DB variables
-// const dbName = 'userMessageStore';
-// const dbName = 'mongodb';
-
 const main = async () => {
     const db = await mongo.createConnection();
-    // const db = client.db(dbName);
     
     // These collections save interactions so that users may log in later
     // and review old conversations/pick up where things left off

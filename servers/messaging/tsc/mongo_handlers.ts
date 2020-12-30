@@ -1,6 +1,6 @@
 "use strict";
 
-import { ObjectID, Collection, MongoClient, Cursor } from "mongodb";
+import { ObjectID, Collection, MongoClient, Cursor, Db } from "mongodb";
 import { Channel, isChannelMember, initializeDummyChannel } from "./channel";
 import { Message, initializeDummyMessage } from "./message";
 
@@ -11,7 +11,7 @@ const mongoURL = 'mongodb://' + mongoContainerName + ':27017/' + dbName;
 // Create a new MongoClient
 const mc = new MongoClient(mongoURL, { useUnifiedTopology: true });
 
-export async function createConnection() {
+export async function createConnection(): Promise<Db> {
     let client: MongoClient;
     while (1) {
         try {
