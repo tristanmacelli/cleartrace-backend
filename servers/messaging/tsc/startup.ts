@@ -5,12 +5,14 @@ import { Channel } from "./channel";
 import { User } from "./user";
 
 // Database Name
-const dbName = 'mongodb';
+// const dbName = 'userMessageStore';
+// const dbName = 'mongodb';
 
 async function startUp() {
-    const client = await mongo.createConnection();
+    const db = await mongo.createConnection();
     console.log("Connected successfully to Mongodb");
-    var db: Db = client.db(dbName);
+    // console.log("Connected successfully to userMessageStore");
+    // var db: Db = client.db(dbName);
 
     // check if any collection exists
     let channels = await db.createCollection('channels')

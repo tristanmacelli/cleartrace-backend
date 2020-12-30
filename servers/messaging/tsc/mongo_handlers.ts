@@ -4,7 +4,9 @@ import { ObjectID, Collection, MongoClient, Cursor } from "mongodb";
 import { Channel, isChannelMember, initializeDummyChannel } from "./channel";
 import { Message, initializeDummyMessage } from "./message";
 
-const mongoURL = 'mongodb://mongodb:27017/mongodb';
+const mongoContainerName = 'userMessageStore'
+const dbName = 'userMessageDB';
+const mongoURL = 'mongodb://' + mongoContainerName + ':27017/' + dbName;
 
 // Create a new MongoClient
 const mc = new MongoClient(mongoURL, { useUnifiedTopology: true });
@@ -21,7 +23,7 @@ export async function createConnection() {
             sleep(1)
         }
     }
-    return client!;
+    return client!.db(dbName);
 }
 
 // getAllChannels does something
