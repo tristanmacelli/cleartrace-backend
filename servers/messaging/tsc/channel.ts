@@ -40,6 +40,13 @@ export function isChannelMember(channel: Channel, userID: number): boolean {
     return false;
 }
 
+export function initializeDummyChannel(): Channel {
+  let emptyUser = new User(-1, "", "", "", "", "")
+  let dummyDate = new Date()
+  let dummyChannel = new Channel("", "", "", false, [], dummyDate, emptyUser, dummyDate);
+  return dummyChannel;
+}
+
 // export default Channel;
 
 // to compile run tsc --outDir ../

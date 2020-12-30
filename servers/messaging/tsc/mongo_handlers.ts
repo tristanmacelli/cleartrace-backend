@@ -1,9 +1,8 @@
 "use strict";
 
 import { ObjectID, Collection, MongoClient, Cursor } from "mongodb";
-import { Channel, isChannelMember } from "./channel";
-import { Message } from "./message";
-import { User } from "./user";
+import { Channel, isChannelMember, initializeDummyChannel } from "./channel";
+import { Message, initializeDummyMessage } from "./message";
 
 const mongoURL = 'mongodb://mongodb:27017/mongodb';
 
@@ -202,7 +201,8 @@ export async function deleteMessage(messages: Collection, existingMessage: Messa
     return false;
 }
 
-// getChannelByID does something
+// getChannelByID returns the channel associated with the provided id value. If there no channel 
+// is no channel associated with the provided id then an error indicator is returned
 export async function getChannelByID(channels: Collection, id: string) {
     // Since id's are auto-generated and unique we chose to use find instead of findOne() 
     let result: any = null;
@@ -216,9 +216,7 @@ export async function getChannelByID(channels: Collection, id: string) {
     }
     let channel: Channel;
     if (result == null) {
-        let emptyUser = new User(-1, "", "", "", "", "")
-        let dummyDate = new Date()
-        channel = new Channel("", "", "", false, [], dummyDate, emptyUser, dummyDate);
+        channel = initializeDummyChannel();
         return { channel, err };
     }
     channel = new Channel(result._id, result.name, result.description, result.private,
@@ -226,7 +224,8 @@ export async function getChannelByID(channels: Collection, id: string) {
     return { channel, err };
 }
 
-// getMessageByID does something
+// getMessageByID returns the message associated with the provided id value. If there no message 
+// is no message associated with the provided id then an error indicator is returned
 export async function getMessageByID(messages: Collection, id: string) {
     // Since id's are auto-generated and unique we chose to use find instead of findOne() 
     let result: any = null;
@@ -241,9 +240,7 @@ export async function getMessageByID(messages: Collection, id: string) {
 
     let message: Message;
     if (result == null) {
-        let emptyUser = new User(-1, "", "", "", "", "")
-        let dummyDate = new Date()
-        message = new Message("", "", dummyDate, "", emptyUser, dummyDate);
+        message = initializeDummyMessage();
         return { message, err };
     }
     message = new Message(result._id, result.channelID, result.createdAt, result.body,
