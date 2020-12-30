@@ -119,10 +119,10 @@ export async function removeChannelMember(channels: Collection, existingChannel:
 async function updateChannelMembers(channels: Collection, channelID: string, channelMembers: number[]): Promise<boolean> {
   let err: boolean = false;
   let newEditedAt = new Date()
-  let mongoID = new ObjectID(channelID)
+  let channelIDObj = new ObjectID(channelID)
 
   await channels.updateOne(
-    { filter: { _id: mongoID } }, 
+    { filter: { _id: channelIDObj } }, 
     {
       update: { 
         members: channelMembers, 
@@ -139,10 +139,10 @@ async function updateChannelMembers(channels: Collection, channelID: string, cha
 export async function updateChannel(channels: Collection, existingChannel: Channel, req: any) {
   let err: boolean = false;
   existingChannel.editedAt = new Date()
-  let mongoID = new ObjectID(existingChannel.id)
+  let channelID = new ObjectID(existingChannel.id.toString())
 
   await channels.updateOne(
-    { filter: { _id: mongoID } }, 
+    { filter: { _id: channelID } }, 
     {
       update: { 
         name: req.body.name, description: req.body.description,
@@ -161,10 +161,9 @@ export async function updateChannel(channels: Collection, existingChannel: Chann
 export async function updateMessage(messages: Collection, existingMessage: Message, req: any) {
     let err: boolean = false;
     existingMessage.editedAt = new Date()
-    let mongoID = new ObjectID(existingMessage.id)
 
     await messages.updateOne(
-      { filter: { _id: mongoID } }, 
+      { filter: { messageID: existingMessage.id } }, 
       {
         update: { 
           body: req.body.body,
