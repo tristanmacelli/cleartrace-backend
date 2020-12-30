@@ -19,11 +19,6 @@ docker run -d \
 --name userMessageStore \
 -v ~/data:/data/db \
 mongo
-# docker run -d \
-# --network=infrastructure \
-# --name mongodb \
-# -v ~/data:/data/db \
-# mongo
 
 docker run -d \
 --restart=unless-stopped \
