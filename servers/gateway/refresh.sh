@@ -17,7 +17,7 @@ docker volume prune -f
 
 echo "pulling newest version of gateway"
 docker pull tristanmacelli/gateway
-docker pull tristanmacelli/db
+# docker pull tristanmacelli/db
 
 
 echo "starting gateway"

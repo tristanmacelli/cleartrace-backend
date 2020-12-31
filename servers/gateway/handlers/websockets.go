@@ -133,13 +133,9 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
-//TODO: add a handler that upgrades clients to a WebSocket connection
-//and adds that to a list of WebSockets to notify when events are
-//read from the RabbitMQ server. Remember to synchronize changes
-//to this list, as handlers are called concurrently from multiple
-//goroutines.
-
-// WebSocketConnectionHandler does something
+// WebSocketConnectionHandler upgrades clients to a WebSocket connection
+// and adds that connection to a list of connections to notify when events
+// are read from the RabbitMQ server
 func (ctx *HandlerContext) WebSocketConnectionHandler(w http.ResponseWriter, r *http.Request) {
 	// problem getting Session State
 	// TODO: how do we handle ctx && socketStore as receivers
@@ -194,12 +190,12 @@ func (ctx *HandlerContext) echo(conn *websocket.Conn) {
 	defer ch.Close()
 
 	q, err := ch.QueueDeclare(
-		"helloQueue", // name
-		false,        // durable (do my messages last until I delete my connection)
-		false,        // delete when unused
-		false,        // exclusive
-		false,        // no-wait
-		nil,          // additional arguments
+		"messageLoopbackQueue", // name (was previously helloQueue)
+		false,                  // durable (do my messages last until I delete my connection)
+		false,                  // delete when unused
+		false,                  // exclusive
+		false,                  // no-wait
+		nil,                    // additional arguments
 	)
 	failOnError("Failed to declare queue", err)
 
@@ -220,13 +216,6 @@ func (ctx *HandlerContext) echo(conn *websocket.Conn) {
 		fmt.Println("Now actively listening for messages!")
 		for d := range msgs {
 			fmt.Println("Looping through infinitely!")
-			// TODO: Handle connection closure
-			// Close connection (returning an error causes the for-loop above to break)
-			// if _, _, err := conn.NextReader(); err != nil {
-			// 	conn.Close()
-			// 	break
-			// }
-			// fmt.Println("1")
 
 			message := &mqMessage{}
 			err := json.Unmarshal(d.Body, message)
@@ -242,6 +231,15 @@ func (ctx *HandlerContext) echo(conn *websocket.Conn) {
 				fmt.Println("Error handling Client-bound messages: ", err)
 				break
 			}
+			// TODO: Handle connection closure
+			// Close connection (returning an error causes the for-loop above to break)
+
+			// if _, _, err := conn.NextReader(); err != nil {
+			// 	fmt.Println("Closing current WebSocket connection")
+			// 	conn.Close()
+			// 	break
+			// }
+			// fmt.Println("Moving past connection closure logic")
 		}
 	}()
 

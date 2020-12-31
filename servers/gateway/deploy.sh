@@ -13,3 +13,5 @@ chmod g+x ./refresh.sh
 
 echo "Starting Gateway Service.."
 ssh -i ~/.ssh/slack-clone-server.pem ec2-user@slack.api.tristanmacelli.com 'bash -s' < refresh.sh
+now=$(date +"%r")
+echo "Current time : $now"

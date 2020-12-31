@@ -23,7 +23,7 @@ export class RabbitObject {
 }
 
 const mqURL = "amqp://userMessageQueue"
-const mqName = "helloQueue"
+const mqName = "messageLoopbackQueue"
 
 export const createMQConnection = async (): Promise<amqp.Connection> => {
     let client: amqp.Connection;
