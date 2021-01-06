@@ -178,8 +178,6 @@ func (ctx *HandlerContext) WebSocketConnectionHandler(w http.ResponseWriter, r *
 // the list (client went away without closing from their end). Also make sure you start a read
 // pump that reads incoming control messages, as described in the Gorilla WebSocket API
 // documentation: http://godoc.org/github.com/gorilla/websocket
-
-// echo does something
 func (ctx *HandlerContext) echo(conn *websocket.Conn) {
 	connMQ, err := amqp.Dial("amqp://userMessageQueue")
 	failOnError("Failed to open connection to RabbitMQ", err)
@@ -234,12 +232,21 @@ func (ctx *HandlerContext) echo(conn *websocket.Conn) {
 			// TODO: Handle connection closure
 			// Close connection (returning an error causes the for-loop above to break)
 
-			// if _, _, err := conn.NextReader(); err != nil {
-			// 	fmt.Println("Closing current WebSocket connection")
-			// 	conn.Close()
-			// 	break
-			// }
-			// fmt.Println("Moving past connection closure logic")
+			// This is not deployed on the current gateway container instance
+			if _, _, err := conn.NextReader(); err != nil {
+				fmt.Println("Closing current WebSocket connection")
+				cm := websocket.FormatCloseMessage(
+					websocket.CloseNormalClosure,
+					"WebSocket connection closed cleanly")
+				if err := conn.WriteMessage(websocket.CloseMessage, cm); err != nil {
+					// handle error
+				}
+				conn.Close()
+				// How is this done properly?
+				// ctx.RemoveConnection(connID, sessionState.User.ID)
+				break
+			}
+			fmt.Println("Moving past connection closure logic")
 		}
 	}()
 
