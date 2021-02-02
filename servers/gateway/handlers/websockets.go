@@ -7,10 +7,13 @@ import (
 	"net/http"
 	"server-side-mirror/servers/gateway/sessions"
 	"sync"
+	"time"
 
 	"github.com/gorilla/websocket"
 	"github.com/streadway/amqp"
 )
+
+const writeWait = time.Second
 
 // Notify A simple store to store all the connections
 type Notify struct {
@@ -212,7 +215,15 @@ func (ctx *HandlerContext) echo(conn *websocket.Conn) {
 
 	go func() {
 		fmt.Println("Now actively listening for messages!")
-		for d := range msgs {
+		for {
+			// fmt.Println("1")
+			// Close connection (returning an error causes the for-loop above to break)
+			// When this logic is called it works properly, but blocks in any other case
+			// if HandleConnectionClosure(conn) {
+			// 	break
+			// }
+			// fmt.Println("2")
+			d, _ := <-msgs
 			fmt.Println("Looping through infinitely!")
 
 			message := &mqMessage{}
@@ -221,7 +232,6 @@ func (ctx *HandlerContext) echo(conn *websocket.Conn) {
 				log.Printf("Error decoding message JSON: %s", err)
 				break
 			}
-			// fmt.Println("2")
 
 			err = ctx.handleClientBoundMessages(d, message)
 			if err != nil {
@@ -229,24 +239,7 @@ func (ctx *HandlerContext) echo(conn *websocket.Conn) {
 				fmt.Println("Error handling Client-bound messages: ", err)
 				break
 			}
-			// TODO: Handle connection closure
-			// Close connection (returning an error causes the for-loop above to break)
-
-			// This is not deployed on the current gateway container instance
-			if _, _, err := conn.NextReader(); err != nil {
-				fmt.Println("Closing current WebSocket connection")
-				cm := websocket.FormatCloseMessage(
-					websocket.CloseNormalClosure,
-					"WebSocket connection closed cleanly")
-				if err := conn.WriteMessage(websocket.CloseMessage, cm); err != nil {
-					// handle error
-				}
-				conn.Close()
-				// How is this done properly?
-				// ctx.RemoveConnection(connID, sessionState.User.ID)
-				break
-			}
-			fmt.Println("Moving past connection closure logic")
+			// fmt.Println("3")
 		}
 	}()
 
@@ -279,6 +272,20 @@ func (ctx *HandlerContext) handleClientBoundMessages(d amqp.Delivery, message *m
 		}
 	}
 	return nil
+}
+
+func HandleConnectionClosure(conn *websocket.Conn) bool {
+	if _, _, err := conn.ReadMessage(); err != nil {
+		fmt.Println("Closing current WebSocket connection")
+		cm := websocket.FormatCloseMessage(
+			websocket.CloseNormalClosure,
+			"WebSocket connection closed cleanly")
+		if err := conn.WriteControl(websocket.CloseMessage, cm, time.Now().Add(writeWait)); err != nil {
+			// handle error
+		}
+		return true
+	}
+	return false
 }
 
 func failOnError(msg string, err error) {
