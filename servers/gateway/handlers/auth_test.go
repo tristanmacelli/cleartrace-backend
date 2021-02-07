@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"server-side-mirror/servers/gateway/indexes"
 	"server-side-mirror/servers/gateway/models/users"
 	"server-side-mirror/servers/gateway/sessions"
 	"sync"
@@ -87,9 +88,9 @@ func buildNewRequest(t *testing.T, method string, contentType string,
 
 // buildNewStores creates mock versions of the user and session stores for testing purposes
 func buildNewStores() (users.Store, sessions.Store) {
-	ustore := users.MockStore{}
+	ustore := &users.MockStore{}
 	var userStore users.Store
-	userStore = &ustore
+	userStore = ustore
 	sStore := sessions.NewMemStore((time.Second * 20), (time.Second * 19))
 	var sessionStore sessions.Store
 	sessionStore = sStore
@@ -115,8 +116,10 @@ func buildCtxUser(t *testing.T, method string, contentType string,
 
 	var conns map[int64]*websocket.Conn
 	socketStore := NewNotify(conns, &sync.Mutex{})
+	var IDs map[string]int64
+	indexedUsers := indexes.NewTrie(IDs, &sync.Mutex{})
 
-	ctx := NewHandlerContext("1234", userStore, sessionStore, *socketStore)
+	ctx := NewHandlerContext("1234", userStore, *indexedUsers, sessionStore, *socketStore)
 
 	rr := httptest.NewRecorder()
 	handler := http.HandlerFunc(ctx.UsersHandler)
@@ -155,8 +158,10 @@ func buildCtxSpecificUser(t *testing.T, method string, contentType string,
 
 	var conns map[int64]*websocket.Conn
 	socketStore := NewNotify(conns, &sync.Mutex{})
+	var IDs map[string]int64
+	indexedUsers := indexes.NewTrie(IDs, &sync.Mutex{})
 
-	ctx := NewHandlerContext("1234", userStore, sessionStore, *socketStore)
+	ctx := NewHandlerContext("1234", userStore, *indexedUsers, sessionStore, *socketStore)
 	rr := httptest.NewRecorder()
 	sessions.BeginSession("1234", sessionStore, sessionState, rr)
 	handler := http.HandlerFunc(ctx.SpecificUserHandler)
@@ -182,8 +187,10 @@ func buildCtxSession(t *testing.T, method string, contentType string,
 
 	var conns map[int64]*websocket.Conn
 	socketStore := NewNotify(conns, &sync.Mutex{})
+	var IDs map[string]int64
+	indexedUsers := indexes.NewTrie(IDs, &sync.Mutex{})
 
-	ctx := NewHandlerContext("anything", userStore, sessionStore, *socketStore)
+	ctx := NewHandlerContext("anything", userStore, *indexedUsers, sessionStore, *socketStore)
 	rr := httptest.NewRecorder()
 	handler := http.HandlerFunc(ctx.SessionsHandler)
 	handler.ServeHTTP(rr, req)
@@ -205,8 +212,10 @@ func buildCtxSpecificSession(t *testing.T, method string, contentType string,
 
 	var conns map[int64]*websocket.Conn
 	socketStore := NewNotify(conns, &sync.Mutex{})
+	var IDs map[string]int64
+	indexedUsers := indexes.NewTrie(IDs, &sync.Mutex{})
 
-	ctx := NewHandlerContext("anything", userStore, sessionStore, *socketStore)
+	ctx := NewHandlerContext("anything", userStore, *indexedUsers, sessionStore, *socketStore)
 	rr := httptest.NewRecorder()
 	_, _ = sessions.BeginSession("anything", sessionStore, sessionState, rr)
 	handler := http.HandlerFunc(ctx.SpecificSessionsHandler)

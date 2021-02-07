@@ -3,6 +3,7 @@ package users
 import (
 	"errors"
 	"net/http"
+	"server-side-mirror/servers/gateway/indexes"
 )
 
 var getByIDnextReturn = User{}
@@ -66,6 +67,8 @@ func (ms *MockStore) GetByEmail(email string) (*User, error) {
 func (ms *MockStore) GetByUserName(username string) (*User, error) {
 	return &getByUserNamenextReturn, errNext
 }
+
+func (ms *MockStore) IndexUsers(trie *indexes.Trie) {}
 
 //Insert inserts the user into the database, and returns
 //the newly-inserted User, complete with the DBMS-assigned ID

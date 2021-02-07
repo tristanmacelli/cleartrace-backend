@@ -3,6 +3,7 @@ package users
 import (
 	"errors"
 	"net/http"
+	"server-side-mirror/servers/gateway/indexes"
 )
 
 //ErrUserNotFound is returned when the user can't be found
@@ -19,6 +20,8 @@ type Store interface {
 
 	//GetByUserName returns the User with the given Username
 	GetByUserName(username string) (*User, error)
+
+	IndexUsers(trie *indexes.Trie)
 
 	//Insert inserts the user into the database, and returns
 	//the newly-inserted User, complete with the DBMS-assigned ID

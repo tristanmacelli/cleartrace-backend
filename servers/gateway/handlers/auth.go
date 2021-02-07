@@ -45,6 +45,12 @@ func (ctx *HandlerContext) UsersHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	// Save user's ID to searchable index of user IDs
+	userIndexes := ctx.UserIndexes
+	userIndexes.Add(user.FirstName, user.ID)
+	userIndexes.Add(user.LastName, user.ID)
+	userIndexes.Add(user.UserName, user.ID)
+
 	// ensure anotherUser contains the new database-assigned primary key value
 	user, _ = userStore.GetByID(user.ID)
 	userJSON := encodeUser(user)

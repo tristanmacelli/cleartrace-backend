@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"net/http"
+	"server-side-mirror/servers/gateway/indexes"
 	"strconv"
 	"strings"
 	"time"
@@ -18,7 +19,7 @@ type MysqlStore struct {
 }
 
 // A partially constructed sql query to use in getter functions
-const queryString = "SELECT * FROM users WHERE"
+const queryString = "SELECT * FROM users "
 
 //NewMysqlStore creates an open database connection to do queries and transactions on
 // For help on forming dsn (https://drstearns.github.io/tutorials/godb/#secconnectingfromagoprogram)
@@ -59,20 +60,39 @@ func (ms *MysqlStore) GetBy(query string, value string) (*User, error) {
 
 //GetByID returns the User with the given ID
 func (ms *MysqlStore) GetByID(id int64) (*User, error) {
-	query := " ID = ?"
+	query := "WHERE ID = ?"
 	return ms.GetBy(query, strconv.FormatInt(id, 10))
 }
 
 //GetByEmail returns the User with the given email
 func (ms *MysqlStore) GetByEmail(email string) (*User, error) {
-	query := " Email = ?"
+	query := "WHERE Email = ?"
 	return ms.GetBy(query, email)
 }
 
 //GetByUserName returns the User with the given Username
 func (ms *MysqlStore) GetByUserName(username string) (*User, error) {
-	query := " UserName = ?"
+	query := "WHERE UserName = ?"
 	return ms.GetBy(query, username)
+}
+
+func (ms *MysqlStore) IndexUsers(trie *indexes.Trie) {
+	insq := queryString
+	rows, err := ms.DB.Query(insq)
+	if err != nil {
+		fmt.Println("Error getting Users from the database", err)
+	}
+	fmt.Println("Rows: ", rows)
+	var users []User
+	// Populating the new user
+	for rows.Next() {
+		rows.Scan(&users)
+	}
+	for _, user := range users {
+		trie.Add(user.FirstName, user.ID)
+		trie.Add(user.LastName, user.ID)
+		trie.Add(user.UserName, user.ID)
+	}
 }
 
 //Insert inserts the user into the database, and returns
