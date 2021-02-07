@@ -25,10 +25,22 @@ func (ctx *HandlerContext) SearchHandler(w http.ResponseWriter, r *http.Request)
 	// Find the user IDs
 	userIndexes := ctx.UserIndexes
 	userIDs := userIndexes.Find(query[0], MaxReturnedUserIDs)
+	userStore := ctx.UserStore
+	// var users []users.User
+
+	// // How can we order these by FirstName ascending?
+	// for _, id := range userIDs {
+	// 	user, err := userStore.GetByID(id)
+	// 	if err == nil {
+	// 		users = append(users, *user)
+	// 	}
+	// }
+	// Returns all user objects ordered by FirstName
+	users, err := userStore.GetByIDs(userIDs, "FirstName")
 	// Format the response data
-	userIDsJSON, err := json.Marshal(userIDs)
+	usersJSON, err := json.Marshal(users)
 	if err != nil {
 		fmt.Printf("Could not marshal indexes: %s", err)
 	}
-	formatResponse(w, http.StatusOK, userIDsJSON)
+	formatResponse(w, http.StatusOK, usersJSON)
 }

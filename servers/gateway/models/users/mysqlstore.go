@@ -58,10 +58,47 @@ func (ms *MysqlStore) GetBy(query string, value string) (*User, error) {
 	return &user, nil
 }
 
+// getMultipleBy is a helper method that resolves all queries asking for singular user objects
+func (ms *MysqlStore) getMultipleBy(query string) (*[]User, error) {
+	// Creates a new user object to populate with the query for a single row
+	insq := query
+	rows, err := ms.DB.Query(insq)
+	if err != nil {
+		fmt.Println("Error getting Users from the database", err)
+		return nil, err
+	}
+	fmt.Println("Rows: ", rows)
+	var users []User
+	// Populating the new user
+	for rows.Next() {
+		err = rows.Scan(&users)
+		if err != nil {
+			fmt.Println("Error parsing Users", err)
+			return nil, err
+		}
+	}
+	return &users, nil
+}
+
 //GetByID returns the User with the given ID
 func (ms *MysqlStore) GetByID(id int64) (*User, error) {
 	query := "WHERE ID = ?"
 	return ms.GetBy(query, strconv.FormatInt(id, 10))
+}
+
+// GetByID returns the User with the given ID
+func (ms *MysqlStore) GetByIDs(ids []int64, orderBy string) (*[]User, error) {
+	query := queryString + "WHERE ID = "
+	query += strconv.FormatInt(ids[0], 10)
+
+	// Loop through 1 - n slice elements
+	for i := 1; i < len(ids); i++ {
+		query += "OR ID = " + strconv.FormatInt(ids[i], 10)
+	}
+	if len(orderBy) > 1 {
+		query += " ORDER BY " + orderBy
+	}
+	return ms.getMultipleBy(query)
 }
 
 //GetByEmail returns the User with the given email
