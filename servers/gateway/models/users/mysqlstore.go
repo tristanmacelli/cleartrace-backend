@@ -2,6 +2,7 @@ package users
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"net/http"
 	"server-side-mirror/servers/gateway/indexes"
@@ -88,12 +89,14 @@ func (ms *MysqlStore) GetByID(id int64) (*User, error) {
 
 // GetByID returns the User with the given ID
 func (ms *MysqlStore) GetByIDs(ids []int64, orderBy string) (*[]User, error) {
-	query := queryString + "WHERE ID = "
-	query += strconv.FormatInt(ids[0], 10)
+	if len(ids) < 2 {
+		return nil, errors.New("Must pass multiple ids")
+	}
+	query := queryString + "WHERE ID = " + strconv.FormatInt(ids[0], 10)
 
 	// Loop through 1 - n slice elements
 	for i := 1; i < len(ids); i++ {
-		query += "OR ID = " + strconv.FormatInt(ids[i], 10)
+		query += " OR ID = " + strconv.FormatInt(ids[i], 10)
 	}
 	if len(orderBy) > 1 {
 		query += " ORDER BY " + orderBy
