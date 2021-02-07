@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"os"
 	"server-side-mirror/servers/gateway/handlers"
+	"server-side-mirror/servers/gateway/indexes"
 	"server-side-mirror/servers/gateway/models/users"
 	"server-side-mirror/servers/gateway/sessions"
 	"strings"
@@ -97,7 +98,10 @@ func main() {
 
 	conns := make(map[int64]*websocket.Conn)
 	socketStore := handlers.NewNotify(conns, &sync.Mutex{})
-	ctx := handlers.NewHandlerContext(sessionkey, userStore, redisStore, *socketStore)
+	IDs := make(map[string]int64)
+	indexedUsers := indexes.NewTrie(IDs, &sync.Mutex{})
+	userStore.IndexUsers(indexedUsers)
+	ctx := handlers.NewHandlerContext(sessionkey, userStore, *indexedUsers, redisStore, *socketStore)
 
 	// proxies
 	messagesProxy := &httputil.ReverseProxy{Director: CustomDirector(messagingUrls, ctx)}
@@ -114,6 +118,7 @@ func main() {
 	mux.HandleFunc("/v1/users/{userID}", ctx.UpdateUserHandler)
 	mux.HandleFunc("/v1/sessions", ctx.SessionsHandler)
 	mux.HandleFunc("/v1/sessions/mine", ctx.SpecificSessionsHandler)
+	mux.HandleFunc("/v1/user/search", ctx.SearchHandler)
 	mux.Handle("/v1/summary", summaryProxy)
 	mux.HandleFunc("/v1/ws", ctx.WebSocketConnectionHandler)
 	mux.Handle("/v1/channels/{channelID}/members", messagesProxy)
