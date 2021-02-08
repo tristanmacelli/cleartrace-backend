@@ -107,9 +107,7 @@ func findHelper(node *trieNode, max int, ids []int64) []int64 {
 //and trims branches with no values.
 func (t *Trie) Remove(key string, value int64) {
 	node := t.Root
-	path := make([]trieNode, len(key))
-	for i, r := range key {
-		path[i] = *node
+	for _, r := range key {
 		child, _ := node.children[r]
 		if child == nil {
 			// Since the key does not exist there is nothing to delete
@@ -137,47 +135,15 @@ func removeHelper(node *trieNode, runes []rune, length int) *trieNode {
 			newRunes = runes[1:]
 		}
 		node.children[runes[0]] = removeHelper(child, newRunes, length)
-		child = node.children[runes[0]]
-		if len(runes) < length && len(node.children) == 1 && child == nil && len(node.values) == 0 {
+		if node.children[runes[0]] == nil && len(node.children) == 1 {
+			node.children = nil
+		}
+		if len(runes) < length && node.isLeaf() && len(node.values) == 0 {
 			return nil
 		}
 		return node
 	}
 }
-
-// func (t *Trie) remove(key string, value int64) {
-// 	node := t.Root
-// 	removeHelper(node, []rune(key), value)
-// }
-
-// func removeHelper(node *trieNode, runes []rune, value int64) *trieNode {
-// 	// Base Case: no children & no values --> remove from trie
-// 	if node.isLeaf() && len(node.values) == 0 {
-// 		return nil
-// 		// No children, has values, & key doesn't exist (nothing to remove)
-// 	} else if node.isLeaf() && len(node.values) > 0 && !node.values.has(value) {
-// 		return node
-// 		// If the value is found remove it from the node
-// 	} else if node.values.has(value) && !node.isLeaf() {
-// 		node.values.remove(value)
-// 		return node
-// 	} else if node.values.has(value) {
-// 		node.values.remove(value)
-// 		return removeHelper(node, runes, value)
-// 	} else {
-// 		child, _ := node.children[runes[0]]
-// 		newRunes := runes
-// 		if len(runes) > 1 {
-// 			newRunes = runes[1:]
-// 		}
-// 		node.children[runes[0]] = removeHelper(child, newRunes, value)
-// 		child = node.children[runes[0]]
-// 		if len(node.children) == 1 && child == nil && len(node.values) == 0 {
-// 			return nil
-// 		}
-// 		return node
-// 	}
-// }
 
 func (t *trieNode) isLeaf() bool {
 	return len(t.children) == 0
