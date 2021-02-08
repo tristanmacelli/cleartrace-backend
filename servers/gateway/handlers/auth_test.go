@@ -116,8 +116,7 @@ func buildCtxUser(t *testing.T, method string, contentType string,
 
 	var conns map[int64]*websocket.Conn
 	socketStore := NewNotify(conns, &sync.Mutex{})
-	var IDs map[string]int64
-	indexedUsers := indexes.NewTrie(IDs, &sync.Mutex{})
+	indexedUsers := indexes.NewTrie(&sync.Mutex{})
 
 	ctx := NewHandlerContext("1234", userStore, *indexedUsers, sessionStore, *socketStore)
 
@@ -158,8 +157,7 @@ func buildCtxSpecificUser(t *testing.T, method string, contentType string,
 
 	var conns map[int64]*websocket.Conn
 	socketStore := NewNotify(conns, &sync.Mutex{})
-	var IDs map[string]int64
-	indexedUsers := indexes.NewTrie(IDs, &sync.Mutex{})
+	indexedUsers := indexes.NewTrie(&sync.Mutex{})
 
 	ctx := NewHandlerContext("1234", userStore, *indexedUsers, sessionStore, *socketStore)
 	rr := httptest.NewRecorder()
@@ -187,8 +185,7 @@ func buildCtxSession(t *testing.T, method string, contentType string,
 
 	var conns map[int64]*websocket.Conn
 	socketStore := NewNotify(conns, &sync.Mutex{})
-	var IDs map[string]int64
-	indexedUsers := indexes.NewTrie(IDs, &sync.Mutex{})
+	indexedUsers := indexes.NewTrie(&sync.Mutex{})
 
 	ctx := NewHandlerContext("anything", userStore, *indexedUsers, sessionStore, *socketStore)
 	rr := httptest.NewRecorder()
@@ -212,8 +209,7 @@ func buildCtxSpecificSession(t *testing.T, method string, contentType string,
 
 	var conns map[int64]*websocket.Conn
 	socketStore := NewNotify(conns, &sync.Mutex{})
-	var IDs map[string]int64
-	indexedUsers := indexes.NewTrie(IDs, &sync.Mutex{})
+	indexedUsers := indexes.NewTrie(&sync.Mutex{})
 
 	ctx := NewHandlerContext("anything", userStore, *indexedUsers, sessionStore, *socketStore)
 	rr := httptest.NewRecorder()

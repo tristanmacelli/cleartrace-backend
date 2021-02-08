@@ -98,8 +98,7 @@ func main() {
 
 	conns := make(map[int64]*websocket.Conn)
 	socketStore := handlers.NewNotify(conns, &sync.Mutex{})
-	IDs := make(map[string]int64)
-	indexedUsers := indexes.NewTrie(IDs, &sync.Mutex{})
+	indexedUsers := indexes.NewTrie(&sync.Mutex{})
 	userStore.IndexUsers(indexedUsers)
 	ctx := handlers.NewHandlerContext(sessionkey, userStore, *indexedUsers, redisStore, *socketStore)
 
