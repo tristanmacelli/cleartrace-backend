@@ -34,16 +34,16 @@ func NewTrie(newLock *sync.Mutex) *Trie {
 
 //Len returns the number of entries in the trie.
 func (t *Trie) Len() int {
-	return lenHelper(t.Root, 0)
+	return lenHelper(t.Root)
 }
 
-func lenHelper(node *trieNode, max int) int {
+func lenHelper(node *trieNode) int {
 	if len(node.children) == 0 {
 		return len(node.values.all())
 	} else {
 		sum := len(node.values.all())
 		for _, child := range node.children {
-			sum += lenHelper(child, max)
+			sum += lenHelper(child)
 		}
 		return sum
 	}
@@ -119,21 +119,29 @@ func (t *Trie) Remove(key string, value int64) {
 	}
 	node.values.remove(value)
 	ids := node.values.all()
-	if len(ids) > 0 {
-		// since there are other values in this node the tree doesn't need trimming
+	// If the node contains other values or has children the tree doesn't need trimming
+	if len(ids) > 0 || !node.isLeaf() {
 		return
 	}
-	for i := len(key) - 1; i >= 0; i-- {
-		node = &path[i]
-		if !node.isLeaf() {
-			// node has other children, stop
-			break
+	node = t.Root
+	t.Root = removeHelper(node, []rune(key), len(key))
+}
+
+func removeHelper(node *trieNode, runes []rune, length int) *trieNode {
+	if len(runes) == 0 {
+		return nil
+	} else {
+		child, _ := node.children[runes[0]]
+		newRunes := []rune{}
+		if len(runes) > 1 {
+			newRunes = runes[1:]
 		}
-		node.children = nil
-		if len(node.values.all()) > 0 {
-			// node has a value, stop
-			break
+		node.children[runes[0]] = removeHelper(child, newRunes, length)
+		child = node.children[runes[0]]
+		if len(runes) < length && len(node.children) == 1 && child == nil && len(node.values) == 0 {
+			return nil
 		}
+		return node
 	}
 }
 
@@ -143,20 +151,31 @@ func (t *Trie) Remove(key string, value int64) {
 // }
 
 // func removeHelper(node *trieNode, runes []rune, value int64) *trieNode {
-// 	if len(node.children) == 0 && len(node.values.all()) == 0 {
+// 	// Base Case: no children & no values --> remove from trie
+// 	if node.isLeaf() && len(node.values) == 0 {
 // 		return nil
+// 		// No children, has values, & key doesn't exist (nothing to remove)
+// 	} else if node.isLeaf() && len(node.values) > 0 && !node.values.has(value) {
+// 		return node
+// 		// If the value is found remove it from the node
+// 	} else if node.values.has(value) && !node.isLeaf() {
+// 		node.values.remove(value)
+// 		return node
+// 	} else if node.values.has(value) {
+// 		node.values.remove(value)
+// 		return removeHelper(node, runes, value)
 // 	} else {
-// 		child := node.children[runes[0]]
-// 		if child.values.has(value) {
-// 			child.values.remove(value)
-// 			return removeHelper(child, runes[1:], value)
-// 		} else {
-// 			removeHelper(child, runes[1:], value)
-// 			if node.isLeaf() {
-// 				return nil
-// 			}
-// 			return node
+// 		child, _ := node.children[runes[0]]
+// 		newRunes := runes
+// 		if len(runes) > 1 {
+// 			newRunes = runes[1:]
 // 		}
+// 		node.children[runes[0]] = removeHelper(child, newRunes, value)
+// 		child = node.children[runes[0]]
+// 		if len(node.children) == 1 && child == nil && len(node.values) == 0 {
+// 			return nil
+// 		}
+// 		return node
 // 	}
 // }
 
