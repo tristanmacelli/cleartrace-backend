@@ -64,11 +64,15 @@ func (t *Trie) Add(key string, value int64) {
 					root.children = map[rune]*trieNode{}
 				}
 				child = &trieNode{}
+				t.lock.Lock()
 				root.children[r] = child
+				t.lock.Unlock()
 			}
 			root = child
 		}
+		t.lock.Lock()
 		root.values.add(value)
+		t.lock.Unlock()
 	}
 }
 
@@ -123,17 +127,19 @@ func (t *Trie) Remove(key string, value int64) {
 		}
 		node = child
 	}
+	t.lock.Lock()
 	node.values.remove(value)
+	t.lock.Unlock()
 	ids := node.values.all()
 	// If the node contains other values or has children the tree doesn't need trimming
 	if len(ids) > 0 || !node.isLeaf() {
 		return
 	}
 	node = t.Root
-	t.Root = removeHelper(node, []rune(key), len(key))
+	t.Root = t.removeHelper(node, []rune(key), len(key))
 }
 
-func removeHelper(node *trieNode, runes []rune, length int) *trieNode {
+func (t *Trie) removeHelper(node *trieNode, runes []rune, length int) *trieNode {
 	if len(runes) == 0 {
 		return nil
 	} else {
@@ -142,9 +148,14 @@ func removeHelper(node *trieNode, runes []rune, length int) *trieNode {
 		if len(runes) > 1 {
 			newRunes = runes[1:]
 		}
-		node.children[runes[0]] = removeHelper(child, newRunes, length)
+		child = t.removeHelper(child, newRunes, length)
+		t.lock.Lock()
+		node.children[runes[0]] = child
+		t.lock.Unlock()
 		if node.children[runes[0]] == nil && len(node.children) == 1 {
+			t.lock.Lock()
 			node.children = nil
+			t.lock.Unlock()
 		}
 		if len(runes) < length && node.isLeaf() && len(node.values) == 0 {
 			return nil
