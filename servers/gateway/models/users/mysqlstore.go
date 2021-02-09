@@ -19,6 +19,13 @@ type MysqlStore struct {
 	DB *sql.DB
 }
 
+type indexedUserValues struct {
+	ID        int64
+	FirstName string
+	LastName  string
+	UserName  string
+}
+
 // A partially constructed sql query to use in getter functions
 const queryString = "SELECT * FROM users "
 
@@ -117,13 +124,13 @@ func (ms *MysqlStore) GetByUserName(username string) (*User, error) {
 }
 
 func (ms *MysqlStore) IndexUsers(trie *indexes.Trie) {
-	insq := queryString
+	insq := "SELECT ID, FirstName, LastName, UserName FROM users"
 	rows, err := ms.DB.Query(insq)
 	if err != nil {
 		fmt.Println("Error getting Users from the database", err)
 	}
 	fmt.Println("Rows: ", rows)
-	var users []User
+	var users []indexedUserValues
 	// Populating the new user
 	for rows.Next() {
 		rows.Scan(&users)
