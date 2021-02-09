@@ -130,6 +130,13 @@ func (ctx *HandlerContext) UpdateUserHandler(w http.ResponseWriter, r *http.Requ
 	if err != nil {
 		panic(err)
 	}
+	// Save user's ID to searchable index of user IDs
+	userIndexes := ctx.UserIndexes
+	userIndexes.Remove(user.FirstName, userID)
+	userIndexes.Remove(user.LastName, userID)
+	userIndexes.Add(up.FirstName, userID)
+	userIndexes.Add(up.LastName, userID)
+
 	user, err = ctx.UserStore.Update(userID, &up)
 	userJSON := encodeUser(user)
 	formatResponse(w, http.StatusOK, userJSON)
