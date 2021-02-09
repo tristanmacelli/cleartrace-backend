@@ -1,6 +1,7 @@
 package indexes
 
 import (
+	"strings"
 	"sync"
 )
 
@@ -51,25 +52,31 @@ func lenHelper(node *trieNode) int {
 
 //Add adds a key and value to the trie.
 func (t *Trie) Add(key string, value int64) {
-	root := t.Root
-	for _, r := range key {
-		child, _ := root.children[r]
-		if child == nil {
-			if root.children == nil {
-				root.children = map[rune]*trieNode{}
+	key = strings.ToLower(key)
+	keys := strings.Fields(key)
+	// If a key contains spaces it is separated into multiple keys
+	for _, key := range keys {
+		root := t.Root
+		for _, r := range key {
+			child, _ := root.children[r]
+			if child == nil {
+				if root.children == nil {
+					root.children = map[rune]*trieNode{}
+				}
+				child = &trieNode{}
+				root.children[r] = child
 			}
-			child = &trieNode{}
-			root.children[r] = child
+			root = child
 		}
-		root = child
+		root.values.add(value)
 	}
-	root.values.add(value)
 }
 
 //Find finds `max` values matching `prefix`. If the trie
 //is entirely empty, or the prefix is empty, or max == 0,
 //or the prefix is not found, this returns a nil slice.
 func (t *Trie) Find(prefix string, max int) []int64 {
+	prefix = strings.ToLower(prefix)
 	if len(prefix) == 0 || max == 0 || len(t.Root.children) == 0 {
 		return []int64{}
 	}
@@ -106,6 +113,7 @@ func findHelper(node *trieNode, max int, ids []int64) []int64 {
 //Remove removes a key/value pair from the trie
 //and trims branches with no values.
 func (t *Trie) Remove(key string, value int64) {
+	key = strings.ToLower(key)
 	node := t.Root
 	for _, r := range key {
 		child, _ := node.children[r]
