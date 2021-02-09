@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"server-side-mirror/servers/gateway/sessions"
 )
 
 const MaxReturnedUserIDs = 20
@@ -13,8 +14,10 @@ func (ctx *HandlerContext) SearchHandler(w http.ResponseWriter, r *http.Request)
 		http.Error(w, "Incorrect HTTP Method", http.StatusMethodNotAllowed)
 		return
 	}
-	if r.Header.Get("X-User") == "" {
-		http.Error(w, "Unauthorized User", http.StatusUnauthorized)
+	sessionState := &SessionState{}
+	_, err := sessions.GetState(r, ctx.Key, ctx.SessionStore, sessionState)
+	if err != nil {
+		http.Error(w, "You are not authenticated", http.StatusUnauthorized)
 		return
 	}
 	query, ok := r.URL.Query()["q"]
