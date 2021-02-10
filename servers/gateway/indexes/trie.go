@@ -95,26 +95,35 @@ func (t *Trie) Find(prefix string, max int) ([]int64, error) {
 	if len(prefix) == 0 || max == 0 || len(t.Root.children) == 0 {
 		return []int64{}, nil
 	}
-	var ids []int64
-	node := t.Root
-	// Loop to the end of prefix, returning a nil slice if the prefix isn't present
-	for _, r := range prefix {
-		child, _ := node.children[r]
-		if child == nil {
-			return []int64{}, nil
+	ids := make(int64set)
+	for _, prefixPart := range strings.Fields(prefix) {
+		// ids := make(int64set)
+		node := t.Root
+		// Loop to the end of prefix, returning a nil slice if the prefix isn't present
+		for _, r := range prefixPart {
+			child, _ := node.children[r]
+			if child == nil {
+				return []int64{}, nil
+			}
+			node = child
 		}
-		node = child
+		newIds := findHelper(node, max, ids)
+		if len(ids.all()) > 0 {
+			ids = intersect(ids, newIds)
+		} else {
+			ids = newIds
+		}
 	}
-	return findHelper(node, max, ids), nil
+	return ids.all(), nil
 }
 
-func findHelper(node *trieNode, max int, ids []int64) []int64 {
+func findHelper(node *trieNode, max int, ids int64set) int64set {
 	if len(node.values.all()) == 0 && len(node.children) == 0 {
 		return ids
 	} else {
 		for _, id := range node.values.all() {
-			ids = append(ids, id)
-			if len(ids) >= max {
+			ids.add(id)
+			if len(ids.all()) >= max {
 				return ids
 			}
 		}
@@ -186,4 +195,15 @@ func (t *Trie) removeHelper(node *trieNode, runes []rune, length int) *trieNode 
 
 func (t *trieNode) isLeaf() bool {
 	return len(t.children) == 0
+}
+
+func intersect(a int64set, b int64set) int64set {
+	set := make(int64set, 0)
+
+	for _, val := range a.all() {
+		if b.has(val) {
+			set.add(val)
+		}
+	}
+	return set
 }
