@@ -37,9 +37,6 @@ func NewTrie(newLock *sync.Mutex) *Trie {
 //Len returns the number of entries in the trie.
 func (t *Trie) Len() int {
 	node := t.Root
-	if node == nil {
-		return 0
-	}
 	return lenHelper(node)
 }
 
@@ -69,22 +66,19 @@ func (t *Trie) Add(key string, value int64) error {
 	keys := strings.Fields(key)
 	// If a key contains spaces it is separated into multiple keys
 	for _, key := range keys {
-		root := t.Root
+		node := t.Root
 		for _, r := range key {
-			child, _ := root.children[r]
+			child, _ := node.children[r]
 			if child == nil {
-				if root.children == nil {
-					root.children = map[rune]*trieNode{}
-				}
 				child = &trieNode{children: map[rune]*trieNode{}, values: int64set{}}
 				t.lock.Lock()
-				root.children[r] = child
+				node.children[r] = child
 				t.lock.Unlock()
 			}
-			root = child
+			node = child
 		}
 		t.lock.Lock()
-		root.values.add(value)
+		node.values.add(value)
 		t.lock.Unlock()
 	}
 	return nil

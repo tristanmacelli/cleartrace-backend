@@ -157,6 +157,15 @@ func TestFind(t *testing.T) {
 		expected  string
 	}{
 		{
+			"Querying an empty trie returns nothing",
+			"Don't search for something that doesn't exist",
+			NewTrie(&sync.Mutex{}),
+			[]string{},
+			"Julie",
+			map[int64]struct{}{},
+			"A length greater than 1 was not expected but was returned",
+		},
+		{
 			"Query prefix doesn't match any existing key",
 			"Only recurse on the branches that contain prefix",
 			NewTrie(&sync.Mutex{}),
@@ -198,6 +207,28 @@ func TestFind(t *testing.T) {
 			},
 			"A length greater than 3 was not expected but was returned",
 		},
+		{
+			"Query prefix matches more than the max",
+			"Only recurse on the branches that contain prefix",
+			NewTrie(&sync.Mutex{}),
+			[]string{"Abby", "Anderson", "Ally", "Andre", "Allison", "Alberto", "Ann", "Annette", "Aaron", "Anders",
+				"Adana", "Alex", "Alexa", "Alice", "Andie", "Anderson", "Allan", "Al", "Allen", "Aidan", "Alden",
+			},
+			"A",
+			map[int64]struct{}{
+				0: {}, 1: {},
+				2: {}, 3: {},
+				4: {}, 5: {},
+				6: {}, 7: {},
+				8: {}, 9: {},
+				10: {}, 11: {},
+				12: {}, 13: {},
+				14: {}, 15: {},
+				16: {}, 17: {},
+				18: {}, 19: {},
+			},
+			"A length greater than 3 was not expected but was returned",
+		},
 	}
 	for _, c := range cases {
 		rr := callFind(c.t, c.additions, c.search)
@@ -220,6 +251,16 @@ func TestRemove(t *testing.T) {
 		length    int
 		expected  string
 	}{
+		{
+			"Check if removing non-existent key works",
+			"The length should be less than 1",
+			NewTrie(&sync.Mutex{}),
+			[]string{"Dane", "Erica"},
+			[]string{"Brandon"},
+			[]int64{2},
+			2,
+			"A length greater than 0 was not expected but was returned",
+		},
 		{
 			"Check if removing last item in the tree works",
 			"The length should be less than 1",
