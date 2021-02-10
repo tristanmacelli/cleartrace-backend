@@ -1,6 +1,7 @@
 package indexes
 
 import (
+	"fmt"
 	"strings"
 	"sync"
 )
@@ -28,30 +29,42 @@ type Trie struct {
 //NewTrie constructs a new Trie.
 func NewTrie(newLock *sync.Mutex) *Trie {
 	return &Trie{
-		Root: &trieNode{},
+		Root: &trieNode{children: map[rune]*trieNode{}, values: int64set{}},
 		lock: newLock,
 	}
 }
 
 //Len returns the number of entries in the trie.
 func (t *Trie) Len() int {
-	return lenHelper(t.Root)
+	node := t.Root
+	if node == nil {
+		return 0
+	}
+	return lenHelper(node)
 }
 
 func lenHelper(node *trieNode) int {
-	if len(node.children) == 0 {
+	if node.isLeaf() {
 		return len(node.values.all())
 	} else {
 		sum := len(node.values.all())
 		for _, child := range node.children {
-			sum += lenHelper(child)
+			if child != nil {
+				sum += lenHelper(child)
+			}
 		}
 		return sum
 	}
 }
 
 //Add adds a key and value to the trie.
-func (t *Trie) Add(key string, value int64) {
+func (t *Trie) Add(key string, value int64) error {
+	if key == "" {
+		return fmt.Errorf("Error: must enter a non-empty string")
+	}
+	if value < 0 {
+		return fmt.Errorf("Error: invalid id value. Must be non-negative")
+	}
 	key = strings.ToLower(key)
 	keys := strings.Fields(key)
 	// If a key contains spaces it is separated into multiple keys
@@ -63,7 +76,7 @@ func (t *Trie) Add(key string, value int64) {
 				if root.children == nil {
 					root.children = map[rune]*trieNode{}
 				}
-				child = &trieNode{}
+				child = &trieNode{children: map[rune]*trieNode{}, values: int64set{}}
 				t.lock.Lock()
 				root.children[r] = child
 				t.lock.Unlock()
@@ -74,15 +87,22 @@ func (t *Trie) Add(key string, value int64) {
 		root.values.add(value)
 		t.lock.Unlock()
 	}
+	return nil
 }
 
 //Find finds `max` values matching `prefix`. If the trie
 //is entirely empty, or the prefix is empty, or max == 0,
 //or the prefix is not found, this returns a nil slice.
-func (t *Trie) Find(prefix string, max int) []int64 {
+func (t *Trie) Find(prefix string, max int) ([]int64, error) {
+	if prefix == "" {
+		return nil, fmt.Errorf("Error: must enter a non-empty string as search query")
+	}
+	if max < 0 {
+		return nil, fmt.Errorf("Error: invalid max value. Must be non-negative")
+	}
 	prefix = strings.ToLower(prefix)
 	if len(prefix) == 0 || max == 0 || len(t.Root.children) == 0 {
-		return []int64{}
+		return []int64{}, nil
 	}
 	var ids []int64
 	node := t.Root
@@ -90,11 +110,11 @@ func (t *Trie) Find(prefix string, max int) []int64 {
 	for _, r := range prefix {
 		child, _ := node.children[r]
 		if child == nil {
-			return []int64{}
+			return []int64{}, nil
 		}
 		node = child
 	}
-	return findHelper(node, max, ids)
+	return findHelper(node, max, ids), nil
 }
 
 func findHelper(node *trieNode, max int, ids []int64) []int64 {
@@ -108,7 +128,9 @@ func findHelper(node *trieNode, max int, ids []int64) []int64 {
 			}
 		}
 		for _, child := range node.children {
-			return findHelper(child, max, ids)
+			if child != nil {
+				return findHelper(child, max, ids)
+			}
 		}
 		return ids
 	}
@@ -116,14 +138,20 @@ func findHelper(node *trieNode, max int, ids []int64) []int64 {
 
 //Remove removes a key/value pair from the trie
 //and trims branches with no values.
-func (t *Trie) Remove(key string, value int64) {
+func (t *Trie) Remove(key string, value int64) error {
+	if key == "" {
+		return fmt.Errorf("Error: must enter a non-empty string")
+	}
+	if value < 0 {
+		return fmt.Errorf("Error: invalid id value")
+	}
 	key = strings.ToLower(key)
 	node := t.Root
 	for _, r := range key {
 		child, _ := node.children[r]
 		if child == nil {
 			// Since the key does not exist there is nothing to delete
-			return
+			return nil
 		}
 		node = child
 	}
@@ -133,10 +161,11 @@ func (t *Trie) Remove(key string, value int64) {
 	ids := node.values.all()
 	// If the node contains other values or has children the tree doesn't need trimming
 	if len(ids) > 0 || !node.isLeaf() {
-		return
+		return nil
 	}
 	node = t.Root
 	t.Root = t.removeHelper(node, []rune(key), len(key))
+	return nil
 }
 
 func (t *Trie) removeHelper(node *trieNode, runes []rune, length int) *trieNode {

@@ -54,12 +54,12 @@ func TestLen(t *testing.T) {
 			"A length greater than 0 was not expected but was returned",
 		},
 		{
-			"Checking trie with additions returns accurate lenght",
+			"Checking trie with additions returns accurate length",
 			"Make sure you are counting entries/additions and not depth",
 			NewTrie(&sync.Mutex{}),
 			true,
 			false,
-			0,
+			2,
 			"A length other than 2 was not expected but was returned",
 		},
 		{
@@ -68,14 +68,14 @@ func TestLen(t *testing.T) {
 			NewTrie(&sync.Mutex{}),
 			true,
 			true,
-			0,
+			1,
 			"A length greater than 0 was not expected but was returned",
 		},
 	}
 	for _, c := range cases {
 		rr := callLen(c.t, c.additions, c.removals)
 		if c.length != rr {
-			t.Errorf(c.expected)
+			t.Errorf("case %s: unexpected error %v\nHINT: %s", c.name, c.expected, c.hint)
 		}
 	}
 }
@@ -98,7 +98,7 @@ func TestAdd(t *testing.T) {
 			"A length of 0 was not expected but was returned",
 		},
 		{
-			"Check if adding to a unique key to an existing tree works",
+			"Check if adding to a unique key to the tree works",
 			"The length should be greater than 1",
 			NewTrie(&sync.Mutex{}),
 			[]string{"Muna", "Abby"},
@@ -106,7 +106,7 @@ func TestAdd(t *testing.T) {
 			"A length of 1 was not expected but was returned",
 		},
 		{
-			"Check if adding to a non-unique key to an existing tree works (full-prefix match)",
+			"Check if adding to a non-unique key to the tree works (full-prefix match)",
 			"The length should be greater than 1",
 			NewTrie(&sync.Mutex{}),
 			[]string{"Ngugyen", "Ngugyen"},
@@ -114,7 +114,7 @@ func TestAdd(t *testing.T) {
 			"A length of 1 was not expected but was returned",
 		},
 		{
-			"Check if adding to a non-unique key to an existing tree works (partial prefix match)",
+			"Check if adding to a non-unique key to the tree works (partial prefix match)",
 			"The length should be greater than 1",
 			NewTrie(&sync.Mutex{}),
 			[]string{"Jon", "Jonathan"},
@@ -122,7 +122,7 @@ func TestAdd(t *testing.T) {
 			"A length of 1 was not expected but was returned",
 		},
 		{
-			"Check if adding to a non-unique key to an existing tree works (partial prefix match)",
+			"Check if adding to a non-unique key to  tree works (partial prefix match)",
 			"The length should be greater than 1",
 			NewTrie(&sync.Mutex{}),
 			[]string{"Jonathan", "Jon"},
@@ -162,7 +162,7 @@ func TestRemove(t *testing.T) {
 			"A length greater than 0 was not expected but was returned",
 		},
 		{
-			"Check if removing multiple items in the tree works",
+			"Check if removing multiple items from the tree works",
 			"The length should be less than 2",
 			NewTrie(&sync.Mutex{}),
 			[]string{"Max", "Allison", "Cooper"},
@@ -182,7 +182,7 @@ func TestRemove(t *testing.T) {
 			"A length greater than 1 was not expected but was returned",
 		},
 		{
-			"Check if removing a unique item in the tree works (full key match)",
+			"Check if removing a non-unique item from the tree works (full key match)",
 			"The length should be less than 1",
 			NewTrie(&sync.Mutex{}),
 			[]string{"Connor", "Connor"},
@@ -192,7 +192,7 @@ func TestRemove(t *testing.T) {
 			"A length greater than 1 was not expected but was returned",
 		},
 		{
-			"Check if removing a non-unique item in the tree works (partial key match)",
+			"Check if removing a non-unique item from the tree works (partial key match)",
 			"The length should be less than 1",
 			NewTrie(&sync.Mutex{}),
 			[]string{"Melissa", "Melinda"},
@@ -202,7 +202,7 @@ func TestRemove(t *testing.T) {
 			"A length greater than 1 was not expected but was returned",
 		},
 		{
-			"Check if removing to a non-unique key from an existing tree works (partial prefix match)",
+			"Check if removing a non-unique key from the tree works (partial key match)",
 			"The length should be greater than 1",
 			NewTrie(&sync.Mutex{}),
 			[]string{"Jon", "Jonathan"},
@@ -212,7 +212,7 @@ func TestRemove(t *testing.T) {
 			"A length of 1 was not expected but was returned",
 		},
 		{
-			"Check if removing to a non-unique key from an existing tree works (partial prefix match)",
+			"Check if removing a non-unique key from the tree works (partial key match)",
 			"The length should be greater than 1",
 			NewTrie(&sync.Mutex{}),
 			[]string{"Jon", "Jonathan"},
