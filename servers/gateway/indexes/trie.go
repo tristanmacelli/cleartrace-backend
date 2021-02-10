@@ -109,8 +109,8 @@ func (t *Trie) Find(prefix string, max int) ([]int64, error) {
 			node = child
 		}
 		newIds := findHelper(node, max, ids)
-		// multiple := i > 0
-		// ids = findHelper(node, max, ids, newIds, multiple)
+		// subsequent := i > 0
+		// ids = findHelper(node, max, ids, newIds, subsequent)
 		if len(ids.all()) > 0 {
 			ids = intersect(ids, newIds)
 		} else {
@@ -120,16 +120,16 @@ func (t *Trie) Find(prefix string, max int) ([]int64, error) {
 	return ids.all(), nil
 }
 
-// func findHelper(node *trieNode, max int, ids int64set, newIds int64set, mutipleTokens bool) int64set {
+// func findHelper(node *trieNode, max int, ids int64set, newIds int64set, subsequentToken bool) int64set {
 func findHelper(node *trieNode, max int, ids int64set) int64set {
 	if len(node.values.all()) == 0 && len(node.children) == 0 {
 		return ids
 	} else {
 		for _, id := range node.values.all() {
 			ids.add(id)
-			// if mutipleTokens && ids.has(id) {
+			// if subsequentToken && ids.has(id) {
 			// 	newIds.add(id)
-			// } else if !multipleTokens {
+			// } else if !subsequentToken {
 			// ids.add(id)
 			// }
 			if len(ids.all()) >= max {

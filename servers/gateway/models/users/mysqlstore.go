@@ -124,18 +124,15 @@ func (ms *MysqlStore) GetByUserName(username string) (*User, error) {
 }
 
 func (ms *MysqlStore) IndexUsers(trie *indexes.Trie) {
-	insq := "SELECT ID, FirstName, LastName, UserName FROM users"
+	insq := "SELECT ID, FirstName, LastName, UserName FROM users;"
 	rows, err := ms.DB.Query(insq)
 	if err != nil {
 		fmt.Println("Error getting Users from the database", err)
 	}
-	fmt.Println("Rows: ", rows)
-	var users []indexedUserValues
-	// Populating the new user
-	for rows.Next() {
-		rows.Scan(&users)
-	}
-	for _, user := range users {
+	// Populating the trie with current users
+	for i := 0; rows.Next(); i++ {
+		user := indexedUserValues{}
+		rows.Scan(&user.ID, &user.FirstName, &user.LastName, &user.UserName)
 		trie.Add(user.FirstName, user.ID)
 		trie.Add(user.LastName, user.ID)
 		trie.Add(user.UserName, user.ID)
