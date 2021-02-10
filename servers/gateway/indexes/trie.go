@@ -97,7 +97,8 @@ func (t *Trie) Find(prefix string, max int) ([]int64, error) {
 	}
 	ids := make(int64set)
 	for _, prefixPart := range strings.Fields(prefix) {
-		// ids := make(int64set)
+		// for i, prefixPart := range strings.Fields(prefix) {
+		// newIds := make(int64set)
 		node := t.Root
 		// Loop to the end of prefix, returning a nil slice if the prefix isn't present
 		for _, r := range prefixPart {
@@ -108,6 +109,8 @@ func (t *Trie) Find(prefix string, max int) ([]int64, error) {
 			node = child
 		}
 		newIds := findHelper(node, max, ids)
+		// multiple := i > 0
+		// ids = findHelper(node, max, ids, newIds, multiple)
 		if len(ids.all()) > 0 {
 			ids = intersect(ids, newIds)
 		} else {
@@ -117,12 +120,18 @@ func (t *Trie) Find(prefix string, max int) ([]int64, error) {
 	return ids.all(), nil
 }
 
+// func findHelper(node *trieNode, max int, ids int64set, newIds int64set, mutipleTokens bool) int64set {
 func findHelper(node *trieNode, max int, ids int64set) int64set {
 	if len(node.values.all()) == 0 && len(node.children) == 0 {
 		return ids
 	} else {
 		for _, id := range node.values.all() {
 			ids.add(id)
+			// if mutipleTokens && ids.has(id) {
+			// 	newIds.add(id)
+			// } else {
+			// ids.add(id)
+			// }
 			if len(ids.all()) >= max {
 				return ids
 			}
