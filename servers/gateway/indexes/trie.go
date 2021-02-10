@@ -129,7 +129,7 @@ func findHelper(node *trieNode, max int, ids int64set) int64set {
 			ids.add(id)
 			// if mutipleTokens && ids.has(id) {
 			// 	newIds.add(id)
-			// } else {
+			// } else if !multipleTokens {
 			// ids.add(id)
 			// }
 			if len(ids.all()) >= max {

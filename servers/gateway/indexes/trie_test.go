@@ -227,7 +227,7 @@ func TestFind(t *testing.T) {
 				16: {}, 17: {},
 				18: {}, 19: {},
 			},
-			"A length greater than 3 was not expected but was returned",
+			"A length greater than 20 was not expected but was returned",
 		},
 	}
 	for _, c := range cases {

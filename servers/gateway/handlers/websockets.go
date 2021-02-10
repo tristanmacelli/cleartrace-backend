@@ -15,6 +15,28 @@ import (
 
 const writeWait = time.Second
 
+const (
+	// TextMessage denotes a text data message. The text message payload is
+	// interpreted as UTF-8 encoded text data.
+	TextMessage = 1
+
+	// BinaryMessage denotes a binary data message.
+	BinaryMessage = 2
+
+	// CloseMessage denotes a close control message. The optional message
+	// payload contains a numeric code and text. Use the FormatCloseMessage
+	// function to format a close message payload.
+	CloseMessage = 8
+
+	// PingMessage denotes a ping control message. The optional message payload
+	// is UTF-8 encoded text.
+	PingMessage = 9
+
+	// PongMessage denotes a pong control message. The optional message payload
+	// is UTF-8 encoded text.
+	PongMessage = 10
+)
+
 // Notify A simple store to store all the connections
 type Notify struct {
 	Connections map[int64]*websocket.Conn
@@ -72,7 +94,6 @@ func (ctx *HandlerContext) InsertConnection(conn *websocket.Conn, userID int64) 
 	s.lock.Lock()
 	connID := len(s.Connections)
 	// insert socket connection
-	// TODO: map userID to the associated web socket connection
 	s.Connections[userID] = conn
 	s.lock.Unlock()
 	return connID
@@ -216,11 +237,19 @@ func (ctx *HandlerContext) echo(conn *websocket.Conn) {
 	go func() {
 		fmt.Println("Now actively listening for messages!")
 		for {
+			// TODO: Figure out how to safely unblock from this statement when sending a message
+			// Potential Solution: 2 Go routines this one continues to handle messages from the q
+			// and the 2nd one will specifically handle close messages sent by logging out, refreshing,
+			// or closing the browser tab/window
+			// Search: gorilla websocket read message without blocking
+			// Read: https://github.com/gorilla/websocket/issues/81
 			// fmt.Println("1")
 			// Close connection (returning an error causes the for-loop above to break)
 			// When this logic is called it works properly, but blocks in any other case
-			// if HandleConnectionClosure(conn) {
+			// if msg, err := HandleConnectionClosure(conn); err != nil {
 			// 	break
+			// } else if msg != nil {
+			// fmt.Printf("Client says %v\n", msg)
 			// }
 			// fmt.Println("2")
 			d, _ := <-msgs
@@ -274,18 +303,20 @@ func (ctx *HandlerContext) handleClientBoundMessages(d amqp.Delivery, message *m
 	return nil
 }
 
-func HandleConnectionClosure(conn *websocket.Conn) bool {
-	if _, _, err := conn.ReadMessage(); err != nil {
+func HandleConnectionClosure(conn *websocket.Conn) ([]byte, bool) {
+	messageType, msg, err := conn.ReadMessage()
+	if err != nil || messageType == CloseMessage {
 		fmt.Println("Closing current WebSocket connection")
 		cm := websocket.FormatCloseMessage(
 			websocket.CloseNormalClosure,
-			"WebSocket connection closed cleanly")
+			"WebSocket connection closed cleanly",
+		)
 		if err := conn.WriteControl(websocket.CloseMessage, cm, time.Now().Add(writeWait)); err != nil {
-			// handle error
+			fmt.Println("Error:", err)
 		}
-		return true
+		return []byte{}, true
 	}
-	return false
+	return msg, false
 }
 
 func failOnError(msg string, err error) {
