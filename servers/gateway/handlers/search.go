@@ -27,7 +27,7 @@ func (ctx *HandlerContext) SearchHandler(w http.ResponseWriter, r *http.Request)
 	}
 	// Find the user IDs
 	userIndexes := ctx.UserIndexes
-	userIDs := userIndexes.Find(query[0], MaxReturnedUserIDs)
+	userIDs, _ := userIndexes.Find(query[0], MaxReturnedUserIDs)
 	userStore := ctx.UserStore
 	// var users []users.User
 

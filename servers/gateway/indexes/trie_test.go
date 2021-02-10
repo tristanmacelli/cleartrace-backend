@@ -23,12 +23,20 @@ func callAdd(t *Trie, additions []string) int {
 	return t.Len()
 }
 
+func callFind(t *Trie, additions []string, query string) []int64 {
+	for id, str := range additions {
+		t.Add(str, int64(id))
+	}
+	ids, _ := t.Find(query, 20)
+	return ids
+}
+
 func callRemove(t *Trie, additions []string, removals []string, ids []int64) int {
 	for id, str := range additions {
 		t.Add(str, int64(id))
 	}
 	for id, str := range removals {
-		t.Add(str, ids[id])
+		t.Remove(str, ids[id])
 	}
 	return t.Len()
 }
@@ -138,7 +146,68 @@ func TestAdd(t *testing.T) {
 	}
 }
 
-func TestFind(t *testing.T) {}
+func TestFind(t *testing.T) {
+	cases := []struct {
+		name      string
+		hint      string
+		t         *Trie
+		additions []string
+		search    string
+		ids       map[int64]struct{}
+		expected  string
+	}{
+		{
+			"Query prefix doesn't match any existing key",
+			"Only recurse on the branches that contain prefix",
+			NewTrie(&sync.Mutex{}),
+			[]string{"Klarisa", "Manny"},
+			"Melvin",
+			map[int64]struct{}{},
+			"A length greater than 1 was not expected but was returned",
+		},
+		{
+			"Query prefix matches 1 existing key w/ 1 total key in the tree",
+			"Only recurse on the branches that contain prefix",
+			NewTrie(&sync.Mutex{}),
+			[]string{"Zoe"},
+			"Zoe",
+			map[int64]struct{}{
+				0: {},
+			},
+			"A length less than 1 was not expected but was returned",
+		},
+		{
+			"Query prefix matches 0 existing keys w/ 1 total key in the tree",
+			"Only recurse on the branches that contain prefix",
+			NewTrie(&sync.Mutex{}),
+			[]string{"Ashly"},
+			"Ashley",
+			map[int64]struct{}{},
+			"A length greater than 0 was not expected but was returned",
+		},
+		{
+			"Query prefix matches 3 existing keys w/ 5 total keys in the tree",
+			"Only recurse on the branches that contain prefix",
+			NewTrie(&sync.Mutex{}),
+			[]string{"Joe", "Jerry", "Jorge", "Jonathan", "Gina"},
+			"Jo",
+			map[int64]struct{}{
+				0: {},
+				2: {},
+				3: {},
+			},
+			"A length greater than 3 was not expected but was returned",
+		},
+	}
+	for _, c := range cases {
+		rr := callFind(c.t, c.additions, c.search)
+		for _, id := range rr {
+			if _, ok := c.ids[id]; !ok {
+				t.Errorf("case %s: unexpected error %v\nHINT: %s", c.name, c.expected, c.hint)
+			}
+		}
+	}
+}
 
 func TestRemove(t *testing.T) {
 	cases := []struct {
@@ -157,8 +226,8 @@ func TestRemove(t *testing.T) {
 			NewTrie(&sync.Mutex{}),
 			[]string{"George"},
 			[]string{"George"},
-			[]int64{1},
-			1,
+			[]int64{0},
+			0,
 			"A length greater than 0 was not expected but was returned",
 		},
 		{
@@ -167,27 +236,27 @@ func TestRemove(t *testing.T) {
 			NewTrie(&sync.Mutex{}),
 			[]string{"Max", "Allison", "Cooper"},
 			[]string{"Max", "Cooper"},
-			[]int64{1, 3},
+			[]int64{0, 2},
 			1,
 			"A length greater than 1 was not expected but was returned",
 		},
 		{
 			"Check if removing a unique item in the tree works",
-			"The length should be less than 1",
+			"The length should be less than 2",
 			NewTrie(&sync.Mutex{}),
 			[]string{"Seaeun", "Mitchell"},
 			[]string{"Seaeun"},
-			[]int64{1},
+			[]int64{0},
 			1,
 			"A length greater than 1 was not expected but was returned",
 		},
 		{
 			"Check if removing a non-unique item from the tree works (full key match)",
-			"The length should be less than 1",
+			"The length should be less than 2",
 			NewTrie(&sync.Mutex{}),
 			[]string{"Connor", "Connor"},
 			[]string{"Connor"},
-			[]int64{1},
+			[]int64{0},
 			1,
 			"A length greater than 1 was not expected but was returned",
 		},
@@ -197,7 +266,7 @@ func TestRemove(t *testing.T) {
 			NewTrie(&sync.Mutex{}),
 			[]string{"Melissa", "Melinda"},
 			[]string{"Melissa"},
-			[]int64{1},
+			[]int64{0},
 			1,
 			"A length greater than 1 was not expected but was returned",
 		},
@@ -207,8 +276,8 @@ func TestRemove(t *testing.T) {
 			NewTrie(&sync.Mutex{}),
 			[]string{"Jon", "Jonathan"},
 			[]string{"Jon"},
-			[]int64{1},
-			2,
+			[]int64{0},
+			1,
 			"A length of 1 was not expected but was returned",
 		},
 		{
@@ -217,9 +286,9 @@ func TestRemove(t *testing.T) {
 			NewTrie(&sync.Mutex{}),
 			[]string{"Jon", "Jonathan"},
 			[]string{"Jonathan"},
-			[]int64{2},
-			2,
-			"A length of 1 was not expected but was returned",
+			[]int64{1},
+			1,
+			"A length of 2 was not expected but was returned",
 		},
 	}
 	for _, c := range cases {

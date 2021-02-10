@@ -94,9 +94,6 @@ func (t *Trie) Add(key string, value int64) error {
 //is entirely empty, or the prefix is empty, or max == 0,
 //or the prefix is not found, this returns a nil slice.
 func (t *Trie) Find(prefix string, max int) ([]int64, error) {
-	if prefix == "" {
-		return nil, fmt.Errorf("Error: must enter a non-empty string as search query")
-	}
 	if max < 0 {
 		return nil, fmt.Errorf("Error: invalid max value. Must be non-negative")
 	}
