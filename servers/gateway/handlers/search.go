@@ -29,15 +29,7 @@ func (ctx *HandlerContext) SearchHandler(w http.ResponseWriter, r *http.Request)
 	userIndexes := ctx.UserIndexes
 	userIDs, _ := userIndexes.Find(query[0], MaxReturnedUserIDs)
 	userStore := ctx.UserStore
-	// var users []users.User
 
-	// // How can we order these by FirstName ascending?
-	// for _, id := range userIDs {
-	// 	user, err := userStore.GetByID(id)
-	// 	if err == nil {
-	// 		users = append(users, *user)
-	// 	}
-	// }
 	// Returns all user objects ordered by FirstName
 	users, err := userStore.GetByIDs(userIDs, "FirstName")
 	// Format the response data
