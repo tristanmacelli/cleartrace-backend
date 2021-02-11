@@ -44,11 +44,15 @@ func NewMysqlStore(dsn string) *MysqlStore {
 }
 
 // GetBy is a helper method that resolves all queries asking for singular user objects
-func (ms *MysqlStore) GetBy(query string, value string) (*User, error) {
+func (ms *MysqlStore) GetBy(query string, args string) (*User, error) {
 	// Creates a new user object to populate with the query for a single row
 	user := User{}
-	insq := queryString + query
-	row := ms.DB.QueryRow(insq, value)
+	var row *sql.Row
+	if len(args) > 0 {
+		row = ms.DB.QueryRow(query, args)
+	} else {
+		row = ms.DB.QueryRow(query)
+	}
 	// Populating the new user
 	err := row.Scan(&user.ID, &user.Email, &user.PassHash, &user.UserName,
 		&user.FirstName, &user.LastName, &user.PhotoURL)
@@ -67,19 +71,18 @@ func (ms *MysqlStore) GetBy(query string, value string) (*User, error) {
 }
 
 // getMultipleBy is a helper method that resolves all queries asking for singular user objects
-func (ms *MysqlStore) getMultipleBy(query string) (*[]User, error) {
-	// Creates a new user object to populate with the query for a single row
-	insq := query
-	rows, err := ms.DB.Query(insq)
+func (ms *MysqlStore) getMultipleBy(query string) (*[]*User, error) {
+	rows, err := ms.DB.Query(query)
 	if err != nil {
 		fmt.Println("Error getting Users from the database", err)
 		return nil, err
 	}
-	fmt.Println("Rows: ", rows)
-	var users []User
-	// Populating the new user
+	var users []*User
 	for rows.Next() {
-		err = rows.Scan(&users)
+		user := User{}
+		err = rows.Scan(&user.ID, &user.Email, &user.PassHash, &user.UserName,
+			&user.FirstName, &user.LastName, &user.PhotoURL)
+		users = append(users, &user)
 		if err != nil {
 			fmt.Println("Error parsing Users", err)
 			return nil, err
@@ -90,36 +93,41 @@ func (ms *MysqlStore) getMultipleBy(query string) (*[]User, error) {
 
 //GetByID returns the User with the given ID
 func (ms *MysqlStore) GetByID(id int64) (*User, error) {
-	query := "WHERE ID = ?"
+	query := queryString + "WHERE ID = ?"
 	return ms.GetBy(query, strconv.FormatInt(id, 10))
 }
 
 // GetByID returns the User with the given ID
-func (ms *MysqlStore) GetByIDs(ids []int64, orderBy string) (*[]User, error) {
-	if len(ids) < 2 {
-		return nil, errors.New("Must pass multiple ids")
+func (ms *MysqlStore) GetByIDs(ids []int64, orderBy string) (*[]*User, error) {
+	if len(ids) < 1 {
+		return nil, errors.New("Must pass more than 0 ids")
 	}
 	query := queryString + "WHERE ID = " + strconv.FormatInt(ids[0], 10)
-
 	// Loop through 1 - n slice elements
-	for i := 1; i < len(ids); i++ {
-		query += " OR ID = " + strconv.FormatInt(ids[i], 10)
+	if len(ids) > 1 {
+		for i := 1; i < len(ids); i++ {
+			query += " OR ID = " + strconv.FormatInt(ids[i], 10)
+		}
+		if len(orderBy) > 0 {
+			query += " ORDER BY " + orderBy
+		}
+		return ms.getMultipleBy(query)
 	}
-	if len(orderBy) > 1 {
-		query += " ORDER BY " + orderBy
-	}
-	return ms.getMultipleBy(query)
+	var users []*User
+	user, err := ms.GetBy(query, "")
+	users = append(users, user)
+	return &users, err
 }
 
 //GetByEmail returns the User with the given email
 func (ms *MysqlStore) GetByEmail(email string) (*User, error) {
-	query := "WHERE Email = ?"
+	query := queryString + "WHERE Email = ?"
 	return ms.GetBy(query, email)
 }
 
 //GetByUserName returns the User with the given Username
 func (ms *MysqlStore) GetByUserName(username string) (*User, error) {
-	query := "WHERE UserName = ?"
+	query := queryString + "WHERE UserName = ?"
 	return ms.GetBy(query, username)
 }
 
