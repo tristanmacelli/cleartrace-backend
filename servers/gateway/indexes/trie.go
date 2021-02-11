@@ -96,9 +96,7 @@ func (t *Trie) Find(prefix string, max int) ([]int64, error) {
 		return []int64{}, nil
 	}
 	ids := make(int64set)
-	for _, prefixPart := range strings.Fields(prefix) {
-		// for i, prefixPart := range strings.Fields(prefix) {
-		// newIds := make(int64set)
+	for i, prefixPart := range strings.Fields(prefix) {
 		node := t.Root
 		// Loop to the end of prefix, returning a nil slice if the prefix isn't present
 		for _, r := range prefixPart {
@@ -108,37 +106,35 @@ func (t *Trie) Find(prefix string, max int) ([]int64, error) {
 			}
 			node = child
 		}
-		newIds := findHelper(node, max, ids)
-		// subsequent := i > 0
-		// ids = findHelper(node, max, ids, newIds, subsequent)
-		if len(ids.all()) > 0 {
-			ids = intersect(ids, newIds)
-		} else {
-			ids = newIds
-		}
+		newIds := make(int64set)
+		subsequent := i > 0
+		ids = findHelper(node, max, ids, newIds, subsequent)
 	}
 	return ids.all(), nil
 }
 
-// func findHelper(node *trieNode, max int, ids int64set, newIds int64set, subsequentToken bool) int64set {
-func findHelper(node *trieNode, max int, ids int64set) int64set {
+func findHelper(node *trieNode, max int, ids int64set, newIds int64set, subsequentToken bool) int64set {
 	if len(node.values.all()) == 0 && len(node.children) == 0 {
 		return ids
 	} else {
 		for _, id := range node.values.all() {
-			ids.add(id)
-			// if subsequentToken && ids.has(id) {
-			// 	newIds.add(id)
-			// } else if !subsequentToken {
-			// ids.add(id)
-			// }
+			// Adds to union list if method is called on a subsequent token
+			// otherwise adds directly to ids slice until the max is reached
+			if subsequentToken && ids.has(id) {
+				newIds.add(id)
+			} else if !subsequentToken {
+				ids.add(id)
+			}
+			if len(newIds.all()) >= max {
+				return newIds
+			}
 			if len(ids.all()) >= max {
 				return ids
 			}
 		}
 		for _, child := range node.children {
 			if child != nil {
-				return findHelper(child, max, ids)
+				return findHelper(child, max, ids, newIds, subsequentToken)
 			}
 		}
 		return ids
@@ -204,15 +200,4 @@ func (t *Trie) removeHelper(node *trieNode, runes []rune, length int) *trieNode 
 
 func (t *trieNode) isLeaf() bool {
 	return len(t.children) == 0
-}
-
-func intersect(a int64set, b int64set) int64set {
-	set := make(int64set, 0)
-
-	for _, val := range a.all() {
-		if b.has(val) {
-			set.add(val)
-		}
-	}
-	return set
 }
