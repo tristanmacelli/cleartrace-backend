@@ -53,5 +53,6 @@ export const createMQChannel = async (conn: amqp.Connection): Promise<amqp.Chann
 export function sendObjectToQueue(channel: amqp.Channel, ob: RabbitObject) {
   let json = JSON.stringify(ob)
   channel.sendToQueue(mqName, Buffer.from(json))
+  // TODO: Remove the following output once tested & working
   console.log("Sent out the message");
 }
