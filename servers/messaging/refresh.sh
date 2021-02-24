@@ -5,7 +5,7 @@ export TLSKEY=/etc/letsencrypt/live/slack.api.tristanmacelli.com/privkey.pem
 
 docker rm -f messaging
 # docker rm -f messaging2
-# docker rm -f mongodb
+# docker rm -f userMessageStore
 
 # clean up
 docker image prune -f

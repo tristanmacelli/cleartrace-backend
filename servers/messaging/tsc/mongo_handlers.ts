@@ -56,21 +56,26 @@ export async function getChannels(channels: Collection, userID: number, search: 
 export async function insertNewChannel(channels: Collection, newChannel: Channel) {
     let err: boolean = false;
     let duplicates: boolean = true;
-    let rightNow = new Date()
+    newChannel.createdAt = new Date()
+    const filter = { name: newChannel.name }
+    const insertDoc = {
+        name: newChannel.name, 
+        description: newChannel.description,
+        private: newChannel.private, 
+        members: newChannel.members,
+        createdAt: newChannel.createdAt, 
+        creator: newChannel.creator,
+        editedAt: newChannel.editedAt
+    }
 
-    let cursor = channels.find({ name: newChannel.name })
+    let cursor = channels.find(filter)
     if (!await cursor.hasNext()) {
         duplicates = false;
-        newChannel.createdAt = rightNow
-        await channels.insertOne({
-            name: newChannel.name, description: newChannel.description,
-            private: newChannel.private, members: newChannel.members,
-            createdAt: newChannel.createdAt, creator: newChannel.creator,
-            editedAt: newChannel.editedAt
-        }).catch(() => {
+        await channels.insertOne(insertDoc)
+        .catch(() => {
             err = true;
         });
-        cursor = channels.find({ name: newChannel.name, createdAt: newChannel.createdAt })
+        cursor = channels.find(filter)
         if (await cursor.hasNext()) {
             let doc = await cursor.next()
             newChannel.id = doc._id
@@ -85,16 +90,20 @@ export async function insertNewChannel(channels: Collection, newChannel: Channel
 export async function insertNewMessage(messages: Collection, newMessage: Message) {
     let err: boolean = false;
     newMessage.createdAt = new Date()
-
-    await messages.insertOne({
-        channelID: newMessage.channelID, createdAt: newMessage.createdAt,
-        body: newMessage.body, creator: newMessage.creator,
+    const insertDoc = {
+        channelID: newMessage.channelID, 
+        createdAt: newMessage.createdAt,
+        body: newMessage.body, 
+        creator: newMessage.creator,
         editedAt: newMessage.editedAt
-    }).catch(() => {
+    }
+
+    await messages.insertOne(insertDoc)
+    .catch(() => {
         err = true;
     });
-
-    let cursor = messages.find({ body: newMessage.body, createdAt: newMessage.createdAt })
+    const filterNew = { body: newMessage.body, createdAt: newMessage.createdAt }
+    let cursor = messages.find(filterNew)
     if (await cursor.hasNext()) {
         let doc = await cursor.next()
         newMessage.id = doc._id
@@ -122,16 +131,16 @@ async function updateChannelMembers(channels: Collection, channelID: string, cha
   let err: boolean = false;
   let newEditedAt = new Date()
   let channelIDObj = new ObjectID(channelID)
+  const filter = { _id: channelIDObj };
+  const updateDoc = {
+    $set: { 
+      members: channelMembers, 
+      editedAt: newEditedAt
+    },
+  };
 
-  await channels.updateOne(
-    { filter: { _id: channelIDObj } }, 
-    {
-      update: { 
-        members: channelMembers, 
-        editedAt: newEditedAt
-      }
-    }
-  ).catch(() => {
+  await channels.updateOne(filter, updateDoc)
+  .catch(() => {
     err = true;
   })
   return err;
@@ -142,16 +151,17 @@ export async function updateChannel(channels: Collection, existingChannel: Chann
   let err: boolean = false;
   existingChannel.editedAt = new Date()
   let channelID = new ObjectID(existingChannel.id.toString())
+  const filter = { _id: channelID };
+  const updateDoc = {
+    $set: { 
+      name: req.body.name, 
+      description: req.body.description,
+      editedAt: existingChannel.editedAt
+    },
+  };
 
-  await channels.updateOne(
-    { filter: { _id: channelID } }, 
-    {
-      update: { 
-        name: req.body.name, description: req.body.description,
-        editedAt: existingChannel.editedAt
-      }
-    }
-  ).catch(() => {
+  await channels.updateOne(filter, updateDoc)
+  .catch(() => {
     err = true;
   })
   existingChannel.name = req.body.name;
@@ -163,16 +173,16 @@ export async function updateChannel(channels: Collection, existingChannel: Chann
 export async function updateMessage(messages: Collection, existingMessage: Message, req: any) {
     let err: boolean = false;
     existingMessage.editedAt = new Date()
+    const filter = { messageID: existingMessage.id };
+    const updateDoc = {
+      $set: { 
+        body: req.body.body,
+        editedAt: existingMessage.editedAt
+      },
+    };
 
-    await messages.updateOne(
-      { filter: { messageID: existingMessage.id } }, 
-      {
-        update: { 
-          body: req.body.body,
-          editedAt: existingMessage.editedAt
-        }
-      }
-    ).catch(() => {
+    await messages.updateOne(filter, updateDoc)
+    .catch(() => {
       err = true;
     })
 
@@ -186,14 +196,18 @@ export async function deleteChannel(channels: Collection, messages: Collection, 
     let err: boolean = false;
     // The general channel never gets deleted
     if (existingChannel.creator.ID == -1) {
-        err = true;
+      return true;
     }
 
     let chanID = new ObjectID(existingChannel.id.toString())
-    await channels.deleteOne({ _id: chanID }).catch(() => {
-        err = true;
+    const channelFilter = { _id: chanID }
+    await channels.deleteOne(channelFilter)
+    .catch(() => {
+      err = true;
     });
-    await messages.deleteMany({ channelID: existingChannel.id.toString() }).catch(() => {
+    const messageFilter = { channelID: existingChannel.id.toString() }
+    await messages.deleteMany(messageFilter)
+    .catch(() => {
         err = true;
     });
     return err;
@@ -201,7 +215,9 @@ export async function deleteChannel(channels: Collection, messages: Collection, 
 
 // deleteMessage deletes a single message
 export async function deleteMessage(messages: Collection, existingMessage: Message): Promise<boolean> {
-    await messages.deleteOne({ messageID: existingMessage.id }).catch(() => {
+  const filter = { messageID: existingMessage.id }  
+  await messages.deleteOne(filter)
+    .catch(() => {
         return true;
     });
     return false;
@@ -214,8 +230,9 @@ export async function getChannelByID(channels: Collection, id: string) {
     let result: any = null;
     let err: boolean = true;
     let mongoID = new ObjectID(id)
+    const filter = { _id: mongoID };
 
-    let cursor = channels.find({ _id: mongoID })
+    let cursor = channels.find(filter)
     if (await cursor.hasNext()) {
         result = await cursor.next()
         err = false;
@@ -237,8 +254,9 @@ export async function getMessageByID(messages: Collection, id: string) {
     let result: any = null;
     let err: boolean = true;
     let mongoID = new ObjectID(id)
+    const filter = { _id: mongoID };
 
-    let cursor = messages.find({ _id: mongoID })
+    let cursor = messages.find(filter)
     if (await cursor.hasNext()) {
         result = await cursor.next()
         err = false;
@@ -259,6 +277,7 @@ export async function getMessageByID(messages: Collection, id: string) {
 export async function last100Messages(messages: Collection, channelID: string, messageID: string) {
     let last100messages: Message[] = []
     let err: boolean = false;
+    const sortFilter = { createdAt: -1 };
 
     if (channelID == null) {
         err = true;
@@ -267,10 +286,12 @@ export async function last100Messages(messages: Collection, channelID: string, m
     channelID = channelID.toString();
     let cursor
     if (!messageID) {
-        cursor = messages.find({ channelID: channelID }).sort({ createdAt: -1 }).limit(100);
+        const findFilter = { channelID: channelID };
+        cursor = messages.find(findFilter).sort(sortFilter).limit(100);
     } else {
         let objID = new ObjectID(messageID)
-        cursor = messages.find({ channelID: channelID, _id: { $lt: objID } }).sort({ createdAt: -1 }).limit(100);
+        const findFilter = { channelID: channelID, _id: { $lt: objID } };
+        cursor = messages.find(findFilter).sort(sortFilter).limit(100);
     }
 
     if (await cursor.hasNext()) {    
