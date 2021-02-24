@@ -193,7 +193,7 @@ export async function deleteChannel(channels: Collection, messages: Collection, 
     await channels.deleteOne({ _id: chanID }).catch(() => {
         err = true;
     });
-    await messages.deleteMany({ channelID: existingChannel.id }).catch(() => {
+    await messages.deleteMany({ channelID: existingChannel.id.toString() }).catch(() => {
         err = true;
     });
     return err;
