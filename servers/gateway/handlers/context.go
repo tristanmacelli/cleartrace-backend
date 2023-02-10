@@ -21,7 +21,13 @@ type HandlerContext struct {
 }
 
 // NewHandlerContext does something
-func NewHandlerContext(key string, userStore users.Store, userIndexes indexes.Trie, sessionStore sessions.Store, socketStore Notify) *HandlerContext {
+func NewHandlerContext(
+	key string,
+	userStore users.Store,
+	userIndexes indexes.Trie,
+	sessionStore sessions.Store,
+	socketStore Notify,
+) *HandlerContext {
 	if len(key) == 0 {
 		panic("No User key")
 	} else if userStore == nil {
