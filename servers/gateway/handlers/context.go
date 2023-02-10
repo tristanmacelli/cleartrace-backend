@@ -6,12 +6,12 @@ import (
 	"server-side-mirror/servers/gateway/sessions"
 )
 
-//HandlerContext a handler context struct that
-//is a receiver on any of your HTTP
-//handler functions that need access to
-//globals, such as the key used for signing
-//and verifying SessionIDs, the session store
-//and the user store
+// HandlerContext a handler context struct that
+// is a receiver on any of your HTTP
+// handler functions that need access to
+// globals, such as the key used for signing
+// and verifying SessionIDs, the session store
+// and the user store
 type HandlerContext struct {
 	Key          string
 	UserStore    users.Store

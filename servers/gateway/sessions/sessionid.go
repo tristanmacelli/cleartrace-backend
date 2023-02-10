@@ -9,33 +9,33 @@ import (
 	"errors"
 )
 
-//InvalidSessionID represents an empty, invalid session ID
+// InvalidSessionID represents an empty, invalid session ID
 const InvalidSessionID SessionID = ""
 
-//idLength is the length of the ID portion
+// idLength is the length of the ID portion
 const idLength = 32
 
-//signedLength is the full length of the signed session ID
-//(ID portion plus signature)
-const signedLength = idLength + sha256.Size
+// signedLength is the full length of the signed session ID
+// (ID portion plus signature)
+// const signedLength = idLength + sha256.Size
 
-//SessionID represents a valid, digitally-signed session ID.
-//This is a base64 URL encoded string created from a byte slice
-//where the first `idLength` bytes are crytographically random
-//bytes representing the unique session ID, and the remaining bytes
-//are an HMAC hash of those ID bytes (i.e., a digital signature).
-//The byte slice layout is like so:
-//+-----------------------------------------------------+
-//|...32 crypto random bytes...|HMAC hash of those bytes|
-//+-----------------------------------------------------+
+// SessionID represents a valid, digitally-signed session ID.
+// This is a base64 URL encoded string created from a byte slice
+// where the first `idLength` bytes are crytographically random
+// bytes representing the unique session ID, and the remaining bytes
+// are an HMAC hash of those ID bytes (i.e., a digital signature).
+// The byte slice layout is like so:
+// +-----------------------------------------------------+
+// |...32 crypto random bytes...|HMAC hash of those bytes|
+// +-----------------------------------------------------+
 type SessionID string
 
-//ErrInvalidID is returned when an invalid session id is passed to ValidateID()
-var ErrInvalidID = errors.New("Invalid Session ID")
+// ErrInvalidID is returned when an invalid session id is passed to ValidateID()
+var errInvalidID = errors.New("invalid session id")
 
-//NewSessionID creates and returns a new digitally-signed session ID,
-//using `signingKey` as the HMAC signing key. An error is returned only
-//if there was an error generating random bytes for the session ID
+// NewSessionID creates and returns a new digitally-signed session ID,
+// using `signingKey` as the HMAC signing key. An error is returned only
+// if there was an error generating random bytes for the session ID
 func NewSessionID(signingKey string) (SessionID, error) {
 	//TODO: if `signingKey` is zero-length, return InvalidSessionID
 	//and an error indicating that it may not be empty
@@ -74,9 +74,9 @@ func NewSessionID(signingKey string) (SessionID, error) {
 	return SessionID(sIDEncoded), nil
 }
 
-//ValidateID validates the string in the `id` parameter
-//using the `signingKey` as the HMAC signing key
-//and returns an error if invalid, or a SessionID if valid
+// ValidateID validates the string in the `id` parameter
+// using the `signingKey` as the HMAC signing key
+// and returns an error if invalid, or a SessionID if valid
 func ValidateID(id string, signingKey string) (SessionID, error) {
 
 	//TODO: validate the `id` parameter using the provided `signingKey`.
@@ -94,7 +94,7 @@ func ValidateID(id string, signingKey string) (SessionID, error) {
 	sIDDec, _ := b64.URLEncoding.DecodeString(id)
 
 	if len(sIDDec) != 64 {
-		return InvalidSessionID, ErrInvalidID
+		return InvalidSessionID, errInvalidID
 	}
 
 	// get the first half of the slice
@@ -111,10 +111,10 @@ func ValidateID(id string, signingKey string) (SessionID, error) {
 	if res == 0 {
 		return SessionID(id), nil
 	}
-	return InvalidSessionID, ErrInvalidID
+	return InvalidSessionID, errInvalidID
 }
 
-//String returns a string representation of the sessionID
+// String returns a string representation of the sessionID
 func (sid SessionID) String() string {
 	return string(sid)
 }

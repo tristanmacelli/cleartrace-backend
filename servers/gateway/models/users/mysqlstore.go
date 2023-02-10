@@ -14,7 +14,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-//MysqlStore represents a connection to our user database
+// MysqlStore represents a connection to our user database
 type MysqlStore struct {
 	DB *sql.DB
 }
@@ -29,7 +29,7 @@ type indexedUserValues struct {
 // A partially constructed sql query to use in getter functions
 const queryString = "SELECT * FROM users "
 
-//NewMysqlStore creates an open database connection to do queries and transactions on
+// NewMysqlStore creates an open database connection to do queries and transactions on
 // For help on forming dsn (https://drstearns.github.io/tutorials/godb/#secconnectingfromagoprogram)
 // See docker run command for env vars that define database name & password
 func NewMysqlStore(dsn string) *MysqlStore {
@@ -91,7 +91,7 @@ func (ms *MysqlStore) getMultipleBy(query string) (*[]*User, error) {
 	return &users, nil
 }
 
-//GetByID returns the User with the given ID
+// GetByID returns the User with the given ID
 func (ms *MysqlStore) GetByID(id int64) (*User, error) {
 	query := queryString + "WHERE ID = ?"
 	return ms.GetBy(query, strconv.FormatInt(id, 10))
@@ -100,7 +100,7 @@ func (ms *MysqlStore) GetByID(id int64) (*User, error) {
 // GetByID returns the User with the given ID
 func (ms *MysqlStore) GetByIDs(ids []int64, orderBy string) (*[]*User, error) {
 	if len(ids) < 1 {
-		return nil, errors.New("Must pass more than 0 ids")
+		return nil, errors.New("must pass more than 0 ids")
 	}
 	query := queryString + "WHERE ID = " + strconv.FormatInt(ids[0], 10)
 	// Loop through 1 - n slice elements
@@ -119,13 +119,13 @@ func (ms *MysqlStore) GetByIDs(ids []int64, orderBy string) (*[]*User, error) {
 	return &users, err
 }
 
-//GetByEmail returns the User with the given email
+// GetByEmail returns the User with the given email
 func (ms *MysqlStore) GetByEmail(email string) (*User, error) {
 	query := queryString + "WHERE Email = ?"
 	return ms.GetBy(query, email)
 }
 
-//GetByUserName returns the User with the given Username
+// GetByUserName returns the User with the given Username
 func (ms *MysqlStore) GetByUserName(username string) (*User, error) {
 	query := queryString + "WHERE UserName = ?"
 	return ms.GetBy(query, username)
@@ -147,8 +147,8 @@ func (ms *MysqlStore) IndexUsers(trie *indexes.Trie) {
 	}
 }
 
-//Insert inserts the user into the database, and returns
-//the newly-inserted User, complete with the DBMS-assigned ID
+// Insert inserts the user into the database, and returns
+// the newly-inserted User, complete with the DBMS-assigned ID
 func (ms *MysqlStore) Insert(user *User) (*User, error) {
 	// This inserts a new row into the "users" table Using ? markers for the values will defeat SQL
 	// injection attacks
@@ -171,7 +171,7 @@ func (ms *MysqlStore) Insert(user *User) (*User, error) {
 	return ms.GetByID(id)
 }
 
-//LogSuccessfulSignIns does something
+// LogSuccessfulSignIns does something
 func (ms *MysqlStore) LogSuccessfulSignIns(user *User, r *http.Request) {
 	uid := user.ID
 	timeOfSignIn := time.Now()
@@ -192,8 +192,8 @@ func (ms *MysqlStore) LogSuccessfulSignIns(user *User, r *http.Request) {
 	}
 }
 
-//Update applies UserUpdates to the given user ID
-//and returns the newly-updated user
+// Update applies UserUpdates to the given user ID
+// and returns the newly-updated user
 func (ms *MysqlStore) Update(id int64, updates *Updates) (*User, error) {
 	insq := "UPDATE users SET firstname = ?, lastname = ? WHERE ID = ?"
 	_, err := ms.DB.Exec(insq, updates.FirstName, updates.LastName, strconv.FormatInt(id, 10))
@@ -204,7 +204,7 @@ func (ms *MysqlStore) Update(id int64, updates *Updates) (*User, error) {
 	return ms.GetByID(id)
 }
 
-//Delete deletes the user with the given ID
+// Delete deletes the user with the given ID
 func (ms *MysqlStore) Delete(id int64) error {
 	insq := "DELETE FROM users WHERE ID = ?"
 	_, err := ms.DB.Exec(insq, strconv.FormatInt(id, 10))

@@ -31,8 +31,7 @@ type Director func(r *http.Request)
 
 // CustomDirector does load balancing using the round-robin method
 func CustomDirector(targets []*url.URL, ctx *handlers.HandlerContext) Director {
-	var counter int32
-	counter = 0
+	var counter int32 = 0
 
 	return func(r *http.Request) {
 		state := &handlers.SessionState{}
@@ -67,7 +66,7 @@ func getAllUrls(addresses string) []*url.URL {
 	return urls
 }
 
-//main is the main entry point for the server
+// main is the main entry point for the server
 func main() {
 	address := os.Getenv("ADDR")
 	// Default address the server should listen on

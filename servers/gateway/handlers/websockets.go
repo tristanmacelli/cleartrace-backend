@@ -172,13 +172,13 @@ func (ctx *HandlerContext) WebSocketConnectionHandler(w http.ResponseWriter, r *
 	// handle the websocket handshake
 
 	if r.Header.Get("Origin") != "https://slack.tristanmacelli.com" {
-		http.Error(w, "Websocket Connection Refused", 403)
+		http.Error(w, "Websocket Connection Refused", http.StatusForbidden)
 		return
 	}
 
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		http.Error(w, "Failed to open websocket connection", 401)
+		http.Error(w, "Failed to open websocket connection", http.StatusUnauthorized)
 		return
 	}
 	sessionState := &SessionState{}

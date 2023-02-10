@@ -13,7 +13,7 @@ var insertnextReturn = User{}
 var updatenextReturn = User{}
 var errNext = errors.New("generic error")
 
-//MockStore represents a mock user store
+// MockStore represents a mock user store
 type MockStore struct {
 	// pointless string
 }
@@ -53,17 +53,17 @@ func SetErr(err error) {
 	errNext = err
 }
 
-//GetByID returns the User with the given ID
+// GetByID returns the User with the given ID
 func (ms *MockStore) GetByID(id int64) (*User, error) {
 	return &getByIDnextReturn, errNext
 }
 
-//GetByEmail returns the User with the given email
+// GetByEmail returns the User with the given email
 func (ms *MockStore) GetByEmail(email string) (*User, error) {
 	return &getByEmailnextReturn, errNext
 }
 
-//GetByUserName returns the User with the given Username
+// GetByUserName returns the User with the given Username
 func (ms *MockStore) GetByUserName(username string) (*User, error) {
 	return &getByUserNamenextReturn, errNext
 }
@@ -74,8 +74,8 @@ func (ms *MockStore) GetByIDs(ids []int64, orderBy string) (*[]User, error) {
 
 func (ms *MockStore) IndexUsers(trie *indexes.Trie) {}
 
-//Insert inserts the user into the database, and returns
-//the newly-inserted User, complete with the DBMS-assigned ID
+// Insert inserts the user into the database, and returns
+// the newly-inserted User, complete with the DBMS-assigned ID
 func (ms *MockStore) Insert(user *User) (*User, error) {
 	return &insertnextReturn, errNext
 }
@@ -85,13 +85,13 @@ func (ms *MockStore) LogSuccessfulSignIns(user *User, r *http.Request) {
 
 }
 
-//Update applies UserUpdates to the given user ID
-//and returns the newly-updated user
+// Update applies UserUpdates to the given user ID
+// and returns the newly-updated user
 func (ms *MockStore) Update(id int64, updates *Updates) (*User, error) {
 	return &updatenextReturn, errNext
 }
 
-//Delete deletes the user with the given ID
+// Delete deletes the user with the given ID
 func (ms *MockStore) Delete(id int64) error {
 	return errNext
 }

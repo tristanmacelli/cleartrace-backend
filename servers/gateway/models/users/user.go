@@ -9,14 +9,14 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-//gravatarBasePhotoURL is the base URL for Gravatar image requests.
-//See https://id.gravatar.com/site/implement/images/ for details
+// gravatarBasePhotoURL is the base URL for Gravatar image requests.
+// See https://id.gravatar.com/site/implement/images/ for details
 const gravatarBasePhotoURL = "https://www.gravatar.com/avatar/%x"
 
-//bcryptCost is the default bcrypt cost to use when hashing passwords
+// bcryptCost is the default bcrypt cost to use when hashing passwords
 var bcryptCost = 13
 
-//User represents a user account in the database
+// User represents a user account in the database
 type User struct {
 	ID        int64  `json:"ID"`
 	Email     string `json:"Email"` //never JSON encoded/decoded
@@ -27,13 +27,13 @@ type User struct {
 	PhotoURL  string `json:"PhotoURL"`
 }
 
-//Credentials represents user sign-in credentials
+// Credentials represents user sign-in credentials
 type Credentials struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
 }
 
-//NewUser represents a new user signing up for an account
+// NewUser represents a new user signing up for an account
 type NewUser struct {
 	Email        string `json:"email"`
 	Password     string `json:"password"`
@@ -43,14 +43,14 @@ type NewUser struct {
 	LastName     string `json:"lastName"`
 }
 
-//Updates represents allowed updates to a user profile
+// Updates represents allowed updates to a user profile
 type Updates struct {
 	FirstName string `json:"firstName"`
 	LastName  string `json:"lastName"`
 }
 
-//Validate validates the new user and returns an error if
-//any of the validation rules fail, or nil if its valid
+// Validate validates the new user and returns an error if
+// any of the validation rules fail, or nil if its valid
 func (nu *NewUser) Validate() error {
 	// Validating the new user according to these rules
 	// Checking for a valid Email address field (see mail.ParseAddress)
@@ -62,24 +62,24 @@ func (nu *NewUser) Validate() error {
 
 	// Checking that Password is at least 6 characters
 	if len(nu.Password) <= 5 {
-		return fmt.Errorf("Error: Password is not 6 characters or more")
+		return fmt.Errorf("error: password is not 6 characters or more")
 	}
 
 	// Checking that Password and PasswordConf match
 	if nu.Password != nu.PasswordConf {
-		return fmt.Errorf("Error: Password doesnt not match the confirmed password")
+		return fmt.Errorf("error: password doesnt not match the confirmed password")
 	}
 	// Checking that UserName is of non-zero length and does not contain spaces
 	if len(nu.UserName) < 1 || strings.Contains(nu.UserName, " ") {
-		return fmt.Errorf("Error: Usernames must have a non-zero length and must contain no spaces")
+		return fmt.Errorf("error: usernames must have a non-zero length and must contain no spaces")
 	}
 	//use fmt.Errorf() to generate appropriate error messages if
 	//the new user doesn't pass one of the validation rules
 	return nil
 }
 
-//ToUser converts the NewUser to a User, setting the
-//PhotoURL and PassHash fields appropriately
+// ToUser converts the NewUser to a User, setting the
+// PhotoURL and PassHash fields appropriately
 func (nu *NewUser) ToUser() (*User, error) {
 
 	// Validating the NewUser and returning any validation
@@ -120,7 +120,7 @@ func (nu *NewUser) ToUser() (*User, error) {
 	return &us, nil
 }
 
-//FullName returns the user's full name, in the form:
+// FullName returns the user's full name, in the form:
 // "<FirstName> <LastName>"
 func (u *User) FullName() string {
 	// If both first and last name are missing, this returns an empty string
@@ -138,7 +138,7 @@ func (u *User) FullName() string {
 	return u.FirstName + " " + u.LastName
 }
 
-//SetPassword hashes the password and stores it in the PassHash field
+// SetPassword hashes the password and stores it in the PassHash field
 func (u *User) SetPassword(password string) error {
 	//TODO: use the bcrypt package to generate a new hash of the password
 	//https://godoc.org/golang.org/x/crypto/bcrypt
@@ -156,8 +156,8 @@ func (u *User) SetPassword(password string) error {
 	return nil
 }
 
-//Authenticate compares the plaintext password against the stored hash
-//and returns an error if they don't match, or nil if they do
+// Authenticate compares the plaintext password against the stored hash
+// and returns an error if they don't match, or nil if they do
 func (u *User) Authenticate(password string) error {
 	//TODO: use the bcrypt package to compare the supplied
 	//password with the stored PassHash
@@ -170,8 +170,8 @@ func (u *User) Authenticate(password string) error {
 	return nil
 }
 
-//ApplyUpdates applies the updates to the user. An error
-//is returned if the updates are invalid
+// ApplyUpdates applies the updates to the user. An error
+// is returned if the updates are invalid
 func (u *User) ApplyUpdates(updates *Updates) error {
 	// Setting the fields of `u` to the values of the related
 	//field in the `updates` struct
