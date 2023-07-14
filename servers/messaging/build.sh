@@ -3,5 +3,5 @@
 cd tsc/
 tsc --outDir ../
 cd -
-docker build -t tristanmacelli/messaging .
+docker buildx build -t tristanmacelli/messaging . --platform linux/amd64
 rm *.js

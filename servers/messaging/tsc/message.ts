@@ -22,13 +22,3 @@ export class Message {
 export function isMessageCreator(message: Message, userID: number): boolean {
     return message.creator.ID === userID;
 }
-
-export function initializeDummyMessage(): Message {
-  let emptyUser = new User(-1, "", "", "", "", "");
-  let dummyDate = new Date();
-  let dummyMessage = new Message("", "", dummyDate, "", emptyUser, dummyDate);
-  return dummyMessage;
-}
-// export default Message;
-
-// to compile run tsc --outDir ../

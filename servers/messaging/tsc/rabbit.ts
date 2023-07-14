@@ -3,24 +3,22 @@ import { Channel } from "./channel";
 import { sleep } from "./mongo_handlers"
 import * as amqp from "amqplib"
 
-export class RabbitObject {
+interface TransactionResult {
+    entity?: Channel | Message;
     type: string;
-    channel: Channel | any;
-    message: Message | any;
-    userIDs: string[] | any;
-    channelID: string | any;
-    messageID: string | any;
-    constructor(t: string, c: Channel | any, m: Message | any, ids: string[] | any,
-        cid: string | any, mid: string | any) {
-
-        this.type = t;
-        this.channel = c;
-        this.message = m;
-        this.userIDs = ids;
-        this.channelID = cid;
-        this.messageID = mid
-    }
+    userIDs: number[];
 }
+
+export interface MessageTransaction extends TransactionResult {
+    messageID?: string;
+    channelID?: string;
+}
+
+export interface ChannelTransaction extends TransactionResult {
+    channelID?: string;
+}
+
+export type MessagingTransaction = MessageTransaction | ChannelTransaction;
 
 const mqURL = "amqp://userMessageQueue"
 const mqName = "messageLoopbackQueue"
@@ -50,7 +48,7 @@ export const createMQChannel = async (conn: amqp.Connection): Promise<amqp.Chann
     return channel!;
 }
 
-export function sendObjectToQueue(channel: amqp.Channel, ob: RabbitObject) {
+export function sendObjectToQueue(channel: amqp.Channel, ob: MessagingTransaction) {
   let json = JSON.stringify(ob)
   channel.sendToQueue(mqName, Buffer.from(json))
   // TODO: Remove the following output once tested & working
