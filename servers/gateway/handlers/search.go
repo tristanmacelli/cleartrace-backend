@@ -25,7 +25,7 @@ func (ctx *HandlerContext) SearchHandler(response http.ResponseWriter, request *
 	decoder := json.NewDecoder(request.Body)
 	err = decoder.Decode(&userIDs)
 
-	if err != nil {
+	if request.Method == http.MethodPost && err != nil {
 		http.Error(response, "Failed to unmarshall userID data", http.StatusUnprocessableEntity)
 		return
 	}

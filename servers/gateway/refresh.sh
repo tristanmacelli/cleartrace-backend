@@ -5,7 +5,7 @@ export TLSKEY=/etc/letsencrypt/live/slack.api.tristanmacelli.com/privkey.pem
 export MYSQL_ROOT_PASSWORD=$(openssl rand -base64 18)
 
 docker rm -f gateway
-# TODO: We should probably not be removing the redis & sql on every deploy
+# Do not remove the redis & sql
 # docker rm -f userStore # SQL
 # docker rm -f sessionStore # REDIS
 # docker rm -f userMessageQueue
@@ -46,7 +46,6 @@ sudo docker run -d \
 -v /etc/letsencrypt:/etc/letsencrypt:ro \
 -e TLSCERT=$TLSCERT \
 -e TLSKEY=$TLSKEY \
--e SUMMARYADDR=summary:5050 \
 -e MESSAGEADDR=messaging:5001 \
 -e SESSIONKEY=sessionkeyrandom \
 -e DSN=userStore:3306 \

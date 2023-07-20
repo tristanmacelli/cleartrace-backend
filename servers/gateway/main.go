@@ -92,7 +92,6 @@ func main() {
 	userStore := users.NewMysqlStore(dsn)
 
 	messagesaddr := os.Getenv("MESSAGEADDR")
-	summaryaddr := os.Getenv("SUMMARYADDR")
 	messagingUrls := getAllUrls(messagesaddr)
 
 	conns := make(map[int64]*websocket.Conn)
@@ -103,7 +102,6 @@ func main() {
 
 	// proxies
 	messagesProxy := &httputil.ReverseProxy{Director: CustomDirector(messagingUrls, ctx)}
-	summaryProxy := httputil.NewSingleHostReverseProxy(&url.URL{Scheme: "http", Host: summaryaddr})
 	// starting a new mux session
 	// mux := http.NewServeMux()
 
@@ -116,7 +114,6 @@ func main() {
 	mux.HandleFunc("/v1/users/search/", ctx.SearchHandler)
 	mux.HandleFunc("/v1/sessions", ctx.SessionsHandler)
 	mux.HandleFunc("/v1/sessions/mine", ctx.SpecificSessionsHandler)
-	mux.Handle("/v1/summary", summaryProxy)
 	mux.HandleFunc("/v1/ws", ctx.WebSocketConnectionHandler)
 	mux.Handle("/v1/channels/{channelID}/members", messagesProxy)
 	mux.Handle("/v1/channels/{channelID}", messagesProxy)
