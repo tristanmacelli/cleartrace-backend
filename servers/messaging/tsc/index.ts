@@ -5,8 +5,8 @@ import express, { Request, Response } from "express";
 import { IncomingHttpHeaders } from 'http';
 import morgan from "morgan";
 import * as mongo from "./mongo_handlers";
-import { Message, isMessageCreator } from "./message";
-import { Channel, isChannelCreator, isChannelMember } from "./channel";
+import { Message } from "./message";
+import { Channel } from "./channel";
 import { sendObjectToQueue, createMQChannel, createMQConnection, ChannelTransaction, MessageTransaction } from "./rabbit";
 import { User } from "./user";
 
@@ -75,7 +75,7 @@ const main = async () => {
             // Case statement brackets to scope variables to case 
             // (source: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/switch)
             case 'POST': {
-                if (!isChannelCreator(channel, user.ID)) {
+                if (!channel.isChannelCreator(user.ID)) {
                     res.status(403);
                     res.setHeader("Content-Type", "text/plain");
                     res.send("Cannot change members")
@@ -94,7 +94,7 @@ const main = async () => {
                 break;
             }
             case 'DELETE': {
-                if (!isChannelCreator(channel, user.ID)) {
+                if (!channel.isChannelCreator(user.ID)) {
                     res.status(403)
                     res.setHeader("Content-Type", "text/plain");
                     res.send("Cannot delete members")
@@ -140,7 +140,7 @@ const main = async () => {
         }
         switch (method) {
             case 'GET': {
-                if (!isChannelMember(channel, user.ID)) {
+                if (!channel.isChannelMember(user.ID)) {
                     res.status(403);
                     res.setHeader("Content-Type", "text/plain");
                     res.send("Cannot get messages")
@@ -160,7 +160,7 @@ const main = async () => {
                 break;
             }
             case 'POST': {
-                if (!isChannelMember(channel, user.ID)) {
+                if (!channel.isChannelMember(user.ID)) {
                     res.status(403);
                     res.setHeader("Content-Type", "text/plain");
                     res.send("Cannot post message")
@@ -190,7 +190,7 @@ const main = async () => {
                 break;
             }
             case 'PATCH': {
-                if (!isChannelCreator(channel, user.ID)) {
+                if (!channel.isChannelCreator(user.ID)) {
                     res.status(403);
                     res.setHeader("Content-Type", "text/plain");
                     res.send("Cannot amend channel")
@@ -217,7 +217,7 @@ const main = async () => {
                 break;
             }
             case 'DELETE': {
-                if (!isChannelCreator(channel, user.ID)) {
+                if (!channel.isChannelCreator(user.ID)) {
                     res.status(403);
                     res.setHeader("Content-Type", "text/plain");
                     res.send("You cannot delete this channel")
@@ -334,7 +334,7 @@ const main = async () => {
         }
         switch (method) {
             case 'PATCH': {
-                if (!isMessageCreator(message, user.ID)) {
+                if (!message.isMessageCreator(user.ID)) {
                     res.status(403);
                     res.setHeader("Content-Type", "text/plain");
                     res.send("Cannot update message");
@@ -366,7 +366,7 @@ const main = async () => {
                 break;
             }
             case 'DELETE': {
-                if (!isMessageCreator(message, user.ID)) {
+                if (!message.isMessageCreator(user.ID)) {
                     res.status(403);
                     res.setHeader("Content-Type", "text/plain");
                     res.send("Cannot delete message");

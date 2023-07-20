@@ -1,7 +1,7 @@
 "use strict";
 
 import { ObjectId, Collection, MongoClient, Sort, Db, Document, Filter } from "mongodb";
-import { Channel, isChannelMember } from "./channel";
+import { Channel } from "./channel";
 import { Message } from "./message";
 
 const mongoContainerName = 'userMessageStore'
@@ -34,7 +34,7 @@ const recursiveCreateConnection = async (retryInterval: number): Promise<void | 
     console.log(`mongo_handlers.ts createConnection ${e}`);
     console.log("Cannot connect to the database: MongoNetworkError: failed to connect to server");
     console.log(`Retrying in ${retryInterval} second(s)`);
-    sleep(retryInterval);  
+    await sleep(retryInterval);  
     recursiveCreateConnection(retryInterval * 2)
   }
 };
@@ -54,7 +54,7 @@ export const getChannels = async (channels: Collection, userID: number, search: 
             channel.members, channel.createdAt, channel.creator, channel.editedAt);
     });
     const usersChannels = allChannels.filter((channel) => {
-        return isChannelMember(channel, userID)
+        return channel.isChannelMember(userID)
     })
     return { usersChannels, err: false };
 };

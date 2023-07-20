@@ -4,7 +4,7 @@ import * as mongo from "./mongo_handlers";
 import { Channel } from "./channel";
 import { User } from "./user";
 
-async function startUp() {
+const startUp = async () => {
     const db = await mongo.createConnection();
     console.log("Connected successfully to userMessageStore");
 
@@ -31,6 +31,6 @@ async function startUp() {
 
     console.log("MongoDB start up complete")
     process.exit(0)
-}
+};
 
 startUp();

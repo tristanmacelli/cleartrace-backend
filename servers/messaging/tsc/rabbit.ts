@@ -24,14 +24,17 @@ const mqURL = "amqp://userMessageQueue"
 const mqName = "messageLoopbackQueue"
 
 export const createMQConnection = async (): Promise<amqp.Connection> => {
+    let retryInterval: number = 1;
     let client: amqp.Connection;
+
     while (1) {
         try {
             client = await amqp.connect(mqURL);
             break
         } catch (e) {
             console.log("Cannot connect to RabbitMQ: failed to connect to server ", e);
-            sleep(1)
+            await sleep(retryInterval)
+            retryInterval *= 2;
         }
     }
     return client!;
@@ -48,7 +51,7 @@ export const createMQChannel = async (conn: amqp.Connection): Promise<amqp.Chann
     return channel!;
 }
 
-export function sendObjectToQueue(channel: amqp.Channel, ob: MessagingTransaction) {
+export const sendObjectToQueue = (channel: amqp.Channel, ob: MessagingTransaction) => {
   let json = JSON.stringify(ob)
   channel.sendToQueue(mqName, Buffer.from(json))
   // TODO: Remove the following output once tested & working

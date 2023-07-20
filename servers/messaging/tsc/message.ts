@@ -17,8 +17,8 @@ export class Message {
         this.creator = Creator;
         this.editedAt = EditedAt;
     }
-}
 
-export function isMessageCreator(message: Message, userID: number): boolean {
-    return message.creator.ID === userID;
+    isMessageCreator = (userID: number): boolean => {
+        return this.creator.ID === userID;
+    };
 }

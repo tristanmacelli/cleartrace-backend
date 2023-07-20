@@ -11,7 +11,16 @@ export class Channel {
     createdAt: Date;
     creator: User;
     editedAt: Date;
-    constructor(id: string, Name: string, Description: string, Private: boolean, Members: number[], CreatedAt: Date, Creator: User, EditedAt: Date) {
+    constructor(
+        id: string,
+        Name: string,
+        Description: string,
+        Private: boolean = true,
+        Members: number[],
+        CreatedAt: Date = new Date(),
+        Creator: User,
+        EditedAt: Date
+    ) {
         this.id = id
         this.name = Name;
         this.description = Description;
@@ -21,21 +30,21 @@ export class Channel {
         this.creator = Creator;
         this.editedAt = EditedAt;
     }
-}
 
-export function isChannelCreator(channel: Channel, userID: number): boolean {
-    return channel.creator.ID === userID;
-}
-
-export function isChannelMember(channel: Channel, userID: number): boolean {
-    if (channel.private) {
-        for (let i = 0; i < channel.members.length; i++) {
-            if (channel.members[i] === userID) {
-                return true;
-            }
-        }
-    } else {
-        return true;
+    isChannelCreator = (userID: number): boolean => {
+        return this.creator.ID === userID;
     }
-    return false;
+
+    isChannelMember = (userID: number): boolean => {
+        if (this.private) {
+            for (let i = 0; i < this.members.length; i++) {
+                if (this.members[i] === userID) {
+                    return true;
+                }
+            }
+        } else {
+            return true;
+        }
+        return false;
+    }
 }
