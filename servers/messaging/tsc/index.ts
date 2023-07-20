@@ -82,12 +82,21 @@ const main = async () => {
                     break;
                 }
                 // Call database to UPDATE the current channel
-                const err = await mongo.addChannelMember(channels, channel, body.id)
+                const { updatedChannel, err } = await mongo.addChannelMember(channels, channel, body.id)
                 if (err) {
                     res.status(500);
                     res.send()
                     return;
                 }
+
+                // add to rabbitMQ queue
+                const channelUpdatedTransaction: ChannelTransaction = {
+                    entity: updatedChannel,
+                    type: "channel-update",
+                    userIDs: updatedChannel.members,
+                };
+                sendObjectToQueue(mqChannel, channelUpdatedTransaction);
+
                 res.status(201)
                 res.setHeader("Content-Type", "text/plain");
                 res.send(user.ID + " was added to your channel");
@@ -101,12 +110,21 @@ const main = async () => {
                     break;
                 }
                 // database to UPDATE the current channel members
-                const err = await mongo.removeChannelMember(channels, channel, body.id)
+                const { updatedChannel, err } = await mongo.removeChannelMember(channels, channel, body.id)
                 if (err) {
                     res.status(500);
                     res.send()
                     return;
                 }
+
+                // add to rabbitMQ queue
+                const channelUpdatedTransaction: ChannelTransaction = {
+                    entity: updatedChannel,
+                    type: "channel-update",
+                    userIDs: updatedChannel.members,
+                };
+                sendObjectToQueue(mqChannel, channelUpdatedTransaction);
+
                 res.status(201)
                 res.setHeader("Content-Type", "text/plain");
                 res.send(user.ID + " was removed from your channel");
@@ -281,8 +299,8 @@ const main = async () => {
                 }
                 const channel = createChannel(req, user);
 
-                const { newChannel, hasDuplicates, err } = await mongo.insertNewChannel(channels, channel)
-                if (hasDuplicates) {
+                const { newChannel, err } = await mongo.insertNewChannel(channels, channel)
+                if (err && err.message.startsWith("duplicate")) {
                     res.status(400);
                     res.send();
                     return;

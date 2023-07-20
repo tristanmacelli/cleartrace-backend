@@ -14,9 +14,9 @@ const startUp = async () => {
     const dummyDate = new Date()
     const general = new Channel("", "General", "an open channel for all", false, [], dummyDate, emptyUser, dummyDate);
     
-    const { hasDuplicates, err } = await mongo.insertNewChannel(channels, general)
+    const { err } = await mongo.insertNewChannel(channels, general)
     // check for insertion errors
-    if (hasDuplicates) {
+    if (err && err.message.startsWith("duplicate")) {
         console.log("Error inserting new channel, channel name already exists")
     }
     if (err) {
