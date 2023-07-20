@@ -41,7 +41,7 @@ func callRemove(t *Trie, additions []string, removals []string, ids []int64) int
 	return t.Len()
 }
 
-//TODO: implement automated tests for your trie data structure
+// TODO: implement automated tests for your trie data structure
 func TestLen(t *testing.T) {
 	cases := []struct {
 		name      string

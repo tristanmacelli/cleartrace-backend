@@ -54,17 +54,17 @@ func TestRedisStore(t *testing.T) {
 		t.Errorf("incorrect error when getting state that was never stored: expected %v but got %v", ErrStateNotFound, err)
 	}
 
-	if err := store.Save(sid, &state); err != nil {
+	if err := store.Save(sid, state); err != nil {
 		t.Fatalf("error saving state: %v", err)
 	}
 
 	//verify that trying to save an unmarshalable session state
 	//generates an error (function values can't be encoded in JSON)
 	if err := store.Save(sid, func() {}); err == nil {
-		t.Error("expected erorr when attempting to save an unmarshalable session state")
+		t.Error("expected error when attempting to save an unmarshalable session state")
 	}
 
-	if err := store.Get(sid, &stateRet); err != nil {
+	if err := store.Get(sid, stateRet); err != nil {
 		t.Fatalf("error getting state: %v", err)
 	}
 	if !reflect.DeepEqual(state, stateRet) {

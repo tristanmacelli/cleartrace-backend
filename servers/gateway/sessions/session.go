@@ -18,7 +18,7 @@ var ErrInvalidScheme = errors.New("authorization scheme not supported")
 
 // BeginSession creates a new SessionID, saves the `sessionState` to the store, adds an
 // Authorization header to the response with the SessionID, and returns the new SessionID
-func BeginSession(signingKey string, store Store, sessionState interface{}, w http.ResponseWriter) (SessionID, error) {
+func BeginSession(signingKey string, store Store, sessionState interface{}, response http.ResponseWriter) (SessionID, error) {
 	// Creating a new SessionID
 	sessionID, err := NewSessionID(signingKey)
 	if err != nil {
@@ -34,17 +34,17 @@ func BeginSession(signingKey string, store Store, sessionState interface{}, w ht
 	//  where "<sessionID>" is replaced with the newly-created SessionID
 	//  (note the constants declared for you above, which will help you avoid typos)
 	authValue := schemeBearer + sessionID.String()
-	w.Header().Add(headerAuthorization, authValue)
+	response.Header().Add(headerAuthorization, authValue)
 	return sessionID, nil
 }
 
 // GetSessionID extracts and validates the SessionID from the request headers
-func GetSessionID(r *http.Request, signingKey string) (SessionID, error) {
+func GetSessionID(request *http.Request, signingKey string) (SessionID, error) {
 	// Get the value of the Authorization header,
-	id := r.Header.Get(headerAuthorization)
+	id := request.Header.Get(headerAuthorization)
 	// Or the "auth" query string parameter if no Authorization header is present,
 	if id == "" || len(id) == 0 {
-		id = r.FormValue(paramAuthorization)
+		id = request.FormValue(paramAuthorization)
 	}
 	if strings.HasPrefix(id, "Bearer") {
 		id = id[7:]
@@ -65,9 +65,9 @@ func GetSessionID(r *http.Request, signingKey string) (SessionID, error) {
 // GetState extracts the SessionID from the request,
 // gets the associated state from the provided store into
 // the `sessionState` parameter, and returns the SessionID
-func GetState(r *http.Request, signingKey string, store Store, sessionState interface{}) (SessionID, error) {
+func GetState(request *http.Request, signingKey string, store Store, sessionState interface{}) (SessionID, error) {
 	// Getting the SessionID from the request
-	id, err := GetSessionID(r, signingKey)
+	id, err := GetSessionID(request, signingKey)
 	// If the sessionID is not valid return the validation error.
 	if err != nil {
 		return InvalidSessionID, err
@@ -83,9 +83,9 @@ func GetState(r *http.Request, signingKey string, store Store, sessionState inte
 // EndSession extracts the SessionID from the request,
 // and deletes the associated data in the provided store, returning
 // the extracted SessionID.
-func EndSession(r *http.Request, signingKey string, store Store) (SessionID, error) {
+func EndSession(request *http.Request, signingKey string, store Store) (SessionID, error) {
 	// Getting the SessionID from the request
-	id, err := GetSessionID(r, signingKey)
+	id, err := GetSessionID(request, signingKey)
 	// If the sessionID is not valid return the validation error.
 	if err != nil {
 		return InvalidSessionID, err

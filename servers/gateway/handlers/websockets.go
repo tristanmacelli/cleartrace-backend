@@ -160,30 +160,30 @@ var upgrader = websocket.Upgrader{
 // WebSocketConnectionHandler upgrades clients to a WebSocket connection
 // and adds that connection to a list of connections to notify when events
 // are read from the RabbitMQ server
-func (ctx *HandlerContext) WebSocketConnectionHandler(w http.ResponseWriter, r *http.Request) {
+func (ctx *HandlerContext) WebSocketConnectionHandler(response http.ResponseWriter, request *http.Request) {
 	// problem getting Session State
 	// TODO: how do we handle ctx && socketStore as receivers
 
 	if ctx.SessionStore == nil {
-		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte("Status Code 401: Unauthorized"))
+		response.WriteHeader(http.StatusUnauthorized)
+		response.Write([]byte("Status Code 401: Unauthorized"))
 		return
 	}
 	// handle the websocket handshake
 
-	if r.Header.Get("Origin") != "https://slack.tristanmacelli.com" {
-		http.Error(w, "Websocket Connection Refused", http.StatusForbidden)
+	if request.Header.Get("Origin") != "https://slack.tristanmacelli.com" {
+		http.Error(response, "Websocket Connection Refused", http.StatusForbidden)
 		return
 	}
 
-	conn, err := upgrader.Upgrade(w, r, nil)
+	conn, err := upgrader.Upgrade(response, request, nil)
 	if err != nil {
-		http.Error(w, "Failed to open websocket connection", http.StatusUnauthorized)
+		http.Error(response, "Failed to open websocket connection", http.StatusUnauthorized)
 		return
 	}
 	sessionState := &SessionState{}
 	// Should we be using the sessionID or the userID when mapping connections?
-	sessions.GetState(r, ctx.Key, ctx.SessionStore, sessionState)
+	sessions.GetState(request, ctx.Key, ctx.SessionStore, sessionState)
 
 	// Access to set with the specific connection and pass it to this function
 	connID := ctx.InsertConnection(conn, sessionState.User.ID) // pass in the id that is contained within the sessionState struct
@@ -252,7 +252,7 @@ func (ctx *HandlerContext) echo(conn *websocket.Conn) {
 			// fmt.Printf("Client says %v\n", msg)
 			// }
 			// fmt.Println("2")
-			d, _ := <-msgs
+			d := <-msgs
 			fmt.Println("Looping through infinitely!")
 
 			message := &mqMessage{}

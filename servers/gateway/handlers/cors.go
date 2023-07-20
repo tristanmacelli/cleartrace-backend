@@ -20,19 +20,19 @@ func NewLogger(handlerToWrap http.Handler) *Passer {
 }
 
 // ServeHTTP does something
-func (p *Passer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (p *Passer) ServeHTTP(response http.ResponseWriter, request *http.Request) {
 
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Methods", "GET, PUT, POST, PATCH, DELETE")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
-	w.Header().Set("Access-Control-Expose-Headers", "Authorization")
-	w.Header().Set("Access-Control-Max-Age", "600")
+	response.Header().Set("Access-Control-Allow-Origin", "*")
+	response.Header().Set("Access-Control-Allow-Methods", "GET, PUT, POST, PATCH, DELETE")
+	response.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
+	response.Header().Set("Access-Control-Expose-Headers", "Authorization")
+	response.Header().Set("Access-Control-Max-Age", "600")
 
-	if r.Method == "OPTIONS" {
-		w.WriteHeader(http.StatusOK)
+	if request.Method == "OPTIONS" {
+		response.WriteHeader(http.StatusOK)
 		return
 	}
 
-	p.handler.ServeHTTP(w, r)
+	p.handler.ServeHTTP(response, request)
 
 }

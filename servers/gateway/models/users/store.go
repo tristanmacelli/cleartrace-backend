@@ -6,10 +6,10 @@ import (
 	"server-side-mirror/servers/gateway/indexes"
 )
 
-//ErrUserNotFound is returned when the user can't be found
+// ErrUserNotFound is returned when the user can't be found
 var ErrUserNotFound = errors.New("user not found")
 
-//Store represents a store for Users
+// Store represents a store for Users
 type Store interface {
 
 	//GetByID returns the User with the given ID
@@ -29,7 +29,7 @@ type Store interface {
 	//the newly-inserted User, complete with the DBMS-assigned ID
 	Insert(user *User) (*User, error)
 
-	LogSuccessfulSignIns(user *User, r *http.Request)
+	LogSuccessfulSignIns(user *User, request *http.Request)
 
 	//Update applies UserUpdates to the given user ID
 	//and returns the newly-updated user

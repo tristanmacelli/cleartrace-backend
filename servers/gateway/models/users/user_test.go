@@ -212,10 +212,10 @@ func TestFullName(t *testing.T) {
 // normal password --> check if length of u.passHash us not zero after test
 func TestSetPassword(t *testing.T) {
 	cases := []struct {
-		name    string
-		hint    string
-		u       *User
-		isError bool
+		name        string
+		hint        string
+		u           *User
+		expectError bool
 	}{
 		{
 			"Healthy password",
@@ -229,8 +229,8 @@ func TestSetPassword(t *testing.T) {
 
 	for _, c := range cases {
 		err := c.u.SetPassword("mypassword")
-		if !c.isError && err == nil {
-			// t.Errorf("case %s: expected error but didn't get one\nHINT: %s", c.name, c.hint)
+		if !c.expectError && err != nil {
+			t.Errorf("case %s: didn't expect an error but did get one\nHINT: %s", c.name, c.hint)
 		}
 		if len(c.u.PassHash) == 0 {
 			t.Errorf("case %s: unexpected result \nHINT: %s", c.name, c.hint)
@@ -248,7 +248,7 @@ func TestAuthenticate(t *testing.T) {
 	}{
 		{
 			"Password and hash should match",
-			"Make sure you authenticate correctly if the param poassword and stored hash match",
+			"Make sure you authenticate correctly if the param password and stored hash match",
 			&User{
 				PassHash: []byte{},
 			},
@@ -257,7 +257,7 @@ func TestAuthenticate(t *testing.T) {
 		},
 		{
 			"Password and hash shouldn't match",
-			"Make sure you retiurn an error if the param poassword and stored hash don't match",
+			"Make sure you return an error if the param password and stored hash don't match",
 			&User{
 				PassHash: []byte{},
 			},
@@ -269,8 +269,8 @@ func TestAuthenticate(t *testing.T) {
 		if c.name == "Password and hash should match" {
 			_ = c.u.SetPassword(c.ptPass)
 			err := c.u.Authenticate(c.ptPass)
-			if !c.isError && err != nil {
-				// t.Errorf("case %s: expected error but didn't get one\nHINT: %s", c.name, c.hint)
+			if c.isError && err == nil {
+				t.Errorf("case %s: expected error but didn't get one\nHINT: %s", c.name, c.hint)
 			}
 		} else {
 			_ = c.u.SetPassword("not hello")
@@ -286,10 +286,10 @@ func TestAuthenticate(t *testing.T) {
 
 func TestApplyUpdates(t *testing.T) {
 	cases := []struct {
-		name    string
-		hint    string
-		up      *Updates
-		isError bool
+		name        string
+		hint        string
+		up          *Updates
+		expectError bool
 	}{
 		{
 			"The firstName must contain characters",
@@ -342,11 +342,11 @@ func TestApplyUpdates(t *testing.T) {
 	u.LastName = "blank"
 	for _, c := range cases {
 		err := u.ApplyUpdates(c.up)
-		if c.isError && err == nil {
-			t.Errorf("case %s: expected error but didn't get one\nHINT: %s", c.name, c.hint)
+		if c.expectError && err == nil {
+			t.Errorf("case %s: expected an error but didn't get one\nHINT: %s", c.name, c.hint)
 		}
-		if !c.isError && err != nil {
-			t.Errorf("case %s: we didn't expected error but did get one\nHINT: %s", c.name, c.hint)
+		if !c.expectError && err != nil {
+			t.Errorf("case %s: didn't expect an error but did get one\nHINT: %s", c.name, c.hint)
 		}
 	}
 }

@@ -22,22 +22,22 @@ import (
 )
 
 // IndexHandler does something
-func IndexHandler(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("Hello from API Gateway"))
+func IndexHandler(response http.ResponseWriter, request *http.Request) {
+	response.Write([]byte("Hello from API Gateway"))
 }
 
 // Director is a function wrapper
-type Director func(r *http.Request)
+type Director func(request *http.Request)
 
 // CustomDirector does load balancing using the round-robin method
 func CustomDirector(targets []*url.URL, ctx *handlers.HandlerContext) Director {
 	var counter int32 = 0
 
-	return func(r *http.Request) {
+	return func(request *http.Request) {
 		state := &handlers.SessionState{}
-		_, err := sessions.GetState(r, ctx.Key, ctx.SessionStore, state)
+		_, err := sessions.GetState(request, ctx.Key, ctx.SessionStore, state)
 		if err != nil {
-			r.Header.Del("X-User")
+			request.Header.Del("X-User")
 			log.Println("Error getting User from GetState")
 			log.Println(err)
 			return
@@ -48,10 +48,10 @@ func CustomDirector(targets []*url.URL, ctx *handlers.HandlerContext) Director {
 
 		targ := targets[counter%int32(len(targets))]
 		atomic.AddInt32(&counter, 1)
-		r.Header.Add("X-User", userString)
-		r.Host = targ.Host
-		r.URL.Host = targ.Host
-		r.URL.Scheme = targ.Scheme
+		request.Header.Add("X-User", userString)
+		request.Host = targ.Host
+		request.URL.Host = targ.Host
+		request.URL.Scheme = targ.Scheme
 	}
 }
 
@@ -112,8 +112,7 @@ func main() {
 	mux.HandleFunc("/", IndexHandler)
 
 	mux.HandleFunc("/v1/users", ctx.UsersHandler)
-	mux.HandleFunc("/v1/users/", ctx.SpecificUserHandler)
-	mux.HandleFunc("/v1/users/{userID}", ctx.UpdateUserHandler)
+	mux.HandleFunc("/v1/users/{userID}", ctx.SpecificUserHandler)
 	mux.HandleFunc("/v1/users/search/", ctx.SearchHandler)
 	mux.HandleFunc("/v1/sessions", ctx.SessionsHandler)
 	mux.HandleFunc("/v1/sessions/mine", ctx.SpecificSessionsHandler)

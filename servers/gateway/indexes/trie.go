@@ -6,27 +6,27 @@ import (
 	"sync"
 )
 
-//TODO: implement a trie data structure that stores
-//keys of type string and values of type int64
+// TODO: implement a trie data structure that stores
+// keys of type string and values of type int64
 
-//PRO TIP: if you are having troubles and want to see
-//what your trie structure looks like at various points,
-//either use the debugger, or try this package:
-//https://github.com/davecgh/go-spew
+// PRO TIP: if you are having troubles and want to see
+// what your trie structure looks like at various points,
+// either use the debugger, or try this package:
+// https://github.com/davecgh/go-spew
 
 type trieNode struct {
 	children map[rune]*trieNode
 	values   int64set
 }
 
-//Trie implements a trie data structure mapping strings to int64s
-//that is safe for concurrent use.
+// Trie implements a trie data structure mapping strings to int64s
+// that is safe for concurrent use.
 type Trie struct {
 	Root *trieNode
 	lock *sync.Mutex
 }
 
-//NewTrie constructs a new Trie.
+// NewTrie constructs a new Trie.
 func NewTrie(newLock *sync.Mutex) *Trie {
 	return &Trie{
 		Root: &trieNode{children: map[rune]*trieNode{}, values: int64set{}},
@@ -34,7 +34,7 @@ func NewTrie(newLock *sync.Mutex) *Trie {
 	}
 }
 
-//Len returns the number of entries in the trie.
+// Len returns the number of entries in the trie.
 func (t *Trie) Len() int {
 	node := t.Root
 	return lenHelper(node)
@@ -54,13 +54,13 @@ func lenHelper(node *trieNode) int {
 	}
 }
 
-//Add adds a key and value to the trie.
+// Add adds a key and value to the trie.
 func (t *Trie) Add(key string, value int64) error {
 	if key == "" {
-		return fmt.Errorf("Error: must enter a non-empty string")
+		return fmt.Errorf("error: must enter a non-empty string")
 	}
 	if value < 0 {
-		return fmt.Errorf("Error: invalid id value. Must be non-negative")
+		return fmt.Errorf("error: invalid id value. Must be non-negative")
 	}
 	key = strings.ToLower(key)
 	keys := strings.Fields(key)
@@ -68,7 +68,8 @@ func (t *Trie) Add(key string, value int64) error {
 	for _, key := range keys {
 		node := t.Root
 		for _, r := range key {
-			child, _ := node.children[r]
+			// Check that this still works without (, _)
+			child := node.children[r]
 			if child == nil {
 				child = &trieNode{children: map[rune]*trieNode{}, values: int64set{}}
 				t.lock.Lock()
@@ -84,12 +85,12 @@ func (t *Trie) Add(key string, value int64) error {
 	return nil
 }
 
-//Find finds `max` values matching `prefix`. If the trie
-//is entirely empty, or the prefix is empty, or max == 0,
-//or the prefix is not found, this returns a nil slice.
+// Find finds `max` values matching `prefix`. If the trie
+// is entirely empty, or the prefix is empty, or max == 0,
+// or the prefix is not found, this returns a nil slice.
 func (t *Trie) Find(prefix string, max int) ([]int64, error) {
 	if max < 0 {
-		return nil, fmt.Errorf("Error: invalid max value. Must be non-negative")
+		return nil, fmt.Errorf("error: invalid max value. Must be non-negative")
 	}
 	prefix = strings.ToLower(prefix)
 	if len(prefix) == 0 || max == 0 || len(t.Root.children) == 0 {
@@ -100,7 +101,8 @@ func (t *Trie) Find(prefix string, max int) ([]int64, error) {
 		node := t.Root
 		// Loop to the end of prefix, returning a nil slice if the prefix isn't present
 		for _, r := range prefixPart {
-			child, _ := node.children[r]
+			// Check that this still works without (, _)
+			child := node.children[r]
 			if child == nil {
 				return []int64{}, nil
 			}
@@ -141,19 +143,20 @@ func findHelper(node *trieNode, max int, ids int64set, newIds int64set, subseque
 	}
 }
 
-//Remove removes a key/value pair from the trie
-//and trims branches with no values.
+// Remove removes a key/value pair from the trie
+// and trims branches with no values.
 func (t *Trie) Remove(key string, value int64) error {
 	if key == "" {
-		return fmt.Errorf("Error: must enter a non-empty string")
+		return fmt.Errorf("error: must enter a non-empty string")
 	}
 	if value < 0 {
-		return fmt.Errorf("Error: invalid id value")
+		return fmt.Errorf("error: invalid id value")
 	}
 	key = strings.ToLower(key)
 	node := t.Root
 	for _, r := range key {
-		child, _ := node.children[r]
+		// Check that this still works without (, _)
+		child := node.children[r]
 		if child == nil {
 			// Since the key does not exist there is nothing to delete
 			return nil
@@ -177,7 +180,8 @@ func (t *Trie) removeHelper(node *trieNode, runes []rune, length int) *trieNode 
 	if len(runes) == 0 {
 		return nil
 	} else {
-		child, _ := node.children[runes[0]]
+		// Check that this still works without (, _)
+		child := node.children[runes[0]]
 		newRunes := []rune{}
 		if len(runes) > 1 {
 			newRunes = runes[1:]

@@ -172,11 +172,11 @@ func (ms *MysqlStore) Insert(user *User) (*User, error) {
 }
 
 // LogSuccessfulSignIns does something
-func (ms *MysqlStore) LogSuccessfulSignIns(user *User, r *http.Request) {
+func (ms *MysqlStore) LogSuccessfulSignIns(user *User, request *http.Request) {
 	uid := user.ID
 	timeOfSignIn := time.Now()
-	clientIP := r.RemoteAddr
-	ips := r.Header.Get("X-Forwarded-For")
+	clientIP := request.RemoteAddr
+	ips := request.Header.Get("X-Forwarded-For")
 
 	if len(ips) > 1 {
 		clientIP = strings.Split(ips, ",")[0]

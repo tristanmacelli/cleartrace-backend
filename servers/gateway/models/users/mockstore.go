@@ -68,8 +68,8 @@ func (ms *MockStore) GetByUserName(username string) (*User, error) {
 	return &getByUserNamenextReturn, errNext
 }
 
-func (ms *MockStore) GetByIDs(ids []int64, orderBy string) (*[]User, error) {
-	return &[]User{}, nil
+func (ms *MockStore) GetByIDs(ids []int64, orderBy string) (*[]*User, error) {
+	return &[]*User{}, nil
 }
 
 func (ms *MockStore) IndexUsers(trie *indexes.Trie) {}
@@ -81,9 +81,7 @@ func (ms *MockStore) Insert(user *User) (*User, error) {
 }
 
 // LogSuccessfulSignIns does something
-func (ms *MockStore) LogSuccessfulSignIns(user *User, r *http.Request) {
-
-}
+func (ms *MockStore) LogSuccessfulSignIns(user *User, request *http.Request) {}
 
 // Update applies UserUpdates to the given user ID
 // and returns the newly-updated user
