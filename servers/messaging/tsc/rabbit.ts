@@ -4,17 +4,18 @@ import { sleep } from "./mongo_handlers"
 import * as amqp from "amqplib"
 
 interface TransactionResult {
-    entity?: Channel | Message;
     type: string;
     userIDs: number[];
 }
 
 export interface MessageTransaction extends TransactionResult {
-    messageID?: string;
+    message?: Message;
     channelID?: string;
+    messageID?: string;
 }
 
 export interface ChannelTransaction extends TransactionResult {
+    channel?: Channel;
     channelID?: string;
 }
 

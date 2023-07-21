@@ -216,7 +216,7 @@ func (ctx *HandlerContext) SpecificSessionsHandler(response http.ResponseWriter,
 	}
 	// Send message to rabbitMQ indicating connection was removed
 	message := mqMessage{}
-	message.MessageType = "close-connection"
+	message.Type = "close-connection"
 	// Error check message sending
 	response.Write([]byte("signed out"))
 }

@@ -91,7 +91,7 @@ const main = async () => {
 
                 // add to rabbitMQ queue
                 const channelUpdatedTransaction: ChannelTransaction = {
-                    entity: updatedChannel,
+                    channel: updatedChannel,
                     type: "channel-update",
                     userIDs: updatedChannel.members,
                 };
@@ -119,7 +119,7 @@ const main = async () => {
 
                 // add to rabbitMQ queue
                 const channelUpdatedTransaction: ChannelTransaction = {
-                    entity: updatedChannel,
+                    channel: updatedChannel,
                     type: "channel-update",
                     userIDs: updatedChannel.members,
                 };
@@ -196,7 +196,7 @@ const main = async () => {
 
                 // add to rabbitMQ queue
                 const messageCreatedTransaction: MessageTransaction = {
-                    entity: newMessage,
+                    message: newMessage,
                     type: "message-new",
                     userIDs: channel.members,
                 }
@@ -224,7 +224,7 @@ const main = async () => {
                 
                 // add to rabbitMQ queue
                 const channelUpdatedTransaction: ChannelTransaction = {
-                    entity: updatedChannel,
+                    channel: updatedChannel,
                     type: "channel-update",
                     userIDs: updatedChannel.members,
                 }
@@ -314,7 +314,7 @@ const main = async () => {
 
                 // add to rabbitMQ queue
                 const channelCreatedTransaction: ChannelTransaction = {
-                    entity: newChannel,
+                    channel: newChannel,
                     type: "channel-new",
                     userIDs: newChannel.members,
                 }
@@ -374,7 +374,7 @@ const main = async () => {
 
                 // add to rabbitMQ queue
                 const messageUpdatedTransaction: MessageTransaction = {
-                    entity: updatedMessage,
+                    message: updatedMessage,
                     type: "message-update",
                     userIDs: channel.members,
                 }
