@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"server-side-mirror/servers/gateway/sessions"
@@ -10,7 +9,8 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
-	"github.com/streadway/amqp"
+	amqp "github.com/rabbitmq/amqp091-go"
+	// "github.com/streadway/amqp" // this package is deprecated
 )
 
 const writeWait = time.Second
@@ -39,29 +39,29 @@ const (
 
 // Notify A simple store to store all the connections
 type Notify struct {
-	Connections map[int64]*websocket.Conn
-	lock        *sync.Mutex
+	ConnectionPool map[int64]*websocket.Conn
+	lock           *sync.Mutex
 }
 
-type mqMessage struct {
-	MessageType string  `json:"type"`
-	Channel     Channel `json:"channel"`
-	Message     Message `json:"message"`
-	UserIDs     []int64 `json:"userIDs"`
-	ChannelID   string  `json:"channelID"`
-	MessageID   string  `json:"messageID"`
+type MessagingTransaction struct {
+	Type      string  `json:"type"`
+	UserIDs   []int64 `json:"userIDs"`
+	Channel   Channel `json:"channel"`
+	Message   Message `json:"message"`
+	ChannelID string  `json:"channelID"`
+	MessageID string  `json:"messageID"`
 }
 
 // Channel is from our messaging service
 type Channel struct {
-	ID          string   `json:"id"`
-	Name        string   `json:"name"`
-	Description string   `json:"description"`
-	Private     bool     `json:"private"`
-	Members     []string `json:"members"`
-	CreatedAt   string   `json:"createdat"`
-	Creator     Creator  `json:"creator"`
-	EditedAt    string   `json:"editedat"`
+	ID          string  `json:"id"`
+	Name        string  `json:"name"`
+	Description string  `json:"description"`
+	Private     bool    `json:"private"`
+	Members     []int64 `json:"members"`
+	CreatedAt   string  `json:"createdat"`
+	Creator     Creator `json:"creator"`
+	EditedAt    string  `json:"editedat"`
 }
 
 // Message is from our messaging service
@@ -83,7 +83,7 @@ type Creator struct {
 	PhotoURL  string `json:"photoURL"`
 }
 
-// NewNotify does something
+// NewNotify creates a WebSocket connection pool and mutex
 func NewNotify(connections map[int64]*websocket.Conn, lock *sync.Mutex) *Notify {
 	return &Notify{connections, lock}
 }
@@ -92,9 +92,9 @@ func NewNotify(connections map[int64]*websocket.Conn, lock *sync.Mutex) *Notify 
 func (ctx *HandlerContext) InsertConnection(conn *websocket.Conn, userID int64) int {
 	s := ctx.SocketStore
 	s.lock.Lock()
-	connID := len(s.Connections)
+	connID := len(s.ConnectionPool)
 	// insert socket connection
-	s.Connections[userID] = conn
+	s.ConnectionPool[userID] = conn
 	s.lock.Unlock()
 	return connID
 }
@@ -103,8 +103,8 @@ func (ctx *HandlerContext) InsertConnection(conn *websocket.Conn, userID int64) 
 func (ctx *HandlerContext) RemoveConnection(connID int, userID int64) {
 	s := ctx.SocketStore
 	s.lock.Lock()
-	// insert socket connection
-	delete(s.Connections, userID)
+	// remove socket connection
+	delete(s.ConnectionPool, userID)
 	s.lock.Unlock()
 }
 
@@ -112,16 +112,17 @@ func (ctx *HandlerContext) RemoveConnection(connID int, userID int64) {
 // In your homework, you will be writing a message to a subset of connections
 // (if the message is intended for a private channel), or to all of them (if the message
 // is posted on a public channel
-func (ctx *HandlerContext) WriteToAllConnections(curUserID int64, messageType int, data []byte) error {
+func (ctx *HandlerContext) WriteToAllConnections(creatorUserID int64, messageType int, data []byte) error {
 	s := ctx.SocketStore
-	var writeError error
 
-	for id, conn := range s.Connections {
-		if id != curUserID {
-			writeError = conn.WriteMessage(messageType, data)
-			if writeError != nil {
-				return writeError
-			}
+	for id, conn := range s.ConnectionPool {
+		// Skip the loop iteration associated with the message creator
+		if id == creatorUserID {
+			continue
+		}
+		writeError := conn.WriteMessage(messageType, data)
+		if writeError != nil {
+			return writeError
 		}
 	}
 
@@ -130,19 +131,22 @@ func (ctx *HandlerContext) WriteToAllConnections(curUserID int64, messageType in
 
 // WriteToSpecificConnections writes to specific connections denoted by the userIDs attached to the
 // message being returned from the message queue
-func (ctx *HandlerContext) WriteToSpecificConnections(curUserID int64, messageType int, data []byte, ids []int64) error {
+func (ctx *HandlerContext) WriteToSpecificConnections(creatorUserID int64, messageType int, data []byte, ids []int64) error {
 	s := ctx.SocketStore
-	var writeError error
 
 	for _, id := range ids {
-		if id != curUserID {
-			conn := s.Connections[id]
-			if conn != nil {
-				writeError = conn.WriteMessage(messageType, data)
-				if writeError != nil {
-					return writeError
-				}
-			}
+		// Skip the loop iteration associated with the message creator
+		if id == creatorUserID {
+			continue
+		}
+		// Skip loop iteration(s) associated with dead connections
+		conn := s.ConnectionPool[id]
+		if conn == nil {
+			continue
+		}
+		writeError := conn.WriteMessage(messageType, data)
+		if writeError != nil {
+			return writeError
 		}
 	}
 
@@ -152,14 +156,16 @@ func (ctx *HandlerContext) WriteToSpecificConnections(curUserID int64, messageTy
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
-	CheckOrigin: func(r *http.Request) bool {
-		return true
+	CheckOrigin: func(request *http.Request) bool {
+		return request.Header.Get("Origin") == "https://slack.tristanmacelli.com"
+		// Uncomment this to accept WebSocket connections from localhost
+		// return true
 	},
 }
 
 // WebSocketConnectionHandler upgrades clients to a WebSocket connection
-// and adds that connection to a list of connections to notify when events
-// are read from the RabbitMQ server
+// and adds that connection to a connection pool. Connections in the connection
+// pool can be notified when events are read from the RabbitMQ server
 func (ctx *HandlerContext) WebSocketConnectionHandler(response http.ResponseWriter, request *http.Request) {
 	// problem getting Session State
 	// TODO: how do we handle ctx && socketStore as receivers
@@ -169,8 +175,8 @@ func (ctx *HandlerContext) WebSocketConnectionHandler(response http.ResponseWrit
 		response.Write([]byte("Status Code 401: Unauthorized"))
 		return
 	}
-	// handle the websocket handshake
 
+	// Comment this out to accept WebSocket connections from localhost
 	if request.Header.Get("Origin") != "https://slack.tristanmacelli.com" {
 		http.Error(response, "Websocket Connection Refused", http.StatusForbidden)
 		return
@@ -193,7 +199,6 @@ func (ctx *HandlerContext) WebSocketConnectionHandler(response http.ResponseWrit
 		defer ctx.RemoveConnection(connID, sessionState.User.ID)
 		ctx.echo(conn)
 	})(conn, connID)
-
 }
 
 // echo starts a goroutine that connects to the RabbitMQ server, reads events off the queue,
@@ -232,69 +237,112 @@ func (ctx *HandlerContext) echo(conn *websocket.Conn) {
 	)
 	failOnError("Failed to register a consumer", err)
 
-	forever := make(chan bool)
+	// Channels (or chan) are an inter-process communication (IPC) construct allowing for typed message passing between
+	// different goroutines
+	waitOnErrorOrClose := make(chan bool)
+	exit := make(chan bool)
 
 	go func() {
-		fmt.Println("Now actively listening for messages!")
+		log.Println("Listening for messages from the Queue!")
 		for {
-			// TODO: Figure out how to safely unblock from this statement when sending a message
-			// Potential Solution: 2 Go routines this one continues to handle messages from the q
-			// and the 2nd one will specifically handle close messages sent by logging out, refreshing,
-			// or closing the browser tab/window
-			// Search: gorilla websocket read message without blocking
-			// Read: https://github.com/gorilla/websocket/issues/81
-			// fmt.Println("1")
-			// Close connection (returning an error causes the for-loop above to break)
-			// When this logic is called it works properly, but blocks in any other case
-			// if msg, err := HandleConnectionClosure(conn); err != nil {
-			// 	break
-			// } else if msg != nil {
-			// fmt.Printf("Client says %v\n", msg)
-			// }
-			// fmt.Println("2")
-			d := <-msgs
-			fmt.Println("Looping through infinitely!")
+			// select statements allow a goroutine to read from multiple channels at once
+			// Reading from multiple channels simultaneously in Golang:
+			// (source: https://stackoverflow.com/questions/20593126/reading-from-multiple-channels-simultaneously-in-golang)
+			// Reading from multiple channels and creating a second goroutine to read WS messages (blocking but not chan)
+			// (source: https://stackoverflow.com/questions/6807590/how-to-stop-a-goroutine)
+			select {
+			case d := <-msgs:
+				message := &MessagingTransaction{}
+				if err := json.Unmarshal(d.Body, message); err != nil {
+					failOnError("Error decoding message JSON", err)
+					CloseClientConnection(conn)
+					// close(chan_reference) frees any receiving goroutines to unblock
+					// In this case we are allowing the echo function to end (it is currently blocked on the <-waitForErrorOrClose
+					// line)
+					close(waitOnErrorOrClose)
+					// Return ends the goroutine (but does not alter the wrapping goroutine, only close(chan_reference)
+					//  can unblock receiving goroutines)
+					return
+				}
 
-			message := &mqMessage{}
-			err := json.Unmarshal(d.Body, message)
-			if err != nil {
-				log.Printf("Error decoding message JSON: %s", err)
-				break
+				err := ctx.HandleOutboundMessages(d, message)
+				if err != nil {
+					// This should cause the connection to close
+					failOnError("Error handling Client-bound messages", err)
+					CloseClientConnection(conn)
+					close(waitOnErrorOrClose)
+					return
+				}
+			case <-exit:
+				log.Println("An inbound message caused a connection closure")
+				close(waitOnErrorOrClose)
+				return
 			}
-
-			err = ctx.handleClientBoundMessages(d, message)
-			if err != nil {
-				// This should cause the connection to close
-				fmt.Println("Error handling Client-bound messages: ", err)
-				break
-			}
-			// fmt.Println("3")
 		}
 	}()
 
-	log.Printf(" [*] Waiting for messages. To exit press CTRL+C")
-	<-forever
-	// What should we be doing as a part of this cleanup
-	// cleanup
-	fmt.Println("infinite loop exited")
+	log.Printf(" [*] Waiting for messages. To exit press CTRL+C\n")
+	go func() {
+		log.Println("Listening for messages from the Client!")
+		for {
+			messageType, msg, err := conn.ReadMessage() // This is a blocking statement
+			if err != nil {
+				// Log any error that isn't a normal connection close
+				if err.Error() != "websocket: close 1000 (normal): user terminated session" {
+					failOnError("Error reading messages from Client", err)
+				}
+				// If the queue listener goroutine exits first, the parent goroutine will exit and close the connection
+				// causing a read error. In this case, the client connection has already been closed
+				if !websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+					CloseClientConnection(conn) // Close WebSocket client connection on error
+				}
+
+				exit <- true
+				close(exit)
+				break
+			}
+			err, exitGoRoutine := HandleInboundMessages(messageType, msg, conn)
+			if err != nil {
+				failOnError("Error handling messages from Client", err)
+				exit <- true
+				close(exit)
+				break
+			}
+			// In case of a CloseMessage received from a client that was successfully handled
+			// and no errors were produced we want to exit the goroutine
+			if exitGoRoutine {
+				log.Println(
+					"Successfully sent a close message to the client. Ending the goroutine & closing the connection server side",
+				)
+				exit <- true
+				close(exit)
+				break
+			}
+		}
+	}()
+
+	// Receing from the waitOnErrorOrClose channel blocks this goroutine until the server receives a close message or
+	// produces an error
+	<-waitOnErrorOrClose
+	log.Println("websocket client closed")
 }
 
-// handleClientBoundMessages forwards messages from the messaging microservice to the
-// clients that are linked to the message
-func (ctx *HandlerContext) handleClientBoundMessages(d amqp.Delivery, message *mqMessage) error {
+// HandleOutboundMessages forwards messages from the RabbitMQ message queue (messaging microservice) to the
+// client connections that are linked to the message
+func (ctx *HandlerContext) HandleOutboundMessages(d amqp.Delivery, message *MessagingTransaction) error {
 	userIDs := message.UserIDs
-	curUserID := message.Message.Creator.ID
+	creatorUserID := message.Message.Creator.ID
 
 	// Broadcast to all clients when userIDs are not provided
 	if userIDs == nil {
-		err := ctx.WriteToAllConnections(curUserID, 1, d.Body)
+		err := ctx.WriteToAllConnections(creatorUserID, 1, d.Body)
 		if err != nil {
 			log.Printf("Error writing message to all connections: %s", err)
 			return err
 		}
 		// Broadcast to specific list when userIDs are provided
 	} else {
-		err := ctx.WriteToSpecificConnections(curUserID, 1, d.Body, userIDs)
+		err := ctx.WriteToSpecificConnections(creatorUserID, 1, d.Body, userIDs)
 		if err != nil {
 			log.Printf("Error writing message to specific connections: %s", err)
 			return err
@@ -303,24 +351,28 @@ func (ctx *HandlerContext) handleClientBoundMessages(d amqp.Delivery, message *m
 	return nil
 }
 
-func HandleConnectionClosure(conn *websocket.Conn) ([]byte, bool) {
-	messageType, msg, err := conn.ReadMessage()
-	if err != nil || messageType == CloseMessage {
-		fmt.Println("Closing current WebSocket connection")
-		cm := websocket.FormatCloseMessage(
-			websocket.CloseNormalClosure,
-			"WebSocket connection closed cleanly",
-		)
-		if err := conn.WriteControl(websocket.CloseMessage, cm, time.Now().Add(writeWait)); err != nil {
-			fmt.Println("Error:", err)
-		}
-		return []byte{}, true
+// HandleInboundMessages
+func HandleInboundMessages(messageType int, msg []byte, conn *websocket.Conn) (error, bool) {
+	if messageType == CloseMessage {
+		return CloseClientConnection(conn)
 	}
-	return msg, false
+	return nil, false
+}
+
+func CloseClientConnection(conn *websocket.Conn) (error, bool) {
+	log.Println("Closing current WebSocket connection")
+	cm := websocket.FormatCloseMessage(
+		websocket.CloseNormalClosure,
+		"WebSocket connection closed cleanly",
+	)
+	if err := conn.WriteControl(websocket.CloseMessage, cm, time.Now().Add(writeWait)); err != nil {
+		return err, true
+	}
+	return nil, true
 }
 
 func failOnError(msg string, err error) {
 	if err != nil {
-		fmt.Printf("%s: %s", msg, err)
+		log.Printf("%s: %s\n", msg, err)
 	}
 }
