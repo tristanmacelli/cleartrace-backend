@@ -1,6 +1,5 @@
 # Files and directories for the messaging container to ignore
-tsc
-temp.js
+src
 build.sh
 deploy.sh
 refresh.sh
