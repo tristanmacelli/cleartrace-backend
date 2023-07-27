@@ -73,6 +73,11 @@ export const insertNewChannel = async (channels: Collection, newChannel: Channel
     if (await channels.find(filter).hasNext()) {
         return { newChannel, err: new Error("duplicate: a channel with the provided name already exists ") }
     }
+    // const newGroupHash = hash(newChannel.members.toString());
+    // const filter = { hash: newGroupHash };
+    // if (await groupMembersHash.find(filter).hasNext()) {
+    //   return { newChannel, err: new Error("duplicate: a channel with the provided members already exists ") }
+    // }
 
     const insertDoc = {
         name: newChannel.name, 
@@ -94,6 +99,12 @@ export const insertNewChannel = async (channels: Collection, newChannel: Channel
       return { newChannel, err: insertResult }
     }
     newChannel.id = insertResult.insertedId.toString()
+    // const hashInsertResult = await groupMembersHash.insertOne({ hash: newGroupHash })
+    //   .then(() => null)
+    //   .catch((reason) => {
+    //     console.log(`mongo_handlers insertNewChannel ${reason}`)
+    //     return new Error(reason)
+    //   })
 
     return { newChannel, err: null }
 };
@@ -339,5 +350,19 @@ export const last100Messages = async (messages: Collection, channelID: string, m
 export const sleep = async (seconds: number): Promise<void> => {
   return new Promise((resolve) => setTimeout(resolve, seconds * 1000));
 };
+
+// hash creates a deterministic integer value
+// const hash = (inputString: string) => {
+//   if (inputString.length === 0) return 0;
+//   let hash = 0;
+//   let char;
+
+//   for (let i = 0; i < inputString.length; i++) {
+//     char = inputString.charCodeAt(i);
+//     hash = ((hash << 5) - hash) + char;
+//     hash |= 0; // Convert to 32bit integer
+//   }
+//   return hash;
+// };
 
 export * from "./mongo_handlers";
