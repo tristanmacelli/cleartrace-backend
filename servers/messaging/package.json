@@ -6,6 +6,8 @@
   "scripts": {
     "build": "bash build.sh",
     "deploy": "bash deploy.sh",
+    "lint": "eslint src/**/*.ts --fix",
+    "format": "prettier --write src/",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -24,6 +26,11 @@
     "@types/express": "^4.17.17",
     "@types/jquery": "^3.5.16",
     "@types/mongodb": "^4.0.7",
-    "@types/morgan": "^1.9.4"
+    "@types/morgan": "^1.9.4",
+    "@typescript-eslint/eslint-plugin": "^6.2.0",
+    "@typescript-eslint/parser": "^6.2.0",
+    "eslint": "^8.45.0",
+    "eslint-plugin-prettier": "^5.0.0",
+    "prettier": "^3.0.0"
   }
 }

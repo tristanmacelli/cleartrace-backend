@@ -3,5 +3,4 @@ src
 build.sh
 deploy.sh
 refresh.sh
-tsconfig.json
 README.md
