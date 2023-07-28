@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -98,19 +99,18 @@ func main() {
 	socketStore := handlers.NewNotify(conns, &sync.Mutex{})
 	indexedUsers := indexes.NewTrie(&sync.Mutex{})
 	userStore.IndexUsers(indexedUsers)
+
 	ctx := handlers.NewHandlerContext(sessionkey, userStore, *indexedUsers, redisStore, *socketStore)
 
 	// proxies
 	messagesProxy := &httputil.ReverseProxy{Director: CustomDirector(messagingUrls, ctx)}
-	// starting a new mux session
-	// mux := http.NewServeMux()
 
 	mux := mux.NewRouter()
-
 	mux.HandleFunc("/", IndexHandler)
 
 	mux.HandleFunc("/v1/users", ctx.UsersHandler)
 	mux.HandleFunc("/v1/users/{userID}", ctx.SpecificUserHandler)
+	mux.HandleFunc("/v1/users/email/{email}", ctx.GetUserByEmailHandler)
 	mux.HandleFunc("/v1/users/search/", ctx.SearchHandler)
 	mux.HandleFunc("/v1/sessions", ctx.SessionsHandler)
 	mux.HandleFunc("/v1/sessions/mine", ctx.SpecificSessionsHandler)
@@ -124,33 +124,31 @@ func main() {
 
 	// logging server location or errors
 	log.Printf("server is listening %s...", address)
-	// config := &tls.Config{
-	// 	MinVersion: tls.VersionTLS12,
-	// 	MaxVersion: tls.VersionTLS13,
-	// 	CipherSuites: []uint16{
-	// 		TLS_AES_128_GCM_SHA256,
-	// 		TLS_AES_256_GCM_SHA384,
-	// 		TLS_CHACHA20_POLY1305_SHA256,
-	// 		tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
-	// 		tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256,
-	// 		tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
-	// 		tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
-	// 	},
-	// 	PreferServerCipherSuites: true,
-	// 	ClientSessionCache:       tls.NewLRUClientSessionCache(128),
-	// }
 
-	// server := &http.Server{Addr: address, Handler: nil, TLSConfig: config}
-	// log.Fatal(server.ListenAndServeTLS(tlsCertPath, tlsKeyPath))
+	// TLS 1.3 configuration
+	config := &tls.Config{
+		MinVersion: tls.VersionTLS13,
+		MaxVersion: tls.VersionTLS13,
+		CipherSuites: []uint16{
+			// 1.3 Cipher suites
+			tls.TLS_AES_128_GCM_SHA256,
+			tls.TLS_AES_256_GCM_SHA384,
+			tls.TLS_CHACHA20_POLY1305_SHA256,
+		},
+		PreferServerCipherSuites: true,
+		ClientSessionCache:       tls.NewLRUClientSessionCache(128),
+	}
+	server := &http.Server{Addr: address, Handler: wrappedMux, TLSConfig: config}
+	// ListenAndServeTLS serves http2 && tls 1.2 by default, we are using it to only use TLS1.3
+	log.Fatal(server.ListenAndServeTLS(tlsCertPath, tlsKeyPath))
 
-	log.Fatal(http.ListenAndServeTLS(address, tlsCertPath, tlsKeyPath, wrappedMux))
+	// TODO: Fix CORS issue
+	// log.Fatal(http3.ListenAndServeQUIC(address, tlsCertPath, tlsKeyPath, wrappedMux))
 
-	// server := &http.Server{Addr: ":4000", Handler: nil, TLSConfig: config}
-	// http2.ConfigureServer(server, nil)
+	// TLS1.2 (Works without much issue)
+	// TODO: Remove eventually
+	// log.Fatal(http.ListenAndServeTLS(address, tlsCertPath, tlsKeyPath, wrappedMux))
 
-	// log.Printf("Staring webserver ...")
-	// go http.ListenAndServe(":3000", nil)
-	// server.ListenAndServeTLS(TLS_PUBLIC_KEY, TLS_PRIVATE_KEY)
 	/* To host server:
 	- change path until in folder with main.go in it
 	- 'go install main.go'
