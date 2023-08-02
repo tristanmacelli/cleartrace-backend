@@ -186,6 +186,32 @@ func callSpecificUserHandler(
 	return rr
 }
 
+func callGetUserByEmailHandler(
+	t *testing.T,
+	method string,
+	user *users.User,
+	resourceIdentifier string, // email
+	err error,
+) *httptest.ResponseRecorder {
+	signingKey := "signing key"
+	sessionID := "sessionid"
+	_, ctx := buildStoresAndCtx(signingKey)
+	rr := httptest.NewRecorder()
+
+	users.SetErr(err)
+	if err == nil {
+		users.SetGetByEmailNextReturn(user)
+	}
+
+	req := buildNewRequest(t, method, "application/json", nil, "email/"+resourceIdentifier, sessionID)
+	req = mux.SetURLVars(req, map[string]string{
+		"email": resourceIdentifier,
+	})
+	handler := http.HandlerFunc(ctx.GetUserByEmailHandler)
+	handler.ServeHTTP(rr, req)
+	return rr
+}
+
 // callSessionsHandler calls the buildNewRequest and buildNewStores helper functions
 // and calls the associated SessionsHandler with mocked returns for testing
 func callSessionsHandler(
@@ -355,7 +381,7 @@ func TestSpecificUserHandler(t *testing.T) {
 		method               string
 		contentType          string
 		userUpdates          map[string]string
-		resourceIdentifier   string
+		resourceIdentifier   string // userID
 		user                 *users.User
 		err                  error
 		useExistingSessionID bool
@@ -480,6 +506,66 @@ func TestSpecificUserHandler(t *testing.T) {
 	}
 }
 
+func TestGetUserByEmailHandler(t *testing.T) {
+	type GetUserByEmailHandlerCase struct {
+		name               string
+		method             string
+		user               *users.User
+		resourceIdentifier string // Email
+		err                error
+		status             int
+		expectation        string
+	}
+
+	cases := []GetUserByEmailHandlerCase{
+		{
+			"Success Case",
+			"GET",
+			valueMapToUser(correctNewUser),
+			"myexampleEmail@live.com",
+			nil,
+			http.StatusOK,
+			"Expected a HTTP StatusOK (200), but received: %d",
+		},
+	}
+	failcases := []GetUserByEmailHandlerCase{
+		{
+			"Incorrect Method",
+			"PATCH",
+			valueMapToUser(correctNewUser),
+			"myexampleEmail@live.com",
+			nil,
+			http.StatusMethodNotAllowed,
+			"Expected a HTTP StatusMethodNotAllowed (405), but received: %d",
+		},
+		{
+			"Database Error",
+			"GET",
+			valueMapToUser(correctNewUser),
+			"myexampleEmail@live.com",
+			errors.New("Error fetching user by email"),
+			http.StatusInternalServerError,
+			"Expected a HTTP StatusInternalServerError (500), but received: %d",
+		},
+	}
+	for _, c := range cases {
+		// SUCCESS CASE
+		response := callGetUserByEmailHandler(t, c.method, c.user, c.resourceIdentifier, c.err)
+		if status := response.Code; status != c.status {
+			t.Log(c.name)
+			t.Errorf(c.expectation, status)
+		}
+	}
+	for _, fc := range failcases {
+		// FAIL CASE
+		response := callGetUserByEmailHandler(t, fc.method, fc.user, fc.resourceIdentifier, fc.err)
+		if status := response.Code; status != fc.status {
+			t.Log(fc.name)
+			t.Errorf(fc.expectation, status)
+		}
+	}
+}
+
 // TestSessionsHandler does something
 func TestSessionsHandler(t *testing.T) {
 	type SessionsHandler struct {
@@ -572,7 +658,7 @@ func TestSpecificSessionsHandler(t *testing.T) {
 		hint                 string
 		method               string
 		contentType          string
-		resourceIdentifier   string
+		resourceIdentifier   string // sessionID || mine
 		useExistingSessionID bool
 		status               int
 		expectation          string

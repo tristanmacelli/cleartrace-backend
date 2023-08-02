@@ -163,6 +163,29 @@ func (ctx *HandlerContext) UpdateUserHandler(response http.ResponseWriter, reque
 	formatResponse(response, http.StatusOK, userJSON)
 }
 
+// TODO: add unit tests for this code
+func (ctx *HandlerContext) GetUserByEmailHandler(response http.ResponseWriter, request *http.Request) {
+	if request.Method != http.MethodGet {
+		http.Error(response, "Incorrect HTTP Method", http.StatusMethodNotAllowed)
+		return
+	}
+	email := mux.Vars(request)["email"]
+	user, err := ctx.UserStore.GetByEmail(email)
+
+	if err != nil {
+		http.Error(response, "Error getting user with the corresponding Email", http.StatusInternalServerError)
+		return
+	}
+
+	// Checking a user field because if a user is found the user should always have a first name
+	foundUser := user.FirstName != ""
+	responseData := map[string]bool{
+		"foundUser": foundUser,
+	}
+	responseJSON, _ := json.Marshal(responseData)
+	formatResponse(response, http.StatusOK, responseJSON)
+}
+
 // SessionsHandler this logs a user in to our application (authentication)
 func (ctx *HandlerContext) SessionsHandler(response http.ResponseWriter, request *http.Request) {
 	// check for POST
