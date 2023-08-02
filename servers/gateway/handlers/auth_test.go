@@ -124,6 +124,7 @@ func callUsersHandler(
 	method string,
 	contentType string,
 	rawUser map[string]string,
+	duplicateEmail bool,
 	err error,
 ) *httptest.ResponseRecorder {
 	signingKey := "signing key"
@@ -133,6 +134,9 @@ func callUsersHandler(
 
 	users.SetErr(err)
 	user := valueMapToUser(rawUser)
+	if duplicateEmail {
+		users.SetGetByEmailNextReturn(user)
+	}
 	users.SetInsertNextReturn(user)
 	users.SetGetByIDNextReturn(user)
 
@@ -241,43 +245,39 @@ func callSpecificSessionsHandler(
 
 // TestUserHandler does something (5 total cases)
 func TestUserHandler(t *testing.T) {
-	cases := []struct {
-		name        string
-		hint        string
-		method      string
-		contentType string
-		newUser     map[string]string
-		err         error
-		status      int
-		expectation string
-	}{
+	type UserHandlerCase struct {
+		name           string
+		hint           string
+		method         string
+		contentType    string
+		newUser        map[string]string
+		duplicateEmail bool
+		err            error
+		status         int
+		expectation    string
+	}
+
+	cases := []UserHandlerCase{
 		{
 			"POST method header set correctly",
 			"Make sure you're using the correct http method",
 			"POST",
 			"application/json",
 			correctNewUser,
+			false,
 			nil,
 			http.StatusCreated,
 			"expected a http.StatusCreated but the handler returned: %d",
 		},
 	}
-	failcases := []struct {
-		name        string
-		hint        string
-		method      string
-		contentType string
-		newUser     map[string]string
-		err         error
-		status      int
-		expectation string
-	}{
+	failcases := []UserHandlerCase{
 		{
 			"GET method header not supported by this method",
 			"Make sure you're using the correct http method",
 			"GET",
 			"application/json",
 			correctNewUser,
+			false,
 			nil,
 			http.StatusMethodNotAllowed,
 			"expected a http.StatusMethodNotAllowed but the handler returned: %d",
@@ -288,16 +288,29 @@ func TestUserHandler(t *testing.T) {
 			"POST",
 			"alication/json",
 			correctNewUser,
+			false,
 			nil,
 			http.StatusUnsupportedMediaType,
 			"expected a http.StatusUnsupportedMediaType but the handler returned: %d",
 		},
 		{
 			"Invalid new user passed",
-			"Make sure you're using passing a valid new user",
+			"Make sure you're passing a valid new user",
 			"POST",
 			"application/json",
 			incorrectNewUser,
+			false,
+			nil,
+			http.StatusNotAcceptable,
+			"expected a http.StatusNotAcceptable but the handler returned: %d",
+		},
+		{
+			"Duplicate email passed",
+			"Make sure you're using a unique email",
+			"POST",
+			"application/json",
+			incorrectNewUser,
+			true,
 			nil,
 			http.StatusNotAcceptable,
 			"expected a http.StatusNotAcceptable but the handler returned: %d",
@@ -308,6 +321,7 @@ func TestUserHandler(t *testing.T) {
 			"POST",
 			"application/json",
 			correctNewUser,
+			false,
 			errors.New("Could not connect to db"),
 			http.StatusInternalServerError,
 			"expected a http.StatusInternalServerError but the handler returned: %d",
@@ -315,18 +329,18 @@ func TestUserHandler(t *testing.T) {
 	}
 	for _, c := range cases {
 		// SUCCESS CASE
-		response := callUsersHandler(t, c.method, c.contentType, c.newUser, c.err)
+		response := callUsersHandler(t, c.method, c.contentType, c.newUser, c.duplicateEmail, c.err)
 		if status := response.Code; status != c.status {
+			t.Log(c.name)
 			t.Errorf(c.expectation, status)
-			t.Log(c.hint)
 		}
 	}
 	// FAIL CASE
 	for _, fc := range failcases {
-		response := callUsersHandler(t, fc.method, fc.contentType, fc.newUser, fc.err)
+		response := callUsersHandler(t, fc.method, fc.contentType, fc.newUser, fc.duplicateEmail, fc.err)
 		if status := response.Code; status != fc.status {
+			t.Log(fc.name)
 			t.Errorf(fc.expectation, status)
-			t.Log(fc.hint)
 		}
 	}
 }
@@ -335,7 +349,7 @@ func TestUserHandler(t *testing.T) {
 // Authorization dependent test cases (6) not operational of 13 total
 // TODO: change the tests to reflect that the GET method only supports query parameters (rather than mux variables)
 func TestSpecificUserHandler(t *testing.T) {
-	cases := []struct {
+	type TestSpecificUserHandler struct {
 		name                 string
 		hint                 string
 		method               string
@@ -347,7 +361,8 @@ func TestSpecificUserHandler(t *testing.T) {
 		useExistingSessionID bool
 		status               int
 		expectation          string
-	}{
+	}
+	cases := []TestSpecificUserHandler{
 		{
 			"Success Case GET Method",
 			"Ensure the method, content type, user id (resource id), user, and sessionID (boolean) are valid",
@@ -375,19 +390,7 @@ func TestSpecificUserHandler(t *testing.T) {
 			"expected a http.StatusOK but the handler returned: %d",
 		},
 	}
-	failcases := []struct {
-		name                 string
-		hint                 string
-		method               string
-		contentType          string
-		userUpdates          map[string]string
-		resourceIdentifier   string
-		user                 *users.User
-		err                  error
-		useExistingSessionID bool
-		status               int
-		expectation          string
-	}{
+	failcases := []TestSpecificUserHandler{
 		{
 			"Method header not allowed",
 			"Must use either GET or PATCH http methods",
@@ -462,7 +465,6 @@ func TestSpecificUserHandler(t *testing.T) {
 		if status := response.Code; status != c.status {
 			t.Log(c.name)
 			t.Errorf(c.expectation, status)
-			// t.Log(c.hint)
 		}
 	}
 
@@ -474,14 +476,13 @@ func TestSpecificUserHandler(t *testing.T) {
 		if status := response.Code; status != fc.status {
 			t.Log(fc.name)
 			t.Errorf(fc.expectation, status)
-			t.Log(response.Body)
 		}
 	}
 }
 
 // TestSessionsHandler does something
 func TestSessionsHandler(t *testing.T) {
-	cases := []struct {
+	type SessionsHandler struct {
 		name        string
 		hint        string
 		method      string
@@ -490,7 +491,8 @@ func TestSessionsHandler(t *testing.T) {
 		err         error
 		status      int
 		expectation string
-	}{
+	}
+	cases := []SessionsHandler{
 		{
 			"Success Case",
 			"Ensure the method, content type, and credentials are valid",
@@ -502,16 +504,7 @@ func TestSessionsHandler(t *testing.T) {
 			"expected a http.StatusCreated but the handler returned: %d",
 		},
 	}
-	failcases := []struct {
-		name        string
-		hint        string
-		method      string
-		contentType string
-		credentials map[string]string
-		err         error
-		status      int
-		expectation string
-	}{
+	failcases := []SessionsHandler{
 		{
 			"PATCH method header not supported by this method",
 			"Make sure you're using the correct http method",
@@ -557,8 +550,8 @@ func TestSessionsHandler(t *testing.T) {
 		// SUCCESS CASE
 		response := callSessionsHandler(t, c.method, c.contentType, c.credentials, c.err)
 		if status := response.Code; status != c.status {
+			t.Log(c.name)
 			t.Errorf(c.expectation, status)
-			t.Log(c.hint)
 		}
 
 	}
@@ -566,15 +559,15 @@ func TestSessionsHandler(t *testing.T) {
 		// FAIL CASE
 		response := callSessionsHandler(t, fc.method, fc.contentType, fc.credentials, fc.err)
 		if status := response.Code; status != fc.status {
+			t.Log(fc.name)
 			t.Errorf(fc.expectation, status)
-			t.Log(fc.hint)
 		}
 	}
 }
 
 // TestSpecificSessionsHandler does something
 func TestSpecificSessionsHandler(t *testing.T) {
-	cases := []struct {
+	type SpecificSessionsHandler struct {
 		name                 string
 		hint                 string
 		method               string
@@ -583,7 +576,8 @@ func TestSpecificSessionsHandler(t *testing.T) {
 		useExistingSessionID bool
 		status               int
 		expectation          string
-	}{
+	}
+	cases := []SpecificSessionsHandler{
 		{
 			"Success Case",
 			"Ensure the method, content type, resource identifier, and sessionID (boolean) are valid",
@@ -595,16 +589,7 @@ func TestSpecificSessionsHandler(t *testing.T) {
 			"expected a http.StatusOK but the handler returned: %d",
 		},
 	}
-	failureCases := []struct {
-		name                 string
-		hint                 string
-		method               string
-		contentType          string
-		resourceIdentifier   string
-		useExistingSessionID bool
-		status               int
-		expectation          string
-	}{
+	failureCases := []SpecificSessionsHandler{
 		{
 			"DELETE method header set incorrectly",
 			"Make sure you're using the correct http method",
@@ -640,8 +625,8 @@ func TestSpecificSessionsHandler(t *testing.T) {
 		// SUCCESS CASE
 		response := callSpecificSessionsHandler(t, c.method, c.contentType, c.resourceIdentifier, c.useExistingSessionID)
 		if status := response.Code; status != c.status {
+			t.Log(c.name)
 			t.Errorf(c.expectation, status)
-			t.Log(c.hint)
 		}
 	}
 
@@ -649,8 +634,8 @@ func TestSpecificSessionsHandler(t *testing.T) {
 		// FAIL CASE
 		response := callSpecificSessionsHandler(t, fc.method, fc.contentType, fc.resourceIdentifier, fc.useExistingSessionID)
 		if status := response.Code; status != fc.status {
+			t.Log(fc.name)
 			t.Errorf(fc.expectation, status)
-			t.Log(fc.hint)
 		}
 	}
 }

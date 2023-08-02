@@ -34,13 +34,16 @@ func (ctx *HandlerContext) UsersHandler(response http.ResponseWriter, request *h
 	}
 
 	user, err := nu.ToUser()
-	if err != nil {
+	userStore := ctx.UserStore
+	// Check for an account with the same email
+	userFromQuery, _ := userStore.GetByEmail(user.Email)
+	// Checking a user field because if a user is found the user should always have a first name
+	if err != nil || userFromQuery.FirstName != "" {
 		http.Error(response, "Invalid user information", http.StatusNotAcceptable)
 		return
 	}
 
 	// save user to database
-	userStore := ctx.UserStore
 	user, err = userStore.Insert(user)
 	if err != nil {
 		http.Error(response, "Could not save user", http.StatusInternalServerError)
@@ -91,19 +94,17 @@ func (ctx *HandlerContext) GetUserHandler(response http.ResponseWriter, request 
 		http.Error(response, "You are not authenticated", http.StatusUnauthorized)
 		return
 	}
-	var queryID []string = strings.Split(request.URL.String(), "users/")
-	userID, _ := strconv.ParseInt(queryID[1], 10, 64)
 
+	userIDString := mux.Vars(request)["userID"]
+	userID, _ := strconv.ParseInt(userIDString, 10, 64)
 	user, err := ctx.UserStore.GetByID(userID)
 	if err != nil {
 		http.Error(response, "Error getting user with the corresponding ID", http.StatusInternalServerError)
 		return
 	}
-	// We are checking for a nil value since our GetBy method will not return an
+	// Checking for a nil value since our GetBy method will not return an
 	// error if there were no matches (since this is not necessarily a failure)
-	// We are also checking for an unpopulated user field because in the case that nobody
-	// is found, the field will not be populated (in the case that someone is found the
-	// user should always have that value)
+	// Checking a user field because if a user is found the user should always have a first name
 	if user.FirstName == "" && err == nil {
 		http.Error(response, "There is no user with the corresponding ID", http.StatusNotFound)
 		return
@@ -217,10 +218,6 @@ func (ctx *HandlerContext) SpecificSessionsHandler(response http.ResponseWriter,
 		http.Error(response, "Could not find user", http.StatusInternalServerError)
 		return
 	}
-	// Send message to rabbitMQ indicating connection was removed
-	message := mqMessage{}
-	message.Type = "close-connection"
-	// Error check message sending
 	response.Write([]byte("signed out"))
 }
 
