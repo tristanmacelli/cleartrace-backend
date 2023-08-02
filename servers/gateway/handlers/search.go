@@ -43,8 +43,8 @@ func (ctx *HandlerContext) SearchHandler(response http.ResponseWriter, request *
 	}
 	userStore := ctx.UserStore
 
-	// Returns all user objects ordered by FirstName
-	users, err := userStore.GetByIDs(userIDs, "FirstName")
+	// Returns all user objects ordered by FirstName & then Lastname (if necessary)
+	users, err := userStore.GetByIDs(userIDs, []string{"FirstName", "Lastname"})
 
 	if err != nil {
 		http.Error(response, "Failed to query users from database", http.StatusInternalServerError)

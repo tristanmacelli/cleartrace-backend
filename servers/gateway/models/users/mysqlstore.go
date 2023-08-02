@@ -98,7 +98,7 @@ func (ms *MysqlStore) GetByID(id int64) (*User, error) {
 }
 
 // GetByID returns the User with the given ID
-func (ms *MysqlStore) GetByIDs(ids []int64, orderBy string) (*[]*User, error) {
+func (ms *MysqlStore) GetByIDs(ids []int64, orderBy []string) (*[]*User, error) {
 	if len(ids) < 1 {
 		return nil, errors.New("must pass more than 0 ids")
 	}
@@ -108,8 +108,11 @@ func (ms *MysqlStore) GetByIDs(ids []int64, orderBy string) (*[]*User, error) {
 		for i := 1; i < len(ids); i++ {
 			query += " OR ID = " + strconv.FormatInt(ids[i], 10)
 		}
-		if len(orderBy) > 0 {
-			query += " ORDER BY " + orderBy
+		if len(orderBy) == 1 {
+			query += " ORDER BY " + orderBy[0]
+		}
+		if len(orderBy) == 2 {
+			query += " ORDER BY " + orderBy[0] + ", " + orderBy[1]
 		}
 		return ms.getMultipleBy(query)
 	}

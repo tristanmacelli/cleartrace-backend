@@ -21,7 +21,7 @@ type Store interface {
 	//GetByUserName returns the User with the given Username
 	GetByUserName(username string) (*User, error)
 
-	GetByIDs(ids []int64, orderBy string) (*[]*User, error)
+	GetByIDs(ids []int64, orderBy []string) (*[]*User, error)
 
 	IndexUsers(trie *indexes.Trie)
 

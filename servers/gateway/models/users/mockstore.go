@@ -68,7 +68,7 @@ func (ms *MockStore) GetByUserName(username string) (*User, error) {
 	return &getByUserNamenextReturn, errNext
 }
 
-func (ms *MockStore) GetByIDs(ids []int64, orderBy string) (*[]*User, error) {
+func (ms *MockStore) GetByIDs(ids []int64, orderBy []string) (*[]*User, error) {
 	return &[]*User{}, nil
 }
 
