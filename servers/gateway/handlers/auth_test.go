@@ -9,14 +9,17 @@ import (
 	"server-side-mirror/servers/gateway/indexes"
 	"server-side-mirror/servers/gateway/models/users"
 	"server-side-mirror/servers/gateway/sessions"
+	"strconv"
 	"sync"
 	"testing"
 	"time"
 
+	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
 )
 
 var correctNewUser = map[string]string{
+	"ID":           "1234",
 	"Email":        "myexampleEmail@live.com",
 	"Password":     "mypassword123",
 	"PasswordConf": "mypassword123",
@@ -64,6 +67,8 @@ const schemeBearer = "Bearer "
 
 func valueMapToUser(newUser map[string]string) *users.User {
 	var nu users.NewUser
+	ID, _ := strconv.ParseInt(newUser["ID"], 10, 64)
+
 	nu.Email = newUser["Email"]
 	nu.Password = newUser["Password"]
 	nu.PasswordConf = newUser["PasswordConf"]
@@ -71,6 +76,7 @@ func valueMapToUser(newUser map[string]string) *users.User {
 	nu.FirstName = newUser["FirstName"]
 	nu.LastName = newUser["LastName"]
 	user, _ := nu.ToUser()
+	user.ID = ID
 	return user
 }
 
@@ -168,6 +174,9 @@ func callSpecificUserHandler(
 	}
 
 	req := buildNewRequest(t, method, contentType, rawUserUpdates, resourceIdentifier, sessionID)
+	req = mux.SetURLVars(req, map[string]string{
+		"userID": resourceIdentifier,
+	})
 	handler := http.HandlerFunc(ctx.SpecificUserHandler)
 	handler.ServeHTTP(rr, req)
 	return rr
@@ -324,6 +333,7 @@ func TestUserHandler(t *testing.T) {
 
 // TestSpecificUserHandler does something
 // Authorization dependent test cases (6) not operational of 13 total
+// TODO: change the tests to reflect that the GET method only supports query parameters (rather than mux variables)
 func TestSpecificUserHandler(t *testing.T) {
 	cases := []struct {
 		name                 string
@@ -357,7 +367,7 @@ func TestSpecificUserHandler(t *testing.T) {
 			"PATCH",
 			"application/json",
 			correctUserUpdates,
-			"me",
+			"1234",
 			valueMapToUser(correctNewUser),
 			nil,
 			true,
@@ -392,7 +402,7 @@ func TestSpecificUserHandler(t *testing.T) {
 			"expected a http.StatusMethodNotAllowed but the handler returned: %d",
 		},
 		{
-			"Not user found",
+			"No user found",
 			"There was no user found with the given id",
 			"GET",
 			"application/json",
@@ -410,9 +420,9 @@ func TestSpecificUserHandler(t *testing.T) {
 			"PATCH",
 			"application/json",
 			correctUserUpdates,
-			"1234",
+			"5678",
 			valueMapToUser(correctNewUser),
-			nil,
+			errors.New(""),
 			true,
 			http.StatusForbidden,
 			"expected a http.StatusForbidden but the handler returned: %d",
@@ -441,7 +451,7 @@ func TestSpecificUserHandler(t *testing.T) {
 			errors.New("Invalid user updates"),
 			true,
 			http.StatusInternalServerError,
-			"522 expected a http.StatusInternalServerError but the handler returned: %d",
+			"expected a http.StatusInternalServerError but the handler returned: %d",
 		},
 	}
 	for _, c := range cases {
@@ -450,8 +460,9 @@ func TestSpecificUserHandler(t *testing.T) {
 			t, c.method, c.contentType, c.userUpdates, c.resourceIdentifier, c.user, c.err, true,
 		)
 		if status := response.Code; status != c.status {
+			t.Log(c.name)
 			t.Errorf(c.expectation, status)
-			t.Log(c.hint)
+			// t.Log(c.hint)
 		}
 	}
 
@@ -461,8 +472,9 @@ func TestSpecificUserHandler(t *testing.T) {
 			t, fc.method, fc.contentType, fc.userUpdates, fc.resourceIdentifier, fc.user, fc.err, fc.useExistingSessionID,
 		)
 		if status := response.Code; status != fc.status {
+			t.Log(fc.name)
 			t.Errorf(fc.expectation, status)
-			t.Log(fc.hint)
+			t.Log(response.Body)
 		}
 	}
 }

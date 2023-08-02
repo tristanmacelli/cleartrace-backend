@@ -142,7 +142,7 @@ func main() {
 	// ListenAndServeTLS serves http2 && tls 1.2 by default, we are using it to only use TLS1.3
 	log.Fatal(server.ListenAndServeTLS(tlsCertPath, tlsKeyPath))
 
-	// TODO: Fix CORS issue
+	// TODO: Fix Alt-Svc issue
 	// log.Fatal(http3.ListenAndServeQUIC(address, tlsCertPath, tlsKeyPath, wrappedMux))
 
 	// TLS1.2 (Works without much issue)

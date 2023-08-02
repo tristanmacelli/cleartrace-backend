@@ -9,6 +9,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/gorilla/mux"
 )
 
 // UsersHandler creates a new user, enters them into the users database and begins a session for them
@@ -126,10 +128,11 @@ func (ctx *HandlerContext) UpdateUserHandler(response http.ResponseWriter, reque
 	}
 	var user = sessionState.User
 	var userID = user.ID
-	var queryID []string = strings.Split(request.URL.String(), "users/")
 
-	id, _ := strconv.ParseInt(queryID[1], 10, 64)
-	if queryID[1] != "me" && id != userID {
+	queryID := mux.Vars(request)["userID"]
+	id, _ := strconv.ParseInt(queryID, 10, 64)
+
+	if queryID != "me" && id != userID {
 		http.Error(response, "You are unauthorized to perform this action", http.StatusForbidden)
 		return
 	}
