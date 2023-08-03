@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
-	"fmt"
+	"log"
 	"net/http"
 	"server-side-mirror/servers/gateway/sessions"
 )
@@ -32,7 +32,7 @@ func (ctx *HandlerContext) SearchHandler(response http.ResponseWriter, request *
 
 	query, ok := request.URL.Query()["q"]
 	if request.Method == http.MethodGet {
-		fmt.Println("Search Query:", query[0])
+		log.Println("Search Query:", query[0])
 		if !ok || len(query[0]) < 1 {
 			http.Error(response, "Must Pass Search Query", http.StatusBadRequest)
 			return
@@ -53,7 +53,7 @@ func (ctx *HandlerContext) SearchHandler(response http.ResponseWriter, request *
 	// Format the response data
 	usersJSON, err := json.Marshal(users)
 	if err != nil {
-		fmt.Printf("Could not marshal indexes: %s", err)
+		log.Printf("Could not marshal indexes: %s", err)
 	}
 	formatResponse(response, http.StatusOK, usersJSON)
 }

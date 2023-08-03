@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
-	"fmt"
+	"log"
 	"net/http"
 	"server-side-mirror/servers/gateway/models/users"
 	"server-side-mirror/servers/gateway/sessions"
@@ -145,6 +145,7 @@ func (ctx *HandlerContext) UpdateUserHandler(response http.ResponseWriter, reque
 	decoder := json.NewDecoder(request.Body)
 	err = decoder.Decode(&up)
 	if err != nil {
+		log.Println("Error decoding user updates")
 		panic(err)
 	}
 	// Save user's ID to searchable index of user IDs
@@ -201,6 +202,7 @@ func (ctx *HandlerContext) SessionsHandler(response http.ResponseWriter, request
 	decoder := json.NewDecoder(request.Body)
 	err := decoder.Decode(&creds)
 	if err != nil {
+		log.Println("Error decoding credentials")
 		panic(err)
 	}
 
@@ -258,7 +260,7 @@ func correctHeader(response http.ResponseWriter, request *http.Request) bool {
 func encodeUser(user *users.User) []byte {
 	userJSON, err := json.Marshal(user)
 	if err != nil {
-		fmt.Printf("Could not marshal user: %s", err)
+		log.Printf("Could not marshal user: %s", err)
 		panic("Could not encode user data")
 	}
 	return userJSON
@@ -271,7 +273,7 @@ func (ctx *HandlerContext) beginSession(user *users.User, response http.Response
 	sessionState.BeginTime = time.Now()
 	_, err := sessions.BeginSession(ctx.Key, ctx.SessionStore, sessionState, response)
 	if err != nil {
-		fmt.Printf("Could not begin session")
+		log.Printf("Could not begin session")
 		panic("Could not begin session")
 	}
 }

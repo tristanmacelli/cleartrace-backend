@@ -3,7 +3,7 @@ package users
 import (
 	"database/sql"
 	"errors"
-	"fmt"
+	"log"
 	"net/http"
 	"server-side-mirror/servers/gateway/indexes"
 	"strconv"
@@ -36,7 +36,7 @@ func NewMysqlStore(dsn string) *MysqlStore {
 	// We are using a persistent connection for all transactions
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
-		fmt.Println("Error opening db", err)
+		log.Println("Error opening db", err)
 	}
 	return &MysqlStore{
 		DB: db,
@@ -62,7 +62,7 @@ func (ms *MysqlStore) GetBy(query string, args string) (*User, error) {
 			// there were no rows, but otherwise no error occurred
 			// We return a user without any values indicating that the query returned nothing
 			// since there was no fatal error
-			fmt.Printf("error getting user: %v\n", err)
+			log.Printf("error getting user: %v\n", err)
 		} else {
 			return nil, err
 		}
@@ -74,9 +74,10 @@ func (ms *MysqlStore) GetBy(query string, args string) (*User, error) {
 func (ms *MysqlStore) getMultipleBy(query string) (*[]*User, error) {
 	rows, err := ms.DB.Query(query)
 	if err != nil {
-		fmt.Println("Error getting Users from the database", err)
+		log.Println("Error getting Users from the database", err)
 		return nil, err
 	}
+	defer rows.Close()
 	var users []*User
 	for rows.Next() {
 		user := User{}
@@ -84,7 +85,7 @@ func (ms *MysqlStore) getMultipleBy(query string) (*[]*User, error) {
 			&user.FirstName, &user.LastName, &user.PhotoURL)
 		users = append(users, &user)
 		if err != nil {
-			fmt.Println("Error parsing Users", err)
+			log.Println("Error parsing Users", err)
 			return nil, err
 		}
 	}
@@ -138,8 +139,9 @@ func (ms *MysqlStore) IndexUsers(trie *indexes.Trie) {
 	insq := "SELECT ID, FirstName, LastName, UserName FROM users;"
 	rows, err := ms.DB.Query(insq)
 	if err != nil {
-		fmt.Println("Error getting Users from the database", err)
+		log.Println("Error getting Users from the database", err)
 	}
+	defer rows.Close()
 	// Populating the trie with current users
 	for i := 0; rows.Next(); i++ {
 		user := indexedUserValues{}
@@ -153,21 +155,35 @@ func (ms *MysqlStore) IndexUsers(trie *indexes.Trie) {
 // Insert inserts the user into the database, and returns
 // the newly-inserted User, complete with the DBMS-assigned ID
 func (ms *MysqlStore) Insert(user *User) (*User, error) {
-	// This inserts a new row into the "users" table Using ? markers for the values will defeat SQL
-	// injection attacks
-
-	insq := "INSERT INTO users(email, passHash, username, firstname, lastname, photoURL) VALUES (?,?,?,?,?,?)"
-	res, err := ms.DB.Exec(insq, user.Email, user.PassHash, user.UserName,
-		user.FirstName, user.LastName, user.PhotoURL)
-
+	tx, err := ms.DB.Begin()
 	if err != nil {
-		fmt.Printf("error inserting new row: %v\n", err)
+		log.Printf("error beginning new transaction: %v\n", err)
 		return nil, err
 	}
-	//get the auto-assigned ID for the new row
+	// This inserts a new row into the users table. Using ? for input values prevents arbitrary code from being run on
+	// the database (preventing a SQL injection attacks)
+	insq := "INSERT INTO users(email, passHash, username, firstname, lastname, photoURL) VALUES (?,?,?,?,?,?)"
+	stmt, err := tx.Prepare(insq)
+	if err != nil {
+		tx.Rollback()
+		log.Printf("error creating prepared statement: %v\n", err)
+		return nil, err
+	}
+
+	defer stmt.Close()
+	res, err := stmt.Exec(user.Email, user.PassHash, user.UserName,
+		user.FirstName, user.LastName, user.PhotoURL)
+	if err != nil {
+		tx.Rollback()
+		log.Printf("error inserting new row: %v\n", err)
+		return nil, err
+	}
+
+	tx.Commit()
+	// get the auto-assigned ID for the new row
 	id, err := res.LastInsertId()
 	if err != nil {
-		fmt.Printf("error getting new ID: %v\n", id)
+		log.Printf("error getting new ID: %v\n", id)
 		return nil, err
 	}
 	// Get and return this new user
@@ -190,7 +206,7 @@ func (ms *MysqlStore) LogSuccessfulSignIns(user *User, request *http.Request) {
 	_, err := ms.DB.Exec(insq, uid, timeOfSignIn, clientIP)
 
 	if err != nil {
-		fmt.Printf("error inserting new row: %v\n", err)
+		log.Printf("error inserting new row: %v\n", err)
 		return
 	}
 }
@@ -198,22 +214,57 @@ func (ms *MysqlStore) LogSuccessfulSignIns(user *User, request *http.Request) {
 // Update applies UserUpdates to the given user ID
 // and returns the newly-updated user
 func (ms *MysqlStore) Update(id int64, updates *Updates) (*User, error) {
-	insq := "UPDATE users SET firstname = ?, lastname = ? WHERE ID = ?"
-	_, err := ms.DB.Exec(insq, updates.FirstName, updates.LastName, strconv.FormatInt(id, 10))
+	tx, err := ms.DB.Begin()
 	if err != nil {
-		fmt.Printf("error updating row: %v\n", err)
+		log.Printf("error beginning new transaction: %v\n", err)
 		return nil, err
 	}
+	// This inserts a new row into the users table. Using ? for input values prevents arbitrary code from being run on
+	// the database (preventing a SQL injection attacks)
+	insq := "UPDATE users SET firstname = ?, lastname = ? WHERE ID = ?"
+	stmt, err := tx.Prepare(insq)
+	if err != nil {
+		tx.Rollback()
+		log.Printf("error creating prepared statement: %v\n", err)
+		return nil, err
+	}
+
+	defer stmt.Close()
+	_, err = stmt.Exec(updates.FirstName, updates.LastName, strconv.FormatInt(id, 10))
+	if err != nil {
+		tx.Rollback()
+		log.Printf("error updating row: %v\n", err)
+		return nil, err
+	}
+	tx.Commit()
 	return ms.GetByID(id)
 }
 
 // Delete deletes the user with the given ID
 func (ms *MysqlStore) Delete(id int64) error {
-	insq := "DELETE FROM users WHERE ID = ?"
-	_, err := ms.DB.Exec(insq, strconv.FormatInt(id, 10))
+	tx, err := ms.DB.Begin()
 	if err != nil {
-		fmt.Printf("error deleting row: %v\n", err)
+		log.Printf("error beginning new transaction: %v\n", err)
 		return err
 	}
+	// This inserts a new row into the users table. Using ? for input values prevents arbitrary code from being run on
+	// the database (preventing a SQL injection attacks)
+	insq := "DELETE FROM users WHERE ID = ?"
+	stmt, err := tx.Prepare(insq)
+	if err != nil {
+		tx.Rollback()
+		log.Printf("error creating prepared statement: %v\n", err)
+		return err
+	}
+
+	defer stmt.Close()
+	_, err = stmt.Exec(strconv.FormatInt(id, 10))
+	if err != nil {
+		tx.Rollback()
+		log.Printf("error deleting row: %v\n", err)
+		return err
+	}
+
+	tx.Commit()
 	return nil
 }

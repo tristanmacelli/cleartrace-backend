@@ -25,8 +25,9 @@ func TestGetByID(t *testing.T) {
 		WillReturnRows(mock.NewRows(columns))
 
 	// passes the mock to our struct
-	var ms = MysqlStore{}
-	ms.DB = db
+	ms := MysqlStore{
+		DB: db,
+	}
 
 	// now we execute our method with the mock
 	if user, err := ms.GetByID(1); err != nil {
@@ -56,8 +57,9 @@ func TestGetByIDExpectError(t *testing.T) {
 		WillReturnError(fmt.Errorf("Invalid ID value: ID's must be positive"))
 
 	// passes the mock to our struct
-	var ms = MysqlStore{}
-	ms.DB = db
+	ms := MysqlStore{
+		DB: db,
+	}
 
 	// now we execute our method with the mock
 	if user, err := ms.GetByID(-1); err == nil {
@@ -88,8 +90,9 @@ func TestGetByEmail(t *testing.T) {
 		WillReturnRows(mock.NewRows(columns))
 
 	// passes the mock to our struct
-	var ms = MysqlStore{}
-	ms.DB = db
+	ms := MysqlStore{
+		DB: db,
+	}
 
 	// now we execute our method with the mock
 	if user, err := ms.GetByEmail("user@domain.com"); err != nil {
@@ -120,8 +123,9 @@ func TestGetByUsername(t *testing.T) {
 		WillReturnRows(mock.NewRows(columns))
 
 	// passes the mock to our struct
-	var ms = MysqlStore{}
-	ms.DB = db
+	ms := MysqlStore{
+		DB: db,
+	}
 
 	// now we execute our method with the mock
 	if user, err := ms.GetByUserName("Sam"); err != nil {
@@ -155,6 +159,7 @@ func TestInsert(t *testing.T) {
 	columns := []string{"ID", "Email", "PassHash", "UserName", "FirstName", "LastName", "PhotoURL"}
 
 	mock.ExpectBegin()
+	mock.ExpectPrepare("INSERT INTO users")
 	mock.ExpectExec("INSERT INTO users").
 		WithArgs(u.Email, u.PassHash, u.UserName, u.FirstName, u.LastName, u.PhotoURL).
 		WillReturnResult(sqlmock.NewResult(1, 1))
@@ -164,12 +169,13 @@ func TestInsert(t *testing.T) {
 		WillReturnRows(mock.NewRows(columns))
 
 	// passes the mock to our struct
-	var ms = MysqlStore{}
-	ms.DB = db
+	ms := MysqlStore{
+		DB: db,
+	}
 
 	// now we execute our method with the mock
 	if _, err := ms.Insert(u); err != nil {
-		t.Errorf("there was an error, but we were not expecting one")
+		t.Errorf("there was an error, but we were not expecting one: %s", err)
 	}
 
 	// we make sure that all expectations were met
@@ -181,7 +187,7 @@ func TestInsert(t *testing.T) {
 // TestExpectErrorInsert Tests case when a user with an undefined passHash is trying to
 // be inserted. Expect an error and a transaction rollback (do not commit new data to
 // the database)
-func TestExpectErrorInsert(t *testing.T) {
+func TestInsertExpectError(t *testing.T) {
 	//MysqlStore represents a connection to our user database
 	db, mock, err := sqlmock.New()
 
@@ -192,17 +198,24 @@ func TestExpectErrorInsert(t *testing.T) {
 
 	nu := NewUser{"user@domain.com", "password", "password", "username", "first", "last"}
 	u, err := nu.ToUser()
+
+	if err != nil {
+		fmt.Println("Error marshalling new user data")
+		return
+	}
 	u.PassHash = []byte{}
 
 	mock.ExpectBegin()
+	mock.ExpectPrepare("INSERT INTO users")
 	mock.ExpectExec("INSERT INTO users").
 		WithArgs(u.Email, u.PassHash, u.UserName, u.FirstName, u.LastName, u.PhotoURL).
 		WillReturnError(fmt.Errorf("No password passed"))
 	mock.ExpectRollback()
 
 	// passes the mock to our struct
-	var ms = MysqlStore{}
-	ms.DB = db
+	ms := MysqlStore{
+		DB: db,
+	}
 
 	// now we execute our method with the mock
 	if _, err := ms.Insert(u); err == nil {
@@ -231,6 +244,7 @@ func TestUpdate(t *testing.T) {
 	columns := []string{"ID", "Email", "PassHash", "UserName", "FirstName", "LastName", "PhotoURL"}
 
 	mock.ExpectBegin()
+	mock.ExpectPrepare("UPDATE users SET firstname = \\?, lastname = \\? WHERE ID = \\?")
 	mock.ExpectExec("UPDATE users SET firstname = \\?, lastname = \\? WHERE ID = \\?").
 		WithArgs(updates.FirstName, updates.LastName, strconv.FormatInt(id, 10)).
 		WillReturnResult(sqlmock.NewResult(1, 1))
@@ -240,12 +254,13 @@ func TestUpdate(t *testing.T) {
 		WillReturnRows(mock.NewRows(columns))
 
 	// passes the mock to our struct
-	var ms = MysqlStore{}
-	ms.DB = db
+	ms := MysqlStore{
+		DB: db,
+	}
 
 	// now we execute our method with the mock
 	if _, err := ms.Update(id, updates); err != nil {
-		t.Errorf("there was an error, but we were not expecting one")
+		t.Errorf("there was an error, but we were not expecting one: %s", err)
 	}
 
 	// we make sure that all expectations were met
@@ -269,14 +284,16 @@ func TestUpdateExpectError(t *testing.T) {
 	updates := &Updates{"testfirst", "testlast"}
 
 	mock.ExpectBegin()
+	mock.ExpectPrepare("UPDATE users SET firstname = \\?, lastname = \\? WHERE ID = \\?")
 	mock.ExpectExec("UPDATE users SET firstname = \\?, lastname = \\? WHERE ID = \\?").
 		WithArgs(updates.FirstName, updates.LastName, strconv.FormatInt(id, 10)).
 		WillReturnError(fmt.Errorf("No negative ID values"))
 	mock.ExpectRollback()
 
 	// passes the mock to our struct
-	var ms = MysqlStore{}
-	ms.DB = db
+	ms := MysqlStore{
+		DB: db,
+	}
 
 	// now we execute our method with the mock
 	if _, err := ms.Update(id, updates); err == nil {
@@ -303,14 +320,16 @@ func TestDelete(t *testing.T) {
 	var id int64 = 1
 
 	mock.ExpectBegin()
+	mock.ExpectPrepare("DELETE FROM users")
 	mock.ExpectExec("DELETE FROM users").
 		WithArgs(strconv.FormatInt(id, 10)).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectCommit()
 
 	// passes the mock to our struct
-	var ms = MysqlStore{}
-	ms.DB = db
+	ms := MysqlStore{
+		DB: db,
+	}
 
 	// now we execute our method with the mock
 	if err := ms.Delete(id); err != nil {
@@ -337,14 +356,16 @@ func TestDeleteExpectError(t *testing.T) {
 	var id int64 = -1
 
 	mock.ExpectBegin()
+	mock.ExpectPrepare("DELETE FROM users")
 	mock.ExpectExec("DELETE FROM users").
 		WithArgs(strconv.FormatInt(id, 10)).
 		WillReturnError(fmt.Errorf("No negative ID values"))
 	mock.ExpectRollback()
 
 	// passes the mock to our struct
-	var ms = MysqlStore{}
-	ms.DB = db
+	ms := MysqlStore{
+		DB: db,
+	}
 
 	// now we execute our method with the mock
 	if err := ms.Delete(id); err == nil {
